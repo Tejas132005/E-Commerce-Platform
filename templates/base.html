@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Home Page{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+</head>
+
+<body class="container-fluid">
+    <header class="d-flex justify-content-between align-items-center py-3">
+        <div class="invoxiagst fs-1 fw-bold">InvoxiaGST</div>
+
+        <nav class="menu">
+            <a class="btn btn-outline-dark" href="{% url 'home' %}">Home</a>
+            <a class="btn btn-outline-dark" href="{% url 'about' %}">About Us</a>
+            <a class="btn btn-outline-dark" href="{% url 'docs' %}">Docs</a>
+            <button type="button" class="btn btn-outline-dark" data-bs-toggle="popover" data-bs-title="Contact Details" data-bs-content="Contact us at support@example.com" data-bs-placement="bottom">Contact Us</button>
+        </nav>
+
+        <div class="account">
+            {% if user.is_authenticated %}
+            <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#profileMenu" aria-controls="profileMenu">
+                <i class="bi bi-person-circle"></i> {{ user.username }}
+            </button>
+
+            <div class="offcanvas offcanvas-end" tabindex="-1" id="profileMenu" aria-labelledby="profileMenuLabel">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title" id="profileMenuLabel">Account Menu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <ul class="list-group">
+                        <li class="list-group-item"><a class="nav-link" href="{% url 'history' %}">History</a></li>
+                        <li class="list-group-item"><a class="nav-link" href="{% url 'stock_details' %}">Stock Details</a></li>
+                        <li class="list-group-item"><a class="nav-link" href="{% url 'data_analysis' %}">Data Analysis</a></li>
+                        <li class="list-group-item"><a class="nav-link" href="{% url 'subscription_history' %}">Subscription History</a></li>
+                        <li class="list-group-item"><a class="nav-link" href="{% url 'logout' %}">Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+            {% else %}
+            <a class="btn btn-primary" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+            <a class="btn btn-outline-primary" href="{% url 'register' %}">Register</a> {% endif %}
+        </div>
+    </header>
+</body>
+
+</html>

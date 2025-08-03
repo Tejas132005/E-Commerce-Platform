@@ -1,0 +1,310 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Home Page{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <style>
+        body {
+            background: linear-gradient(-45deg, #ffffff, #dff1ff, #e6f7ff, #f8f9fa);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            font-family: 'Segoe UI', sans-serif;
+            color: #131313d8;
+            min-height: 100vh;
+        }
+        
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        
+        header {
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+            margin-top: 20px;
+            padding: 20px 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .invoxiagst {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #0056b3;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+            font-style: italic;
+        }
+        
+        .menu .btn {
+            margin: 0 6px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            border-radius: 25px;
+            padding: 8px 18px;
+        }
+        
+        .menu .btn:hover {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+        
+        h1.text-center {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #2a52be;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .plans-heading h2 {
+            color: #004085;
+            text-shadow: 1px 1px 1px #ced4da;
+            margin-bottom: 1rem;
+        }
+        
+        .card {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border: none;
+            border-radius: 1.25rem;
+            transition: all 0.4s ease;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(245, 245, 245, 0.95));
+            backdrop-filter: blur(6px);
+            max-width: 100%;
+        }
+        
+        .card:hover {
+            transform: scale(1.05);
+            box-shadow: 0px 20px 60px rgba(5, 228, 187, 0.886);
+        }
+        
+        .card-header {
+            background-color: #0d6efd;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 1rem 1rem 0 0;
+            font-size: 1.25rem;
+            text-align: center;
+        }
+        
+        .card-body {
+            text-align: center;
+            font-size: 1rem;
+            background-color: rgb(210, 213, 14);
+            font-style: oblique;
+        }
+        
+        .card-footer {
+            background-color: rgb(167, 203, 168);
+            border-radius: 0 0 1rem 1rem;
+            text-align: center;
+        }
+        
+        .text-center {
+            font-style: italic;
+        }
+        
+        .btn-primary {
+            border-radius: 25px;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+        
+        .btn-outline-dark:hover {
+            background-color: #0d6efd;
+            color: #fff;
+            border-color: #0d6efd;
+        }
+        
+        .modal-content {
+            border-radius: 1rem;
+        }
+        
+        .account .btn {
+            margin-left: 8px;
+        }
+        /* === RESPONSIVE DESIGN === */
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .menu {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                margin-top: 10px;
+            }
+            .account {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                margin-top: 10px;
+                justify-content: center;
+                align-items: center;
+            }
+            .plans {
+                flex-direction: column !important;
+                align-items: center;
+                padding: 0 1rem;
+            }
+            h1.text-center {
+                font-size: 2rem;
+            }
+            .card-header {
+                font-size: 1rem;
+            }
+        }
+    </style>
+
+
+
+</head>
+
+<body class="container-fluid">
+    <header class="d-flex justify-content-between align-items-center py-3">
+        <div class="invoxiagst fs-1 fw-bold">InvoxiaGST</div>
+
+        <nav class="menu">
+            <a class="btn btn-outline-dark" href="{% url 'home' %}">Home</a>
+            <a class="btn btn-outline-dark" href="{% url 'about' %}">About Us</a>
+            <a class="btn btn-outline-dark" href="{% url 'docs' %}">Docs</a>
+            <button type="button" class="btn btn-outline-dark" data-bs-toggle="popover" data-bs-title="Contact Details" data-bs-content="Contact us at support@example.com" data-bs-placement="bottom">Contact Us</button>
+        </nav>
+
+        <div class="account">
+            {% if user.is_authenticated %}
+            <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#profileMenu" aria-controls="profileMenu">
+                <i class="bi bi-person-circle"></i> {{ user.username }}
+            </button>
+
+            <div class="offcanvas offcanvas-end" tabindex="-1" id="profileMenu" aria-labelledby="profileMenuLabel">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title" id="profileMenuLabel">Account Menu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <ul class="list-group">
+                        <li class="list-group-item"><a class="nav-link" href="{% url 'history' %}">History</a></li>
+                        <li class="list-group-item"><a class="nav-link" href="{% url 'stock_details' %}">Stock Details</a></li>
+                        <li class="list-group-item"><a class="nav-link" href="{% url 'data_analysis' %}">Data Analysis</a></li>
+                        <li class="list-group-item"><a class="nav-link" href="{% url 'logout' %}">Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+            {% else %}
+            <a class="btn btn-primary" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+            <a class="btn btn-outline-primary" href="{% url 'register' %}">Register</a> {% endif %}
+        </div>
+    </header>
+
+    {% if request.GET.success == "true" %}
+    <div class="modal fade show" id="successModal" tabindex="-1" style="display: block;" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-success">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Subscription Successful</h5>
+                    <button type="button" class="btn-close" onclick="closeModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Thank you for subscribing! Your access has been activated.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+    <script>
+        function closeModal() {
+            const modal = document.getElementById("successModal");
+            modal.style.display = "none";
+            document.querySelector(".modal-backdrop").remove();
+            const url = new URL(window.location.href);
+            url.searchParams.delete('success');
+            window.history.replaceState({}, document.title, url);
+        }
+    </script>
+    {% endif %} {% if user.is_authenticated and user.tier == "free" %}
+    <div class="modal fade show" id="planExpiredModal" tabindex="-1" style="display: block;" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Plan Expired</h5>
+                    <button type="button" class="btn-close" onclick="document.getElementById('planExpiredModal').style.display='none';"></button>
+                </div>
+                <div class="modal-body">
+                    Your subscription has expired. Please choose a plan to continue.
+                </div>
+                <div class="modal-footer">
+                    <a href="{% url 'upgrade' %}" class="btn btn-primary">Renew Now</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+
+    <section class="mt-5">
+        <h1 class="text-center">Welcome to InvoxiaGST!</h1>
+        <p class="text-center">Your complete GST Billing and Analytics System.</p>
+
+        <p>
+            <p>
+                {% if user.is_authenticated %} {% if user.subscription %} {% if user.subscription.tier == "pro" %} Tier : Pro {% elif user.subscription.tier == "free" %} Tier : Free {% else %} Tier : None {% endif %} {% else %} Tier : None {% endif %} {% endif %}
+            </p>
+        </p>
+
+        {% if user.is_authenticated %} {% if user.subscription.tier == "pro" %}
+        <div class="text-center mt-5">
+            <h4>✅ You are on the <strong>Pro</strong> plan. Enjoy full access!</h4>
+        </div>
+        {% elif user.is_authenticated and user.subscription.tier == "free" %}
+        <div class="plans-heading mt-5">
+            <h2 class="text-center fw-bold">Plans</h2>
+        </div>
+
+        <div class="plans d-flex justify-content-center mt-3">
+            <div class="text-center">
+                <div class="card w-100 shadow-sm">
+                    <div class="card-header fs-4">₹1000 Plan — 300 Days Access</div>
+                    <div class="card-body">
+                        <p>Enjoy full access to InvoxiaGST for 300 days.</p>
+                        <h5><strong>₹1000</strong></h5>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{% url 'upgrade' %}" class="btn btn-primary">Subscribe Now</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %} {% endif %}
+    </section>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+        [...popoverTriggerList].map(triggerEl => new bootstrap.Popover(triggerEl));
+    </script>
+</body>
+
+</html>
+
+</html>

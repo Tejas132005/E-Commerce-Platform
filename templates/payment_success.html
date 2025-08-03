@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Stock Platform{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"> {% block head %}{% endblock %}
+</head>
+
+<body class="bg-gray-100 text-gray-900">
+    <div class="container mx-auto px-4 py-6">
+        {% block content %}
+        <div class="p-6 bg-green-100 rounded text-center shadow">
+            <h1 class="text-2xl font-bold mb-4">🎉 Payment Successful</h1>
+            <p class="text-lg">You've been upgraded to the <strong>Pro</strong> plan!</p>
+            <a href="/" class="text-blue-600 underline mt-4 inline-block">Go to Home</a>
+        </div>
+        {% endblock %}
+    </div>
+</body>
+
+</html>
