@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Product - {{ user.company_name|default:user.username }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .search-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        
+        .search-section h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .product-search {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .product-search input,
+        .product-search select {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .product-search input:focus,
+        .product-search select:focus {
+            outline: none;
+            border-color: #ffc107;
+            box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.1);
+        }
+        
+        .products-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .product-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .product-item:hover {
+            border-color: #ffc107;
+            transform: translateY(-2px);
+        }
+        
+        .product-item.selected {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+        
+        .form-section {
+            display: none;
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+        
+        .form-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #ffc107;
+            box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.1);
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 1rem;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #28a745;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .actions {
+            text-align: center;
+            padding-top: 1.5rem;
+            border-top: 2px solid #e9ecef;
+        }
+        
+        .current-info {
+            background: #e3f2fd;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .current-info h4 {
+            color: #0d47a1;
+            margin-bottom: 0.5rem;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+            .product-search {
+                flex-direction: column;
+            }
+            .products-list {
+                grid-template-columns: 1fr;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✏️ Update Product</h1>
+            <p>Modify existing products in your inventory</p>
+        </div>
+
+        {% if messages %} {% for message in messages %}
+        <div class="{% if message.tags == 'error' %}error-message{% else %}success-message{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %} {% endif %}
+
+        <!-- Product Selection -->
+        <div class="search-section">
+            <h3>Select Product to Update</h3>
+
+            <div class="product-search">
+                <input type="text" id="searchInput" placeholder="🔍 Search by product name..." onkeyup="filterProducts()">
+                <select id="categoryFilter" onchange="filterProducts()">
+                    <option value="">All Categories</option>
+                    {% regroup products by category as category_list %}
+                    {% for category in category_list %}
+                        <option value="{{ category.grouper }}">{{ category.grouper|title|default:"Uncategorized" }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {% if products %}
+            <div class="products-list" id="productsList">
+                {% for product in products %}
+                <div class="product-item" data-name="{{ product.name|lower }}" data-category="{{ product.category|default:'uncategorized'|lower }}" onclick="selectProduct('{{ product.name }}', '{{ product.price }}', '{{ product.quantity }}', '{{ product.category|default:'' }}', '{{ product.gst }}', '{{ product.hsn_code|default:'' }}')">
+                    <strong>{{ product.name }}</strong>
+                    <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+                        ₹{{ product.price }} | Stock: {{ product.quantity }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 2rem; color: #666;">
+                <h3>No products found</h3>
+                <p>Add some products first before you can update them.</p>
+                <br>
+                <a href="{% url 'add_product' %}" class="btn btn-warning">Add Product</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Update Form -->
+        <div class="form-section" id="updateForm">
+            <h3>Update Product Details</h3>
+
+            <div class="current-info" id="currentInfo">
+                <h4>Current Product Information</h4>
+                <div id="currentDetails"></div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" id="product_name" name="product_name">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="hsn_code">HSN Code</label>
+                        <input type="text" id="hsn_code" name="hsn_code" placeholder="HSN/SAC Code">
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn btn-warning">✏️ Update Product</button>
+                    <a href="{% url 'product_list' %}" class="btn btn-secondary">📋 Back to Products</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Navigation -->
+        <div style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e9ecef;">
+            <a href="{% url 'product_list' %}" style="color: #ffc107; text-decoration: none; margin: 0 1rem;">📋 Product List</a>
+            <a href="{% url 'add_product' %}" style="color: #ffc107; text-decoration: none; margin: 0 1rem;">➕ Add Product</a>
+            <a href="{% url 'delete_product' %}" style="color: #ffc107; text-decoration: none; margin: 0 1rem;">🗑️ Delete Product</a>
+            <a href="{% url 'sales_dashboard' %}" style="color: #ffc107; text-decoration: none; margin: 0 1rem;">📊 Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        function filterProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value.toLowerCase();
+            const productItems = document.querySelectorAll('.product-item');
+
+            productItems.forEach(item => {
+                const name = item.getAttribute('data-name');
+                const category = item.getAttribute('data-category');
+
+                const matchesSearch = name.includes(searchTerm);
+                const matchesCategory = !categoryFilter || category === categoryFilter;
+
+                if (matchesSearch && matchesCategory) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function selectProduct(name, price, quantity, category, gst, hsn_code) {
+            // Remove previous selection
+            document.querySelectorAll('.product-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+
+            // Mark current selection
+            event.target.closest('.product-item').classList.add('selected');
+
+            // Fill form fields
+            document.getElementById('product_name').value = name;
+            document.getElementById('price').value = price;
+            document.getElementById('quantity').value = quantity;
+            document.getElementById('category').value = category;
+            document.getElementById('gst').value = gst;
+            document.getElementById('hsn_code').value = hsn_code;
+
+            // Show current info
+            document.getElementById('currentDetails').innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div><strong>Product:</strong> ${name}</div>
+                    <div><strong>Current Price:</strong> ₹${price}</div>
+                    <div><strong>Current Stock:</strong> ${quantity}</div>
+                    <div><strong>Category:</strong> ${category || 'Uncategorized'}</div>
+                    <div><strong>GST:</strong> ${gst}%</div>
+                    <div><strong>HSN Code:</strong> ${hsn_code || 'Not set'}</div>
+                </div>
+            `;
+
+            // Show update form
+            document.getElementById('updateForm').classList.add('active');
+
+            // Scroll to form
+            document.getElementById('updateForm').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+
+        // Add form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const productName = document.getElementById('product_name').value;
+            if (!productName) {
+                e.preventDefault();
+                alert('Please select a product first!');
+                return false;
+            }
+
+            const price = document.getElementById('price').value;
+            const quantity = document.getElementById('quantity').value;
+
+            if (price <= 0) {
+                e.preventDefault();
+                alert('Price must be greater than 0!');
+                return false;
+            }
+
+            if (quantity < 0) {
+                e.preventDefault();
+                alert('Quantity cannot be negative!');
+                return false;
+            }
+
+            return confirm(`Are you sure you want to update "${productName}"?`);
+        });
+    </script>
+</body>
+
+</html>
+<label for="price">New Price (₹) *</label>
+<input type="number" step="0.01" id="price" name="price" required>
+</div>
+
+<div class="form-group">
+    <label for="quantity">New Quantity *</label>
+    <input type="number" id="quantity" name="quantity" min="0" required>
+</div>
+
+<div class="form-group">
+    <label for="category">Category</label>
+    <input type="text" id="category" name="category" placeholder="e.g., Electronics, Clothing">
+</div>
+
+<div class="form-group">
+    <label for="gst">GST (%)</label>
+    <input type="number" step="0.01" id="gst" name="gst" min="0" max="100">
+</div>
+
+<div class="form-group">

@@ -1,0 +1,549 @@
+<!-- invoice_template.html -->
+<!-- Save this as templates/invoice_template.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice #{{ invoice.invoice_number|default:invoice.id }} - {{ company.name }}</title>
+    <style>
+        .invoice-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #333;
+        }
+        
+        .company-info h1 {
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        
+        .company-info p {
+            margin: 2px 0;
+            color: #555;
+        }
+        
+        .invoice-details {
+            text-align: right;
+        }
+        
+        .invoice-details h2 {
+            color: #e74c3c;
+            margin: 0 0 15px 0;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        .customer-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .customer-section h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        
+        .customer-details p {
+            margin: 3px 0;
+            color: #555;
+        }
+        
+        .items-section {
+            margin-bottom: 30px;
+        }
+        
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .invoice-table th {
+            background: #34495e;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #2c3e50;
+        }
+        
+        .invoice-table td {
+            padding: 10px 8px;
+            border: 1px solid #bdc3c7;
+            vertical-align: top;
+        }
+        
+        .invoice-table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .totals-section {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .gst-summary h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        
+        .gst-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        
+        .gst-table th {
+            background: #3498db;
+            color: white;
+            padding: 8px 6px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #2980b9;
+        }
+        
+        .gst-table td {
+            padding: 6px;
+            border: 1px solid #bdc3c7;
+            text-align: center;
+        }
+        
+        .gst-table .total-row {
+            background: #ecf0f1;
+            font-weight: bold;
+        }
+        
+        .invoice-totals {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .totals-table {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+        }
+        
+        .total-row.gst-breakdown {
+            color: #3498db;
+            font-weight: 600;
+        }
+        
+        .total-row.discount {
+            color: #e74c3c;
+        }
+        
+        .total-row.grand-total {
+            border-top: 2px solid #2c3e50;
+            padding-top: 10px;
+            margin-top: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .total-label {
+            font-weight: 600;
+        }
+        
+        .total-value {
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        .amount-in-words {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            font-style: italic;
+        }
+        
+        .invoice-footer {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .terms-section h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .terms-section ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .terms-section li {
+            margin: 5px 0;
+            color: #555;
+        }
+        
+        .signature-section {
+            text-align: center;
+        }
+        
+        .company-signature {
+            border: 1px solid #bdc3c7;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .print-section {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #bdc3c7;
+        }
+        
+        .print-btn,
+        .download-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .print-btn:hover,
+        .download-btn:hover {
+            background: #2980b9;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .download-btn {
+            background: #27ae60;
+        }
+        
+        .download-btn:hover {
+            background: #219a52;
+        }
+        
+        .back-btn {
+            background: #6c757d;
+        }
+        
+        .back-btn:hover {
+            background: #545b62;
+        }
+        /* Print Styles */
+        
+        @media print {
+            .print-section {
+                display: none;
+            }
+            .invoice-container {
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
+            }
+            .totals-section {
+                grid-template-columns: 1fr 300px;
+            }
+            body {
+                -webkit-print-color-adjust: exact;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .invoice-container {
+                padding: 10px;
+                font-size: 11px;
+            }
+            .invoice-header {
+                flex-direction: column;
+                gap: 20px;
+            }
+            .customer-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .totals-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .invoice-footer {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .print-section {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .print-btn,
+            .download-btn {
+                display: block;
+                margin: 5px 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="invoice-container">
+        <div class="invoice-header">
+            <div class="company-info">
+                <h1>{{ company.name }}</h1>
+                <p>{{ company.address }}</p>
+                <p>{{ company.city }}, {{ company.state }} - {{ company.pincode }}</p>
+                <p>Phone: {{ company.phone }}</p>
+                <p>Email: {{ company.email }}</p>
+                <p><strong>GSTIN: {{ company.gstin }}</strong></p>
+            </div>
+            <div class="invoice-details">
+                <h2>TAX INVOICE</h2>
+                <p><strong>Invoice No:</strong> {{ invoice.invoice_number|default:invoice.id }}</p>
+                <p><strong>Date:</strong> {{ invoice.order_date|date:"d/m/Y" }}</p>
+                <p><strong>Due Date:</strong> {{ invoice.order_date|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+
+        <!-- Customer Details -->
+        <div class="customer-section">
+            <div class="billing-info">
+                <h3>Bill To:</h3>
+                <div class="customer-details">
+                    <p><strong>{{ customer.name }}</strong></p>
+                    {% if customer.address %}
+                    <p>{{ customer.address }}</p>
+                    {% endif %} {% if customer.address2 %}
+                    <p>{{ customer.address2 }}</p>
+                    {% endif %} {% if customer.city %}
+                    <p>{{ customer.city }}, {{ customer.state|default:"State" }} - {{ customer.pincode|default:"000000" }}</p>
+                    {% endif %}
+                    <p><strong>Phone:</strong> {{ customer.phone }}</p>
+                    {% if customer.email %}
+                    <p><strong>Email:</strong> {{ customer.email }}</p>
+                    {% endif %} {% if customer.gstin %}
+                    <p><strong>GSTIN:</strong> {{ customer.gstin }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="shipping-info">
+                <h3>Ship To:</h3>
+                <div class="customer-details">
+                    <p><strong>{{ customer.name }}</strong></p>
+                    {% if customer.address %}
+                    <p>{{ customer.address }}</p>
+                    {% else %}
+                    <p>{{ customer.place|default:"Address not provided" }}</p>
+                    {% endif %} {% if customer.address2 %}
+                    <p>{{ customer.address2 }}</p>
+                    {% endif %} {% if customer.city %}
+                    <p>{{ customer.city }}, {{ customer.state|default:"State" }} - {{ customer.pincode|default:"000000" }}</p>
+                    {% endif %}
+                    <p><strong>Phone:</strong> {{ customer.phone }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Items Table -->
+        <div class="items-section">
+            <table class="invoice-table">
+                <thead>
+                    <tr>
+                        <th width="5%">Sr.</th>
+                        <th width="25%">Description</th>
+                        <th width="10%">HSN/SAC</th>
+                        <th width="8%">Qty</th>
+                        <th width="8%">Unit</th>
+                        <th width="12%">Rate (₹)</th>
+                        <th width="12%">Amount (₹)</th>
+                        <th width="10%">GST Rate</th>
+                        <th width="10%">GST Amount (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in invoice_items %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <strong>{{ item.product.name }}</strong> {% if item.product.description %}
+                            <br><small>{{ item.product.description|truncatewords:10 }}</small> {% endif %}
+                        </td>
+                        <td>{{ item.product.hsn_code|default:"-" }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.product.unit|default:"Nos" }}</td>
+                        <td class="text-right">{{ item.item_price|floatformat:2 }}</td>
+                        <td class="text-right">{{ item.subtotal|floatformat:2 }}</td>
+                        <td class="text-center">{{ item.product.gst }}%</td>
+                        <td class="text-right">{{ item.gst_amount|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- GST Summary and Totals -->
+        <div class="totals-section">
+            <div class="gst-summary">
+                <h4>GST Summary</h4>
+                <table class="gst-table">
+                    <thead>
+                        <tr>
+                            <th>GST Rate</th>
+                            <th>Taxable Amount (₹)</th>
+                            <th>CGST (₹)</th>
+                            <th>SGST (₹)</th>
+                            <th>Total GST (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for gst_group in gst_summary %}
+                        <tr>
+                            <td>{{ gst_group.rate }}%</td>
+                            <td class="text-right">{{ gst_group.taxable_amount|floatformat:2 }}</td>
+                            <td class="text-right">{{ gst_group.cgst|floatformat:2 }}</td>
+                            <td class="text-right">{{ gst_group.sgst|floatformat:2 }}</td>
+                            <td class="text-right">{{ gst_group.total_gst|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td><strong>Total</strong></td>
+                            <td class="text-right"><strong>₹{{ invoice.subtotal|floatformat:2 }}</strong></td>
+                            <td class="text-right"><strong>₹{{ invoice.total_cgst|floatformat:2 }}</strong></td>
+                            <td class="text-right"><strong>₹{{ invoice.total_sgst|floatformat:2 }}</strong></td>
+                            <td class="text-right"><strong>₹{{ invoice.total_gst|floatformat:2 }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="invoice-totals">
+                <div class="totals-table">
+                    <div class="total-row">
+                        <span class="total-label">Subtotal:</span>
+                        <span class="total-value">₹{{ invoice.subtotal|floatformat:2 }}</span>
+                    </div>
+
+                    <div class="total-row gst-breakdown">
+                        <span class="total-label">CGST:</span>
+                        <span class="total-value">₹{{ invoice.total_cgst|floatformat:2 }}</span>
+                    </div>
+
+                    <div class="total-row gst-breakdown">
+                        <span class="total-label">SGST:</span>
+                        <span class="total-value">₹{{ invoice.total_sgst|floatformat:2 }}</span>
+                    </div>
+
+                    {% if invoice.discount and invoice.discount > 0 %}
+                    <div class="total-row discount">
+                        <span class="total-label">Discount:</span>
+                        <span class="total-value">-₹{{ invoice.discount|floatformat:2 }}</span>
+                    </div>
+                    {% endif %} {% if invoice.shipping_charges and invoice.shipping_charges > 0 %}
+                    <div class="total-row">
+                        <span class="total-label">Shipping:</span>
+                        <span class="total-value">₹{{ invoice.shipping_charges|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="total-row grand-total">
+                        <span class="total-label">Grand Total:</span>
+                        <span class="total-value">₹{{ invoice.total_price|floatformat:2 }}</span>
+                    </div>
+
+                    <div class="amount-in-words">
+                        <strong>Amount in Words:</strong><br> {{ invoice.get_amount_in_words }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terms and Footer -->
+        <div class="invoice-footer">
+            <div class="terms-section">
+                <h4>Terms & Conditions:</h4>
+                <ul>
+                    <li>Payment is due within {{ invoice.payment_terms|default:"30" }} days of invoice date</li>
+                    <li>Late payments may incur additional charges</li>
+                    <li>Goods once sold will not be taken back</li>
+                    <li>Subject to {{ company.jurisdiction|default:"Local" }} jurisdiction only</li>
+                </ul>
+            </div>
+
+            <div class="signature-section">
+                <div class="company-signature">
+                    <p>For {{ company.name }}</p>
+                    <br><br>
+                    <p>____________________</p>
+                    <p>Authorized Signatory</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Print Button -->
+        <div class="print-section">
+            <button onclick="window.print()" class="print-btn">🖨️ Print Invoice</button>
+            <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=invoice.id %}" class="download-btn">📄 Download PDF</a>
+            <a href="{% url 'my_orders' username=store_owner.username %}" class="print-btn back-btn">← Back to Orders</a>
+        </div>
+    </div>
+
+    <script>
+        // Auto-print functionality if needed
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('print') === 'true') {
+            window.onload = function() {
+                window.print();
+            };
+        }
+    </script>
+</body>
+
+</html>

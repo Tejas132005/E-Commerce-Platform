@@ -1,3 +1,5 @@
+# accounts/views.py
+
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.views.decorators.csrf import csrf_exempt
@@ -8,6 +10,7 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from .forms import RegisterForm, LoginForm
 from .models import CustomUser, Subscription
 import stripe
+from django.urls import reverse
 from datetime import timedelta
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -24,10 +27,13 @@ def register_view(request):
         password2 = request.POST.get('password2')
 
         if password1 != password2:
-            return redirect('register')
+            return render(request, 'register.html', {'error': 'Passwords do not match'})
 
-        if CustomUser.objects.filter(email=email).exists() or CustomUser.objects.filter(phone=phone).exists():
-            return redirect('register')
+        if CustomUser.objects.filter(email=email).exists():
+            return render(request, 'register.html', {'error': 'Email already exists'})
+        
+        if CustomUser.objects.filter(phone=phone).exists():
+            return render(request, 'register.html', {'error': 'Phone already exists'})
 
         user = CustomUser.objects.create_user(
             username=username,
@@ -39,7 +45,7 @@ def register_view(request):
             password=password1,
         )
 
-        # ✅ Create subscription with default tier='free'
+        # Create subscription with default tier='free'
         Subscription.objects.create(user=user, tier='free')
 
         login(request, user)
@@ -72,18 +78,18 @@ def upgrade_to_pro(request):
         line_items=[{
             'price_data': {
                 'currency': 'inr',
-                'unit_amount': 100000,
+                'unit_amount': 100000,  # ₹1000
                 'product_data': {'name': '300 Days Premium Plan'},
             },
             'quantity': 1,
         }],
         mode='payment',
-        customer_email=request.user.email,  # ✅ Pass email to identify the user later
-        success_url=request.build_absolute_uri('/payment-success/?success=true'),
+        customer_email=request.user.email,
+        # Redirect to payment success page instead of store directly
+        success_url=request.build_absolute_uri('/accounts/payment-success/'),
         cancel_url=request.build_absolute_uri('/'),
     )
     return redirect(session.url, code=303)
-
 
 @csrf_exempt
 def stripe_webhook(request):
@@ -106,7 +112,6 @@ def stripe_webhook(request):
 
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-
         email = session.get("customer_email")
         print(f"🎯 Webhook for email: {email}")
 
@@ -116,7 +121,7 @@ def stripe_webhook(request):
                 user.is_paid = True
                 user.subscription_expiry = (
                     user.subscription_expiry + timedelta(days=300)
-                    if user.subscription_expiry
+                    if user.subscription_expiry and user.subscription_expiry > timezone.now()
                     else timezone.now() + timedelta(days=300)
                 )
                 user.save()
@@ -137,14 +142,14 @@ def stripe_webhook(request):
 
     return HttpResponse(status=200)
 
-
 @login_required
 def payment_success(request):
+    """Payment success page that upgrades user and shows success message"""
     user = request.user
     user.is_paid = True
     user.subscription_expiry = (
         user.subscription_expiry + timedelta(days=300)
-        if user.subscription_expiry
+        if user.subscription_expiry and user.subscription_expiry > timezone.now()
         else timezone.now() + timedelta(days=300)
     )
     user.save()
@@ -154,10 +159,11 @@ def payment_success(request):
         defaults={'tier': 'pro'}
     )
 
-    print(f"✅ Subscription upgraded for {user.email}")
-
-    return render(request, "payment_success.html")
-
+    # Show payment success page instead of redirecting immediately
+    return render(request, 'payment_success.html', {
+        'user': user,
+        'store_url': reverse('store_products', kwargs={'username': user.username})
+    })
 
 def plan_view(request):
     return render(request, 'plan.html')

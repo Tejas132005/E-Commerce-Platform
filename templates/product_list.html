@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Management - {{ user.company_name|default:user.username }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .stat-item .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #6f42c1;
+        }
+        
+        .stat-item .label {
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        .actions-bar {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .search-filter {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .search-input {
+            padding: 10px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            min-width: 250px;
+            font-size: 1rem;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #6f42c1;
+        }
+        
+        .products-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .section-title {
+            font-size: 1.8rem;
+            color: #333;
+            margin: 0;
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .product-card {
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-color: #6f42c1;
+        }
+        
+        .product-image {
+            height: 200px;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #dee2e6;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .product-info {
+            padding: 1.5rem;
+        }
+        
+        .product-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+        
+        .product-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+        }
+        
+        .detail-label {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .detail-value {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .price-value {
+            color: #28a745;
+            font-size: 1.1rem;
+        }
+        
+        .stock-value {
+            color: #007bff;
+        }
+        
+        .stock-low {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .category-badge {
+            background: #e9ecef;
+            color: #495057;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .btn-sm {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .no-products {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+        
+        .no-products-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+        
+        .no-products h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .navigation {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid #e9ecef;
+        }
+        
+        .navigation a {
+            color: #6f42c1;
+            text-decoration: none;
+            margin: 0 1rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .navigation a:hover {
+            color: #e83e8c;
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .actions-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-filter {
+                flex-direction: column;
+            }
+            .search-input {
+                min-width: 100%;
+            }
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+            .section-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .product-card {
+            animation: fadeIn 0.6s ease-out;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>📦 Product Management</h1>
+        <p>{{ user.company_name|default:user.username }} - Inventory Overview</p>
+    </div>
+
+    <div class="container">
+        <!-- Statistics Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="number">{{ products.count }}</div>
+                <div class="label">Total Products</div>
+            </div>
+            <div class="stat-item">
+                <div class="number">{{ products|length|add:0 }}</div>
+                <div class="label">Categories</div>
+            </div>
+            <div class="stat-item">
+                <div class="number">₹{% for product in products %}{{ product.price|add:0 }}{% endfor %}</div>
+                <div class="label">Total Value</div>
+            </div>
+            <div class="stat-item">
+                <div class="number">{{ low_stock_count|default:0 }}</div>
+                <div class="label">Low Stock</div>
+            </div>
+        </div>
+
+        <!-- Actions Bar -->
+        <div class="actions-bar">
+            <div class="search-filter">
+                <input type="text" class="search-input" id="searchProducts" placeholder="🔍 Search products..." onkeyup="filterProducts()">
+                <select class="search-input" id="categoryFilter" onchange="filterProducts()" style="min-width: 150px;">
+                    <option value="">All Categories</option>
+                    {% regroup products by category as category_list %}
+                    {% for category in category_list %}
+                        <option value="{{ category.grouper }}">{{ category.grouper|title|default:"Uncategorized" }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="{% url 'add_product' %}" class="btn btn-success">
+                    ➕ Add Product
+                </a>
+                <a href="{% url 'update_product' %}" class="btn btn-warning">
+                    ✏️ Update Product
+                </a>
+                <a href="{% url 'delete_product' %}" class="btn btn-danger">
+                    🗑️ Delete Product
+                </a>
+                <a href="{% url 'sales_dashboard' %}" class="btn btn-info">
+                    📊 Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Products Section -->
+        <div class="products-section">
+            <div class="section-header">
+                <h2 class="section-title">Your Products</h2>
+                <span style="color: #666;">{{ products.count }} item{{ products.count|pluralize }}</span>
+            </div>
+
+            {% if products %}
+            <div class="products-grid" id="productsGrid">
+                {% for product in products %}
+                <div class="product-card" data-name="{{ product.name|lower }}" data-category="{{ product.category|default:'uncategorized'|lower }}">
+                    <div class="product-image">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}"> {% else %} 📦 {% endif %}
+                    </div>
+
+                    <div class="product-info">
+                        <div class="product-name">{{ product.name }}</div>
+
+                        <div class="product-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Price:</span>
+                                <span class="detail-value price-value">₹{{ product.price }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Stock:</span>
+                                <span class="detail-value {% if product.quantity < 10 %}stock-low{% else %}stock-value{% endif %}">
+                                            {{ product.quantity }}
+                                        </span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">GST:</span>
+                                <span class="detail-value">{{ product.gst }}%</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">HSN:</span>
+                                <span class="detail-value">{{ product.hsn_code|default:"-" }}</span>
+                            </div>
+                        </div>
+
+                        {% if product.category %}
+                        <div style="margin-bottom: 1rem;">
+                            <span class="category-badge">{{ product.category }}</span>
+                        </div>
+                        {% endif %}
+
+                        <div class="product-actions">
+                            <a href="{% url 'update_product' %}" class="btn btn-warning btn-sm">
+                                        ✏️ Edit
+                                    </a>
+                            <a href="{% url 'store_products' username=user.username %}" class="btn btn-primary btn-sm">
+                                        👁️ View
+                                    </a>
+                            <a href="{% url 'delete_product' %}" class="btn btn-danger btn-sm">
+                                        🗑️ Delete
+                                    </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-products">
+                <div class="no-products-icon">📦</div>
+                <h3>No products yet</h3>
+                <p>Start building your inventory by adding your first product!</p>
+                <br>
+                <a href="{% url 'add_product' %}" class="btn btn-success">
+                        ➕ Add Your First Product
+                    </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation">
+            <a href="/">🏠 Home</a>
+            <a href="{% url 'sales_dashboard' %}">📊 Dashboard</a>
+            <a href="{% url 'sales_report' %}">📋 Reports</a>
+            <a href="{% url 'store_products' username=user.username %}">🏪 View Store</a>
+        </div>
+    </div>
+
+    <script>
+        function filterProducts() {
+            const searchTerm = document.getElementById('searchProducts').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value.toLowerCase();
+            const productCards = document.querySelectorAll('.product-card');
+
+            productCards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                const category = card.getAttribute('data-category');
+
+                const matchesSearch = name.includes(searchTerm);
+                const matchesCategory = !categoryFilter || category === categoryFilter;
+
+                if (matchesSearch && matchesCategory) {
+                    card.style.display = 'block';
+                    card.style.animation = 'fadeIn 0.3s ease-out';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Highlight low stock items
+            const stockElements = document.querySelectorAll('.stock-low');
+            stockElements.forEach(element => {
+                const card = element.closest('.product-card');
+                if (card) {
+                    card.style.borderLeft = '4px solid #dc3545';
+                }
+            });
+
+            // Add hover effects to buttons
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                });
+
+                button.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+
+        // Auto-save search preferences
+        document.getElementById('searchProducts').addEventListener('input', function() {
+            localStorage.setItem('productSearch', this.value);
+        });
+
+        document.getElementById('categoryFilter').addEventListener('change', function() {
+            localStorage.setItem('categoryFilter', this.value);
+        });
+
+        // Restore search preferences
+        window.addEventListener('load', function() {
+            const savedSearch = localStorage.getItem('productSearch');
+            const savedCategory = localStorage.getItem('categoryFilter');
+
+            if (savedSearch) {
+                document.getElementById('searchProducts').value = savedSearch;
+            }
+
+            if (savedCategory) {
+                document.getElementById('categoryFilter').value = savedCategory;
+            }
+
+            if (savedSearch || savedCategory) {
+                filterProducts();
+            }
+        });
+    </script>
+</body>
+
+</html>

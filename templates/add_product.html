@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Product</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .form-group input[type="file"] {
+            padding: 8px 15px;
+            background: #f8f9fa;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 1rem;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #28a745;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .actions {
+            text-align: center;
+            padding-top: 1.5rem;
+            border-top: 2px solid #e9ecef;
+        }
+        
+        .navigation {
+            text-align: center;
+            margin-top: 2rem;
+        }
+        
+        .navigation a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 1rem;
+            font-weight: 500;
+        }
+        
+        .navigation a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .btn {
+                width: 100%;
+                margin-bottom: 1rem;
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Add New Product</h1>
+            <p>Add a new product to your store inventory</p>
+        </div>
+
+        {% if messages %} {% for message in messages %}
+        <div class="{% if message.tags == 'error' %}error-message{% else %}success-message{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %} {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.name.id_for_label }}">Product Name *</label> {{ form.name }} {% if form.name.errors %}
+                    <div class="error-message">{{ form.name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.category.id_for_label }}">Category</label> {{ form.category }} {% if form.category.errors %}
+                    <div class="error-message">{{ form.category.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.price.id_for_label }}">Price (₹) *</label> {{ form.price }} {% if form.price.errors %}
+                    <div class="error-message">{{ form.price.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.quantity.id_for_label }}">Quantity *</label> {{ form.quantity }} {% if form.quantity.errors %}
+                    <div class="error-message">{{ form.quantity.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.gst.id_for_label }}">GST (%)</label> {{ form.gst }} {% if form.gst.errors %}
+                    <div class="error-message">{{ form.gst.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.hsn_code.id_for_label }}">HSN Code</label> {{ form.hsn_code }} {% if form.hsn_code.errors %}
+                    <div class="error-message">{{ form.hsn_code.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="{{ form.image.id_for_label }}">Product Image</label> {{ form.image }} {% if form.image.errors %}
+                    <div class="error-message">{{ form.image.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="actions">
+                <button type="submit" class="btn btn-primary">Add Product</button>
+                <a href="{% url 'product_list' %}" class="btn btn-secondary">View All Products</a>
+            </div>
+        </form>
+
+        <div class="navigation">
+            <a href="{% url 'product_list' %}">📋 View Products</a>
+            <a href="{% url 'update_product' %}">✏️ Update Product</a>
+            <a href="{% url 'delete_product' %}">🗑️ Delete Product</a>
+            <a href="{% url 'sales_dashboard' %}">📊 Sales Dashboard</a>
+        </div>
+    </div>
+</body>
+
+</html>

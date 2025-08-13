@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Report - {{ user.company_name|default:user.username }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .summary-card h3 {
+            color: #666;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+        
+        .summary-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .report-section {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .report-section h2 {
+            margin-bottom: 1.5rem;
+            color: #333;
+            border-bottom: 2px solid #28a745;
+            padding-bottom: 0.5rem;
+        }
+        
+        .sales-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .sales-table th,
+        .sales-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .sales-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        .sales-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .currency {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .no-sales {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .date-badge {
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+            .sales-table {
+                font-size: 0.9rem;
+            }
+            .sales-table th,
+            .sales-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>📊 Detailed Sales Report</h1>
+        <p>{{ user.company_name|default:user.username }}</p>
+    </div>
+
+    <div class="container">
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card">
+                <h3>Total Sales</h3>
+                <div class="value">₹{{ total_sales|floatformat:2 }}</div>
+            </div>
+            <div class="summary-card">
+                <h3>Total Profit</h3>
+                <div class="value">₹{{ total_profit|floatformat:2 }}</div>
+            </div>
+            <div class="summary-card">
+                <h3>Total Transactions</h3>
+                <div class="value">{{ sales.count }}</div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+            <a href="{% url 'sales_dashboard' %}" class="btn btn-primary">
+                📊 Back to Dashboard
+            </a>
+            <a href="{% url 'add_product' %}" class="btn btn-success">
+                ➕ Add Product
+            </a>
+        </div>
+
+        <!-- Sales Report Table -->
+        <div class="report-section">
+            <h2>📋 Sales Transactions</h2>
+
+            {% if sales %}
+            <div style="overflow-x: auto;">
+                <table class="sales-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                            <th>Total Price</th>
+                            <th>Profit</th>
+                            <th>Order ID</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr>
+                            <td>
+                                <span class="date-badge">
+                                            {{ sale.sale_date|date:"M d, Y" }}
+                                        </span>
+                                <br>
+                                <small>{{ sale.sale_date|time:"H:i" }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ sale.customer.name }}</strong>
+                                <br>
+                                <small>{{ sale.customer.phone }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ sale.product.name }}</strong>
+                                <br>
+                                <small>₹{{ sale.product.price }} each</small>
+                            </td>
+                            <td>
+                                {{ sale.category|default:"Uncategorized" }}
+                            </td>
+                            <td>
+                                <strong>{{ sale.quantity }}</strong>
+                            </td>
+                            <td class="currency">
+                                ₹{{ sale.total_price|floatformat:2 }}
+                            </td>
+                            <td class="currency">
+                                ₹{{ sale.profit|floatformat:2 }}
+                            </td>
+                            <td>
+                                <small>#{{ sale.order.id }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="no-sales">
+                <h3>📈 No sales data available</h3>
+                <p>Start making sales to see detailed reports here!</p>
+                <br>
+                <a href="{% url 'add_product' %}" class="btn btn-success">Add Your First Product</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+
+</html>

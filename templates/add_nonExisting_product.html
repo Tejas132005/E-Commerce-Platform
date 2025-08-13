@@ -1,0 +1,115 @@
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Add New Product</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+        
+        .form-container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #666;
+            text-decoration: none;
+        }
+        
+        .back-link:hover {
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="form-container">
+        <h2>Add New Product</h2>
+        <form action="{% url 'add_product' %}" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="product_name">Product Name:</label>
+                <input type="text" name="product_name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category:</label>
+                <input type="text" name="category" required>
+            </div>
+
+            <div class="form-group">
+                <label for="gst">GST (%):</label>
+                <input type="number" name="gst" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="price">Price:</label>
+                <input type="number" name="price" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="stock">Stock Quantity:</label>
+                <input type="number" name="stock" required min="1">
+            </div>
+
+            <div class="form-group">
+                <label for="hsn_code">HSN Code:</label>
+                <input type="text" name="hsn_code" required>
+            </div>
+
+            <div class="form-group">
+                <label for="image">Product Image:</label>
+                <input type="file" name="image" accept="image/*" required>
+            </div>
+
+            <button type="submit">Add Product</button>
+        </form>
+
+        <a href="#" class="back-link">← Back to Products</a>
+    </div>
+</body>
+
+</html>
+{% endblock %}

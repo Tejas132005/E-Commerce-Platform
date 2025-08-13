@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Home Page{% endblock %}</title>
+    <title>{% block title %}Multi-Store E-Commerce Platform{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 
@@ -106,12 +106,12 @@
         .card-body {
             text-align: center;
             font-size: 1rem;
-            background-color: rgb(210, 213, 14);
+            background-color: rgba(210, 213, 14, 0.1);
             font-style: oblique;
         }
         
         .card-footer {
-            background-color: rgb(167, 203, 168);
+            background-color: rgba(167, 203, 168, 0.3);
             border-radius: 0 0 1rem 1rem;
             text-align: center;
         }
@@ -138,6 +138,31 @@
         
         .account .btn {
             margin-left: 8px;
+        }
+        
+        .demo-badge {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 1rem;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .store-info {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
         }
         /* === RESPONSIVE DESIGN === */
         
@@ -174,20 +199,20 @@
             }
         }
     </style>
-
-
-
 </head>
 
 <body class="container-fluid">
     <header class="d-flex justify-content-between align-items-center py-3">
-        <div class="invoxiagst fs-1 fw-bold">InvoxiaGST</div>
+        <div class="d-flex align-items-center">
+            <div class="invoxiagst fs-1 fw-bold">🏪 MultiStore</div>
+            <div class="demo-badge">DEMO</div>
+        </div>
 
         <nav class="menu">
-            <a class="btn btn-outline-dark" href="{% url 'home' %}">Home</a>
-            <a class="btn btn-outline-dark" href="{% url 'about' %}">About Us</a>
-            <a class="btn btn-outline-dark" href="{% url 'docs' %}">Docs</a>
-            <button type="button" class="btn btn-outline-dark" data-bs-toggle="popover" data-bs-title="Contact Details" data-bs-content="Contact us at support@example.com" data-bs-placement="bottom">Contact Us</button>
+            <a class="btn btn-outline-dark" href="/">Home</a>
+            <a class="btn btn-outline-dark" href="#features">Features</a>
+            <a class="btn btn-outline-dark" href="#about">About</a>
+            <button type="button" class="btn btn-outline-dark" data-bs-toggle="popover" data-bs-title="Contact Details" data-bs-content="Contact us at support@multistore.demo" data-bs-placement="bottom">Contact Us</button>
         </nav>
 
         <div class="account">
@@ -198,34 +223,64 @@
 
             <div class="offcanvas offcanvas-end" tabindex="-1" id="profileMenu" aria-labelledby="profileMenuLabel">
                 <div class="offcanvas-header">
-                    <h5 class="offcanvas-title" id="profileMenuLabel">Account Menu</h5>
+                    <h5 class="offcanvas-title" id="profileMenuLabel">Store Owner Menu</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                 </div>
                 <div class="offcanvas-body">
                     <ul class="list-group">
-                        <li class="list-group-item"><a class="nav-link" href="{% url 'history' %}">History</a></li>
-                        <li class="list-group-item"><a class="nav-link" href="{% url 'stock_details' %}">Stock Details</a></li>
-                        <li class="list-group-item"><a class="nav-link" href="{% url 'data_analysis' %}">Data Analysis</a></li>
-                        <li class="list-group-item"><a class="nav-link" href="{% url 'logout' %}">Logout</a></li>
+                        <li class="list-group-item">
+                            <a class="nav-link" href="/store/{{ user.username }}/">
+                                <i class="bi bi-shop"></i> My Store
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a class="nav-link" href="/store/sales-dashboard/">
+                                <i class="bi bi-graph-up"></i> Sales Dashboard
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a class="nav-link" href="/store/sales-report/">
+                                <i class="bi bi-file-earmark-text"></i> Sales Reports
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a class="nav-link" href="/store/manage/products/">
+                                <i class="bi bi-box-seam"></i> Manage Products
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a class="nav-link" href="/accounts/upgrade/">
+                                <i class="bi bi-star"></i> Upgrade Plan
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a class="nav-link" href="/accounts/logout/">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
             {% else %}
-            <a class="btn btn-primary" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
-            <a class="btn btn-outline-primary" href="{% url 'register' %}">Register</a> {% endif %}
+            <a class="btn btn-primary" href="/accounts/login/"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+            <a class="btn btn-outline-primary" href="/accounts/register/">Start Your Store</a> {% endif %}
         </div>
     </header>
 
-    {% if request.GET.success == "true" %}
+    <!-- Success Modal -->
+    {% if request.GET.payment_success == "true" %}
     <div class="modal fade show" id="successModal" tabindex="-1" style="display: block;" aria-modal="true" role="dialog">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-success">
                 <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">Subscription Successful</h5>
+                    <h5 class="modal-title">🎉 Upgrade Successful!</h5>
                     <button type="button" class="btn-close" onclick="closeModal()"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Thank you for subscribing! Your access has been activated.</p>
+                    <p>Welcome to Pro! Your store is now fully activated with all premium features.</p>
+                    <div class="text-center">
+                        <a href="/store/{{ user.username }}/" class="btn btn-primary">Visit My Store</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -237,66 +292,152 @@
             modal.style.display = "none";
             document.querySelector(".modal-backdrop").remove();
             const url = new URL(window.location.href);
-            url.searchParams.delete('success');
+            url.searchParams.delete('payment_success');
             window.history.replaceState({}, document.title, url);
         }
     </script>
-    {% endif %} {% if user.is_authenticated and user.tier == "free" %}
-    <div class="modal fade show" id="planExpiredModal" tabindex="-1" style="display: block;" aria-modal="true" role="dialog">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-danger">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Plan Expired</h5>
-                    <button type="button" class="btn-close" onclick="document.getElementById('planExpiredModal').style.display='none';"></button>
-                </div>
-                <div class="modal-body">
-                    Your subscription has expired. Please choose a plan to continue.
-                </div>
-                <div class="modal-footer">
-                    <a href="{% url 'upgrade' %}" class="btn btn-primary">Renew Now</a>
-                </div>
-            </div>
+    {% endif %}
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
+        {% endfor %}
     </div>
     {% endif %}
 
-
     <section class="mt-5">
-        <h1 class="text-center">Welcome to InvoxiaGST!</h1>
-        <p class="text-center">Your complete GST Billing and Analytics System.</p>
+        <h1 class="text-center">Create Your Online Store Today!</h1>
+        <p class="text-center fs-5">Multi-tenant e-commerce platform with complete analytics and payment processing.</p>
 
-        <p>
-            <p>
-                {% if user.is_authenticated %} {% if user.subscription %} {% if user.subscription.tier == "pro" %} Tier : Pro {% elif user.subscription.tier == "free" %} Tier : Free {% else %} Tier : None {% endif %} {% else %} Tier : None {% endif %} {% endif %}
+        {% if user.is_authenticated %}
+        <div class="store-info text-center">
+            <h3>👋 Welcome back, {{ user.username }}!</h3>
+            <p class="mb-3">
+                <strong>Store:</strong> {{ user.company_name|default:user.username }} |
+                <strong>Plan:</strong> {% if user.subscription.tier == "pro" %}
+                <span class="badge bg-success">Pro ⭐</span> {% else %}
+                <span class="badge bg-secondary">Free</span> {% endif %}
             </p>
-        </p>
 
-        {% if user.is_authenticated %} {% if user.subscription.tier == "pro" %}
-        <div class="text-center mt-5">
-            <h4>✅ You are on the <strong>Pro</strong> plan. Enjoy full access!</h4>
-        </div>
-        {% elif user.is_authenticated and user.subscription.tier == "free" %}
-        <div class="plans-heading mt-5">
-            <h2 class="text-center fw-bold">Plans</h2>
-        </div>
-
-        <div class="plans d-flex justify-content-center mt-3">
-            <div class="text-center">
-                <div class="card w-100 shadow-sm">
-                    <div class="card-header fs-4">₹1000 Plan — 300 Days Access</div>
-                    <div class="card-body">
-                        <p>Enjoy full access to InvoxiaGST for 300 days.</p>
-                        <h5><strong>₹1000</strong></h5>
+            {% if user.subscription.tier == "pro" %}
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="alert alert-success">
+                        <h4>✅ Pro Plan Active!</h4>
+                        <p>You have full access to all features. Your store is live and ready for customers!</p>
                     </div>
-                    <div class="card-footer">
-                        <a href="{% url 'upgrade' %}" class="btn btn-primary">Subscribe Now</a>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <a href="/store/{{ user.username }}/" class="btn btn-primary w-100">
+                                <i class="bi bi-shop"></i> Visit My Store
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <a href="/store/sales-dashboard/" class="btn btn-success w-100">
+                                <i class="bi bi-graph-up"></i> Analytics
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <a href="/store/manage/add-product/" class="btn btn-info w-100">
+                                <i class="bi bi-plus-circle"></i> Add Products
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="plans-heading mt-4">
+                <h2 class="text-center fw-bold">Upgrade to Pro</h2>
+                <p class="text-center">Unlock all features and get your store live!</p>
+            </div>
+
+            <div class="plans d-flex justify-content-center mt-3">
+                <div class="text-center">
+                    <div class="card w-100 shadow-sm" style="max-width: 400px;">
+                        <div class="card-header fs-4">Pro Plan — 300 Days Access</div>
+                        <div class="card-body">
+                            <h3 class="text-primary">₹1,000</h3>
+                            <ul class="list-unstyled mt-3">
+                                <li>✅ Unlimited Products</li>
+                                <li>✅ Custom Store URL</li>
+                                <li>✅ Advanced Analytics</li>
+                                <li>✅ Invoice Generation</li>
+                                <li>✅ Customer Management</li>
+                                <li>✅ 300 Days Access</li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <a href="/accounts/upgrade/" class="btn btn-primary btn-lg">
+                                🚀 Upgrade Now (Demo)
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <!-- Not logged in -->
+        <div class="text-center mt-4">
+            <a href="/accounts/register/" class="btn btn-primary btn-lg px-5">
+                🚀 Start Your Free Store
+            </a>
+            <p class="mt-3">Already have an account? <a href="/accounts/login/">Login here</a></p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="mt-5">
+        <div class="container">
+            <h2 class="text-center mb-4">Platform Features</h2>
+            <div class="feature-grid">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-shop fs-1 text-primary"></i>
+                        <h5 class="mt-3">Your Own Store</h5>
+                        <p>Get a personalized store URL with complete customization control</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-graph-up fs-1 text-success"></i>
+                        <h5 class="mt-3">Analytics Dashboard</h5>
+                        <p>Track sales, profits, and performance with detailed reports</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-credit-card fs-1 text-info"></i>
+                        <h5 class="mt-3">Payment Processing</h5>
+                        <p>Secure payment handling with automated invoice generation</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-people fs-1 text-warning"></i>
+                        <h5 class="mt-3">Customer Management</h5>
+                        <p>Manage customers, orders, and inventory all in one place</p>
                     </div>
                 </div>
             </div>
         </div>
-        {% endif %} {% endif %}
     </section>
 
+    <!-- Demo Notice -->
+    <section id="about" class="mt-5 mb-5">
+        <div class="container">
+            <div class="alert alert-info text-center">
+                <h4>🎭 Demo Platform</h4>
+                <p class="mb-0">This is a demonstration of a multi-tenant e-commerce platform. All payments are simulated for testing purposes. Each user gets their own isolated store with complete data separation.</p>
+            </div>
+        </div>
+    </section>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -304,7 +445,5 @@
         [...popoverTriggerList].map(triggerEl => new bootstrap.Popover(triggerEl));
     </script>
 </body>
-
-</html>
 
 </html>
