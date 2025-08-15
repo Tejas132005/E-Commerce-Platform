@@ -722,8 +722,9 @@ def generate_invoice_pdf(request, username, order_id):
     for i, item in enumerate(order.items.all(), 1):
         # Calculate GST for each item
         item_subtotal = item.item_price * item.quantity
-        gst_rate = float(item.product.gst)
-        item_total_gst = item_subtotal * (gst_rate / 100)
+        gst_rate = Decimal(str(item.product.gst))  # Convert to Decimal
+        gst_decimal = gst_rate / Decimal('100')    # Convert percentage to decimal
+        item_total_gst = item_subtotal * gst_decimal
         item_cgst = item_total_gst / 2
         item_sgst = item_total_gst / 2
         item_total = item_subtotal + item_total_gst
