@@ -1,199 +1,149 @@
+<!-- templates/my_orders.html -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Orders - {{ store_owner.company_name|default:store_owner.username }}</title>
+    <title>My Orders - {{ store_owner.username }}</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            line-height: 1.6;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 2rem 1rem;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-        
-        .header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-        
-        .breadcrumb {
-            background: white;
-            padding: 1rem;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .breadcrumb a {
-            color: #28a745;
-            text-decoration: none;
-            margin-right: 0.5rem;
-        }
-        
-        .breadcrumb a:hover {
-            text-decoration: underline;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem 1rem;
+            padding: 20px;
         }
         
-        .customer-info {
+        .header {
             background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 2.5rem;
+        }
+        
+        .store-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 15px;
         }
         
-        .welcome-text {
-            color: #333;
-            font-size: 1.2rem;
+        .customer-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
         }
         
-        .action-buttons {
+        .navigation {
             display: flex;
-            gap: 1rem;
+            gap: 10px;
             flex-wrap: wrap;
         }
         
-        .btn {
+        .nav-btn {
             padding: 10px 20px;
             border: none;
             border-radius: 8px;
             text-decoration: none;
             font-weight: 600;
-            cursor: pointer;
             transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.95rem;
+            cursor: pointer;
         }
         
-        .btn-primary {
-            background: #007bff;
+        .nav-btn.primary {
+            background: #667eea;
             color: white;
         }
         
-        .btn-success {
-            background: #28a745;
-            color: white;
+        .nav-btn.secondary {
+            background: #e9ecef;
+            color: #495057;
         }
         
-        .btn-warning {
-            background: #ffc107;
-            color: #212529;
-        }
-        
-        .btn-info {
-            background: #17a2b8;
-            color: white;
-        }
-        
-        .btn-danger {
+        .nav-btn.danger {
             background: #dc3545;
             color: white;
         }
         
-        .btn:hover {
+        .nav-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
         
         .orders-section {
             background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
         
-        .section-header {
+        .orders-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
             border-bottom: 2px solid #e9ecef;
         }
         
-        .section-title {
-            font-size: 1.8rem;
-            color: #333;
-            margin: 0;
-        }
-        
-        .orders-grid {
-            display: grid;
-            gap: 1.5rem;
+        .orders-count {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
         }
         
         .order-card {
-            border: 1px solid #e9ecef;
+            border: 2px solid #e9ecef;
             border-radius: 12px;
+            margin-bottom: 20px;
             overflow: hidden;
             transition: all 0.3s ease;
-            background: #fff;
         }
         
         .order-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            border-color: #28a745;
+            border-color: #667eea;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.15);
         }
         
         .order-header {
             background: #f8f9fa;
-            padding: 1.5rem;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .order-header-top {
-            display: flex;
-            justify-content: space-between;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 20px;
             align-items: center;
-            margin-bottom: 1rem;
         }
         
-        .order-id {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #333;
+        .order-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
         }
         
         .order-status {
-            padding: 0.5rem 1rem;
+            padding: 8px 16px;
             border-radius: 20px;
-            font-size: 0.85rem;
             font-weight: 600;
             text-transform: uppercase;
+            font-size: 0.8rem;
         }
         
         .status-pending {
@@ -217,392 +167,275 @@
         }
         
         .order-meta {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            font-size: 0.9rem;
-            color: #666;
-        }
-        
-        .order-body {
-            padding: 1.5rem;
-        }
-        
-        .order-items {
-            margin-bottom: 1.5rem;
-        }
-        
-        .order-items h4 {
-            color: #333;
-            margin-bottom: 1rem;
-            font-size: 1.1rem;
-        }
-        
-        .item-list {
-            display: grid;
-            gap: 0.75rem;
-        }
-        
-        .order-item {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        
-        .item-info {
-            flex: 1;
-        }
-        
-        .item-name {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.25rem;
-        }
-        
-        .item-details {
-            font-size: 0.9rem;
-            color: #666;
-        }
-        
-        .item-gst-info {
-            font-size: 0.8rem;
-            color: #17a2b8;
-            margin-top: 0.25rem;
-        }
-        
-        .item-total {
-            font-weight: 600;
-            color: #28a745;
-            font-size: 1.1rem;
-        }
-        
-        .gst-breakdown {
-            background: #e3f2fd;
-            border: 1px solid #2196f3;
-            border-radius: 8px;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-        
-        .gst-breakdown h5 {
-            color: #1976d2;
-            margin-bottom: 0.75rem;
-            font-size: 1rem;
-        }
-        
-        .gst-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 1rem;
-            font-size: 0.9rem;
-        }
-        
-        .gst-item {
-            text-align: center;
-            padding: 0.5rem;
-            background: white;
-            border-radius: 6px;
-        }
-        
-        .gst-label {
-            font-weight: 600;
-            color: #1976d2;
-            display: block;
-        }
-        
-        .gst-amount {
-            color: #333;
-            font-weight: 700;
-        }
-        
-        .order-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 1rem;
-            border-top: 1px solid #e9ecef;
-        }
-        
-        .order-total {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #28a745;
+            flex-direction: column;
+            gap: 5px;
         }
         
         .order-actions {
             display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
+            gap: 10px;
         }
         
-        .btn-sm {
+        .order-body {
+            padding: 20px;
+        }
+        
+        .order-items {
+            margin-bottom: 20px;
+        }
+        
+        .order-item {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .item-details h4 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+        }
+        
+        .item-price {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .gst-breakdown {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .gst-breakdown h4 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+        
+        .gst-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+        
+        .gst-item {
+            text-align: center;
+        }
+        
+        .gst-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .gst-value {
+            font-weight: bold;
+            color: #1976d2;
+        }
+        
+        .grand-total {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .btn {
             padding: 8px 16px;
-            font-size: 0.85rem;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }
         
-        .invoice-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
         }
         
         .no-orders {
             text-align: center;
-            padding: 4rem 2rem;
-            color: #666;
-        }
-        
-        .no-orders-icon {
-            font-size: 5rem;
-            margin-bottom: 1rem;
-            opacity: 0.3;
+            padding: 60px 20px;
+            color: #6c757d;
         }
         
         .no-orders h3 {
-            font-size: 1.8rem;
-            margin-bottom: 1rem;
-            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
         }
         
-        .no-orders p {
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .navigation {
-            background: white;
-            padding: 1.5rem;
+        .quick-links {
+            background: #f8f9fa;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-top: 20px;
             text-align: center;
-            margin-top: 2rem;
         }
         
-        .navigation h3 {
-            color: #333;
-            margin-bottom: 1rem;
-        }
-        
-        .nav-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-        
-        .nav-links a {
-            color: #28a745;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-        
-        .nav-links a:hover {
-            color: #20c997;
-            text-decoration: underline;
+        .quick-links h4 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
         }
         
         @media (max-width: 768px) {
             .container {
-                padding: 1rem;
+                padding: 10px;
             }
-            .header h1 {
-                font-size: 2rem;
-            }
-            .customer-info {
+            .store-info {
                 flex-direction: column;
+                align-items: stretch;
+            }
+            .order-header {
+                grid-template-columns: 1fr;
+                gap: 10px;
                 text-align: center;
             }
-            .order-header-top {
-                flex-direction: column;
-                gap: 1rem;
-                align-items: flex-start;
-            }
-            .order-meta {
+            .order-item {
                 grid-template-columns: 1fr;
-            }
-            .order-footer {
-                flex-direction: column;
-                gap: 1rem;
-                align-items: flex-start;
-            }
-            .nav-links {
-                flex-direction: column;
-                gap: 1rem;
+                text-align: center;
             }
             .gst-grid {
-                grid-template-columns: 1fr;
-                gap: 0.5rem;
+                grid-template-columns: repeat(2, 1fr);
             }
-            .order-actions {
-                flex-direction: column;
-                width: 100%;
+            .navigation {
+                justify-content: center;
             }
-        }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .order-card {
-            animation: fadeIn 0.6s ease-out;
         }
     </style>
 </head>
 
 <body>
-    <div class="header">
-        <h1>📦 My Orders</h1>
-        <p>{{ store_owner.company_name|default:store_owner.username }}</p>
-    </div>
-
-    <div class="breadcrumb">
-        <div class="container">
-            <a href="{% url 'store_products' username=store_owner.username %}">🏪 Store</a> →
-            <span>My Orders</span>
-        </div>
-    </div>
-
     <div class="container">
-        <!-- Customer Info -->
-        <div class="customer-info">
-            <div class="welcome-text">
-                👋 <strong>{{ customer.name }}</strong>'s Order History
-                <br>
-                <small>📱 {{ customer.phone }}{% if customer.place %} • 📍 {{ customer.place }}{% endif %}</small>
-            </div>
-            <div class="action-buttons">
-                <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-primary">
-                    🏪 Continue Shopping
-                </a>
-                <a href="{% url 'cart_view' username=store_owner.username %}" class="btn btn-success">
-                    🛒 View Cart
-                </a>
-                <a href="{% url 'customer_logout' username=store_owner.username %}" class="btn btn-warning">
-                    🚪 Logout
-                </a>
+        <!-- Header -->
+        <div class="header">
+            <div class="store-info">
+                <div>
+                    <h1>📦 My Orders</h1>
+                    <div class="customer-info">
+                        <strong>{{ store_owner.company_name|default:store_owner.username }} Company</strong><br> 🏪 Store → My Orders<br> 👋 <strong>{{ customer.name }}</strong>'s Order History 📱 {{ customer.phone }} • 📍 {{ customer.place|default:"Location
+                        not provided" }}
+                    </div>
+                </div>
+                <div class="navigation">
+                    <a href="{% url 'store_products' username=store_owner.username %}" class="nav-btn primary">🏪 Continue Shopping</a>
+                    <a href="{% url 'cart_view' username=store_owner.username %}" class="nav-btn secondary">🛒 View Cart</a>
+                    <a href="{% url 'customer_logout' username=store_owner.username %}" class="nav-btn danger">🚪 Logout</a>
+                </div>
             </div>
         </div>
 
         <!-- Orders Section -->
         <div class="orders-section">
-            <div class="section-header">
-                <h2 class="section-title">Your Orders</h2>
-                <span style="color: #666;">{{ orders.count }} order{{ orders.count|pluralize }}</span>
+            <div class="orders-header">
+                <h2>Your Orders</h2>
+                <div class="orders-count">{{ orders|length }} order{{ orders|length|pluralize }}</div>
             </div>
 
-            {% if orders %}
-            <div class="orders-grid">
-                {% for order in orders %}
-                <div class="order-card">
-                    <div class="order-header">
-                        <div class="order-header-top">
-                            <div class="order-id">Order #{{ order.id }}</div>
-                            <div class="order-status status-{{ order.status }}">
-                                {% if order.status == 'pending' %} ⏳ {{ order.get_status_display }} {% elif order.status == 'confirmed' %} ✅ {{ order.get_status_display }} {% elif order.status == 'delivered' %} 🚚 {{ order.get_status_display }} {% elif order.status == 'cancelled' %}
-                                ❌ {{ order.get_status_display }} {% else %} 📋 {{ order.get_status_display }} {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="order-meta">
-                            <div><strong>Date:</strong> {{ order.order_date|date:"M d, Y" }}</div>
-                            <div><strong>Time:</strong> {{ order.order_date|time:"H:i" }}</div>
-                            <div><strong>Items:</strong> {{ order.items.count }} item{{ order.items.count|pluralize }}</div>
-                            <div><strong>Invoice:</strong> {{ order.invoice_number|default:order.id }}</div>
-                        </div>
+            {% if orders %} {% for order in orders %}
+            <div class="order-card">
+                <div class="order-header">
+                    <div class="order-number">Order #{{ order.order_number }}</div>
+                    <div class="order-meta">
+                        <div><strong>Date:</strong> {{ order.order_date|date:"M d, Y" }}</div>
+                        <div><strong>Time:</strong> {{ order.order_date|time:"H:i" }}</div>
+                        <div><strong>Items:</strong> {{ order.items.count }} item{{ order.items.count|pluralize }}</div>
+                        <div><strong>Invoice:</strong> {{ order.invoice_number|default:order.order_number }}</div>
                     </div>
-
-                    <div class="order-body">
-                        <div class="order-items">
-                            <h4>Order Items</h4>
-                            <div class="item-list">
-                                {% for item in order.items.all %}
-                                <div class="order-item">
-                                    <div class="item-info">
-                                        <div class="item-name">{{ item.product.name }}</div>
-                                        <div class="item-details">
-                                            Qty: {{ item.quantity }} × ₹{{ item.item_price }} each = ₹{{ item.subtotal }}
-                                        </div>
-                                        <div class="item-gst-info">
-                                            GST {{ item.product.gst }}%: CGST ₹{{ item.cgst_amount|floatformat:2 }} + SGST ₹{{ item.sgst_amount|floatformat:2 }}
-                                        </div>
-                                    </div>
-                                    <div class="item-total">₹{{ item.total_price|floatformat:2 }}</div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <!-- GST Breakdown -->
-                        <div class="gst-breakdown">
-                            <h5>💰 GST Breakdown</h5>
-                            <div class="gst-grid">
-                                <div class="gst-item">
-                                    <span class="gst-label">Subtotal</span>
-                                    <span class="gst-amount">₹{{ order.subtotal|floatformat:2 }}</span>
-                                </div>
-                                <div class="gst-item">
-                                    <span class="gst-label">CGST</span>
-                                    <span class="gst-amount">₹{{ order.total_cgst|floatformat:2 }}</span>
-                                </div>
-                                <div class="gst-item">
-                                    <span class="gst-label">SGST</span>
-                                    <span class="gst-amount">₹{{ order.total_sgst|floatformat:2 }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="order-footer">
-                            <div class="order-total">
-                                Grand Total: ₹{{ order.total_price|floatformat:2 }}
-                            </div>
-                            <div class="order-actions">
-                                <a href="{% url 'order_detail' username=store_owner.username order_id=order.id %}" class="btn btn-primary btn-sm">
-                                    👁️ View Details
-                                </a>
-                                <div class="invoice-actions">
-                                    <a href="{% url 'generate_invoice' username=store_owner.username order_id=order.id %}" class="btn btn-info btn-sm" target="_blank">
-                                        📄 View Invoice
-                                    </a>
-                                    <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=order.id %}" class="btn btn-success btn-sm">
-                                        📥 Download PDF
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="order-status status-{{ order.status }}">⏳ {{ order.get_status_display }}</div>
+                    <div class="order-actions">
+                        <a href="{% url 'order_detail_view' username=store_owner.username order_id=order.id %}" class="btn btn-primary">👁️ View Details</a>
                     </div>
                 </div>
-                {% endfor %}
+
+                <div class="order-body">
+                    <!-- Order Items -->
+                    <div class="order-items">
+                        <h4>Order Items</h4>
+                        {% for item in order.items.all %}
+                        <div class="order-item">
+                            <div class="item-details">
+                                <h4>{{ item.product.name }}</h4>
+                                <div>Qty: {{ item.quantity }} × ₹{{ item.item_price }} each = ₹{{ item.subtotal|default:item.total_price|floatformat:2 }}</div>
+                                <div>GST {{ item.product.gst }}%: CGST ₹{{ item.cgst_amount|default:"0.00"|floatformat:2 }} + SGST ₹{{ item.sgst_amount|default:"0.00"|floatformat:2 }}</div>
+                            </div>
+                            <div class="item-price">₹{{ item.total_price|floatformat:2 }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- GST Breakdown -->
+                    <div class="gst-breakdown">
+                        <h4>💰 GST Breakdown</h4>
+                        <div class="gst-grid">
+                            <div class="gst-item">
+                                <div class="gst-label">Subtotal</div>
+                                <div class="gst-value">₹{{ order.subtotal|default:"0.00"|floatformat:2 }}</div>
+                            </div>
+                            <div class="gst-item">
+                                <div class="gst-label">CGST</div>
+                                <div class="gst-value">₹{{ order.total_cgst|default:"0.00"|floatformat:2 }}</div>
+                            </div>
+                            <div class="gst-item">
+                                <div class="gst-label">SGST</div>
+                                <div class="gst-value">₹{{ order.total_sgst|default:"0.00"|floatformat:2 }}</div>
+                            </div>
+                            <div class="gst-item">
+                                <div class="gst-label grand-total">Grand Total</div>
+                                <div class="gst-value grand-total">₹{{ order.total_price|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <a href="{% url 'order_detail_view' username=store_owner.username order_id=order.id %}" class="btn btn-primary">👁️ View Details</a>
+                        <a href="{% url 'generate_invoice_view' username=store_owner.username order_id=order.id %}" class="btn btn-info">📄 View Invoice</a>
+                        <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=order.id %}" class="btn btn-success">📥 Download PDF</a>
+                    </div>
+                </div>
             </div>
-            {% else %}
+            {% endfor %} {% else %}
             <div class="no-orders">
-                <div class="no-orders-icon">📦</div>
-                <h3>No Orders Yet</h3>
-                <p>You haven't placed any orders yet. Start shopping to see your order history here!</p>
-                <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-success">
-                    🛍️ Start Shopping
-                </a>
+                <h3>🛒 No Orders Yet</h3>
+                <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
+                <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-primary">🏪 Start Shopping</a>
             </div>
             {% endif %}
         </div>
 
-        <!-- Navigation -->
-        <div class="navigation">
-            <h3>Quick Links</h3>
-            <div class="nav-links">
-                <a href="{% url 'store_products' username=store_owner.username %}">🏪 Back to Store</a>
-                <a href="{% url 'cart_view' username=store_owner.username %}">🛒 Shopping Cart</a>
-                <a href="{% url 'customer_logout' username=store_owner.username %}">🚪 Logout</a>
+        <!-- Quick Links -->
+        <div class="quick-links">
+            <h4>Quick Links</h4>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-primary">🏪 Back to Store</a>
+                <a href="{% url 'cart_view' username=store_owner.username %}" class="btn btn-secondary">🛒 Shopping Cart</a>
+                <a href="{% url 'customer_logout' username=store_owner.username %}" class="btn btn-danger">🚪 Logout</a>
             </div>
         </div>
     </div>

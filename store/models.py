@@ -1,4 +1,4 @@
-# store/models.py 
+# store/models.py - Updated with per-user order numbering
 
 from django.db import models
 from accounts.models import CustomUser
@@ -59,12 +59,39 @@ class Order(models.Model):
     
     store_owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='orders')
     customer = models.ForeignKey(ShopCustomer, on_delete=models.CASCADE)
+    order_number = models.PositiveIntegerField()  # Per-user order numbering
     order_date = models.DateTimeField(auto_now_add=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # GST breakdown fields (optional - will be added if not exist)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    total_cgst = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    total_sgst = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    total_gst = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    invoice_number = models.CharField(max_length=50, blank=True, null=True)
+
+    class Meta:
+        unique_together = ('store_owner', 'order_number')
+        ordering = ['-order_date']
+
+    def save(self, *args, **kwargs):
+        if not self.order_number:
+            # Get the last order number for this store owner
+            last_order = Order.objects.filter(store_owner=self.store_owner).order_by('-order_number').first()
+            if last_order:
+                self.order_number = last_order.order_number + 1
+            else:
+                self.order_number = 1
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Order #{self.id} - {self.store_owner.username}"
+        return f"Order #{self.order_number} - {self.store_owner.username}"
+
+    @property
+    def display_order_id(self):
+        """Return user-specific order number for display"""
+        return self.order_number
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
@@ -72,6 +99,12 @@ class OrderItem(models.Model):
     quantity = models.PositiveIntegerField()
     item_price = models.DecimalField(max_digits=10, decimal_places=2)
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # GST breakdown fields (optional - will be added if not exist)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    cgst_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    sgst_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    gst_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity}"
@@ -89,6 +122,3 @@ class SalesReport(models.Model):
 
     def __str__(self):
         return f"Sale: {self.product.name} - {self.store_owner.username}"
-    
-    
-

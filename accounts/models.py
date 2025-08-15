@@ -39,6 +39,17 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     dob = models.DateField()
     location = models.CharField(max_length=255)
     company_name = models.CharField(max_length=100, blank=True)
+    
+    # Company Details for Invoice
+    company_address = models.TextField(blank=True, null=True, help_text="Complete company address")
+    company_city = models.CharField(max_length=100, blank=True, null=True)
+    company_state = models.CharField(max_length=100, blank=True, null=True)
+    company_pincode = models.CharField(max_length=10, blank=True, null=True)
+    company_phone = models.CharField(max_length=15, blank=True, null=True)
+    company_email = models.EmailField(blank=True, null=True)
+    company_gstin = models.CharField(max_length=15, blank=True, null=True, help_text="GST Identification Number (Optional)")
+    
+    # Subscription fields
     is_paid = models.BooleanField(default=False)
     subscription_expiry = models.DateTimeField(null=True, blank=True)
     
@@ -64,6 +75,20 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         if not self.is_paid or not self.subscription_expiry:
             return False
         return self.subscription_expiry > timezone.now()
+
+    def get_company_details(self):
+        """Return company details for invoice generation"""
+        return {
+            'name': self.company_name or self.username,
+            'address': self.company_address or 'Company Address',
+            'city': self.company_city or 'City',
+            'state': self.company_state or 'State',
+            'pincode': self.company_pincode or '000000',
+            'phone': self.company_phone or self.phone,
+            'email': self.company_email or self.email,
+            'gstin': self.company_gstin or 'GSTIN not provided',
+            'jurisdiction': 'Local',
+        }
 
 class Subscription(models.Model):
     TIER_CHOICES = [

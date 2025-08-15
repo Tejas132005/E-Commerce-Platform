@@ -1,4 +1,4 @@
-# store/views.py - Complete updated file with invoice functionality
+# store/views.py - Complete updated file with invoice functionality and fixed decimal operations
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
@@ -159,7 +159,7 @@ def product_detail_view(request, username, product_id):
         'customer': customer,
     })
 
-# -------------------- CART & BILLING WITH GST --------------------
+# -------------------- CART & BILLING WITH GST - FIXED --------------------
 
 def add_to_cart_view(request, username, product_id):
     store_owner = get_store_owner(username)
@@ -216,7 +216,7 @@ def cart_view(request, username):
 
     cart_items = Cart.objects.filter(store_owner=store_owner, customer=customer)
     
-    # Calculate totals with GST
+    # Calculate totals with GST - FIXED: Proper Decimal handling
     subtotal = Decimal('0.00')
     total_gst = Decimal('0.00')
     
@@ -226,9 +226,9 @@ def cart_view(request, username):
         # Calculate item subtotal (without GST)
         item_subtotal = item.product.price * item.quantity
         
-        # Calculate GST for this item
-        item_gst_rate = item.product.gst / 100
-        item_gst_amount = item_subtotal * item_gst_rate
+        # Calculate GST for this item - FIXED: Convert to Decimal first
+        gst_rate_decimal = Decimal(str(item.product.gst)) / Decimal('100')
+        item_gst_amount = item_subtotal * gst_rate_decimal
         
         # Calculate item total (with GST)
         item_total_with_gst = item_subtotal + item_gst_amount
@@ -273,7 +273,7 @@ def checkout_view(request, username):
     if not cart_items.exists():
         return redirect('cart_view', username=username)
 
-    # Calculate totals with GST breakdown
+    # Calculate totals with GST breakdown - FIXED: Proper Decimal handling
     subtotal = Decimal('0.00')
     total_cgst = Decimal('0.00')
     total_sgst = Decimal('0.00')
@@ -282,11 +282,11 @@ def checkout_view(request, username):
         # Calculate item subtotal (without GST)
         item_subtotal = item.product.price * item.quantity
         
-        # Calculate CGST and SGST for this item
-        item_gst_rate = item.product.gst / 100
-        item_total_gst = item_subtotal * item_gst_rate
-        item_cgst = item_total_gst / 2  # CGST = GST/2
-        item_sgst = item_total_gst / 2  # SGST = GST/2
+        # Calculate CGST and SGST for this item - FIXED: Convert to Decimal first
+        gst_rate_decimal = Decimal(str(item.product.gst)) / Decimal('100')
+        item_total_gst = item_subtotal * gst_rate_decimal
+        item_cgst = item_total_gst / Decimal('2')  # CGST = GST/2
+        item_sgst = item_total_gst / Decimal('2')  # SGST = GST/2
         
         # Add to totals
         subtotal += item_subtotal
@@ -296,43 +296,43 @@ def checkout_view(request, username):
     total_gst = total_cgst + total_sgst
     grand_total = subtotal + total_gst
 
-    # Create order with GST breakdown
+    # Create order - The order_number will be auto-assigned by the model's save method
     order = Order.objects.create(
         store_owner=store_owner,
         customer=customer,
         order_date=timezone.now(),
+        total_price=grand_total,
         subtotal=subtotal,
         total_cgst=total_cgst,
         total_sgst=total_sgst,
         total_gst=total_gst,
-        total_price=grand_total,
         status='pending'
     )
 
-    # Generate invoice number
-    order.invoice_number = f"INV-{order.id}-{order.order_date.strftime('%Y%m')}"
+    # Generate invoice number based on the per-user order number
+    order.invoice_number = f"INV-{store_owner.username.upper()}-{order.order_number:04d}-{order.order_date.strftime('%Y%m')}"
     order.save()
 
     # Create order items with GST breakdown
     for item in cart_items:
-        # Calculate GST for this item
+        # Calculate GST for this item - FIXED: Convert to Decimal first
         item_subtotal = item.product.price * item.quantity
-        item_gst_rate = item.product.gst / 100
-        item_total_gst = item_subtotal * item_gst_rate
-        item_cgst = item_total_gst / 2
-        item_sgst = item_total_gst / 2
+        gst_rate_decimal = Decimal(str(item.product.gst)) / Decimal('100')
+        item_total_gst = item_subtotal * gst_rate_decimal
+        item_cgst = item_total_gst / Decimal('2')
+        item_sgst = item_total_gst / Decimal('2')
         item_total = item_subtotal + item_total_gst
         
-        OrderItem.objects.create(
+        order_item = OrderItem.objects.create(
             order=order,
             product=item.product,
             quantity=item.quantity,
             item_price=item.product.price,
+            total_price=item_total,
             subtotal=item_subtotal,
             cgst_amount=item_cgst,
             sgst_amount=item_sgst,
-            gst_amount=item_total_gst,
-            total_price=item_total
+            gst_amount=item_total_gst
         )
 
         # Decrease stock
@@ -358,6 +358,7 @@ def checkout_view(request, username):
     # Clear cart
     cart_items.delete()
     return redirect('my_orders', username=username)
+
 
 def my_orders_view(request, username):
     store_owner = get_store_owner(username)
@@ -428,7 +429,7 @@ def sales_dashboard_view(request):
         'category_sales': category_sales,
     })
 
-# -------------------- INVOICE GENERATION WITH GST --------------------
+# -------------------- INVOICE GENERATION WITH GST - FIXED --------------------
 
 def generate_invoice_view(request, username, order_id):
     """Generate HTML invoice for an order with CGST/SGST breakdown"""
@@ -445,94 +446,8 @@ def generate_invoice_view(request, username, order_id):
             return redirect('customer_login', username=username)
         order = get_object_or_404(Order, id=order_id, store_owner=store_owner, customer=customer)
 
-    # Get or create company profile
-    company = {
-        'name': store_owner.company_name or store_owner.username,
-        'address': getattr(store_owner, 'address', 'Company Address'),
-        'city': getattr(store_owner, 'city', 'City'),
-        'state': getattr(store_owner, 'state', 'State'),
-        'pincode': getattr(store_owner, 'pincode', '000000'),
-        'phone': getattr(store_owner, 'phone', '+91-XXXXXXXXXX'),
-        'email': getattr(store_owner, 'email', store_owner.email or 'info@company.com'),
-        'gstin': getattr(store_owner, 'gstin', 'XXXXXXXXXXXXXXXXXXXX'),
-        'jurisdiction': getattr(store_owner, 'jurisdiction', 'Local'),
-    }
-
-    # Get all order items
-    invoice_items = order.items.all()
-    
-    # Create GST summary by rate
-    gst_summary = {}
-    for item in invoice_items:
-        rate = item.product.gst
-        if rate not in gst_summary:
-            gst_summary[rate] = {
-                'rate': rate,
-                'taxable_amount': Decimal('0.00'),
-                'cgst': Decimal('0.00'),
-                'sgst': Decimal('0.00'),
-                'total_gst': Decimal('0.00')
-            }
-        
-        gst_summary[rate]['taxable_amount'] += item.subtotal
-        gst_summary[rate]['cgst'] += item.cgst_amount
-        gst_summary[rate]['sgst'] += item.sgst_amount
-        gst_summary[rate]['total_gst'] += item.gst_amount
-
-    context = {
-        'order': order,
-        'invoice': order,  # Alias for template compatibility
-        'company': type('Company', (), company)(),  # Convert dict to object
-        'customer': order.customer,
-        'store_owner': store_owner,
-        'invoice_items': invoice_items,
-        'gst_summary': gst_summary.values(),
-    }
-
-    return render(request, 'invoice_template.html', context)
-
-# Add these functions to your existing store/views.py
-# These work with your current models and add invoice functionality
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.utils import timezone
-from django.http import HttpResponse
-from .models import Product, Cart, Order, OrderItem, SalesReport, ShopCustomer
-from accounts.models import CustomUser
-import io
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from decimal import Decimal
-
-# -------------------- ADD THESE NEW FUNCTIONS --------------------
-
-def generate_invoice_view(request, username, order_id):
-    """Generate HTML invoice for an order with CGST/SGST breakdown"""
-    store_owner = get_store_owner(username)
-    
-    # Allow both customers and store owners to generate invoices
-    if hasattr(request.user, 'username') and request.user.username == username:
-        # Store owner accessing their own order
-        order = get_object_or_404(Order, id=order_id, store_owner=store_owner)
-    else:
-        # Customer accessing their order
-        customer = get_logged_in_customer(request, store_owner)
-        if not customer:
-            return redirect('customer_login', username=username)
-        order = get_object_or_404(Order, id=order_id, store_owner=store_owner, customer=customer)
-
-    # Get company details from user profile
-    company_details = store_owner.get_company_details() if hasattr(store_owner, 'get_company_details') else {
-        'name': store_owner.company_name or store_owner.username,
-        'address': getattr(store_owner, 'company_address', 'Company Address'),
-        'city': getattr(store_owner, 'company_city', 'City'),
-        'state': getattr(store_owner, 'company_state', 'State'),
-        'pincode': getattr(store_owner, 'company_pincode', '000000'),
-        'phone': getattr(store_owner, 'company_phone', store_owner.phone),
-        'email': getattr(store_owner, 'company_email', store_owner.email),
-        'gstin': getattr(store_owner, 'company_gstin', 'GSTIN not provided'),
-        'jurisdiction': 'Local',
-    }
+    # Get company details from user profile - UPDATED to use new method
+    company_details = store_owner.get_company_details()
 
     # Convert dict to object for template compatibility
     company = type('Company', (), company_details)()
@@ -552,11 +467,12 @@ def generate_invoice_view(request, username, order_id):
         # Calculate item subtotal
         item_subtotal = item.item_price * item.quantity
         
-        # Calculate GST amounts
-        gst_rate = float(item.product.gst)
-        item_total_gst = item_subtotal * (gst_rate / 100)
-        item_cgst = item_total_gst / 2  # CGST = GST/2
-        item_sgst = item_total_gst / 2  # SGST = GST/2
+        # Calculate GST amounts - FIXED: Convert to Decimal first
+        gst_rate = Decimal(str(item.product.gst))  # Convert to Decimal
+        gst_decimal = gst_rate / Decimal('100')    # Convert percentage to decimal
+        item_total_gst = item_subtotal * gst_decimal
+        item_cgst = item_total_gst / Decimal('2')  # CGST = GST/2
+        item_sgst = item_total_gst / Decimal('2')  # SGST = GST/2
         item_total_with_gst = item_subtotal + item_total_gst
         
         # Update item object with calculated values
@@ -573,38 +489,32 @@ def generate_invoice_view(request, username, order_id):
         order_total_sgst += item_sgst
         
         # Create GST summary by rate
-        if gst_rate not in gst_summary:
-            gst_summary[gst_rate] = {
-                'rate': gst_rate,
+        gst_rate_float = float(gst_rate)  # For dictionary key
+        if gst_rate_float not in gst_summary:
+            gst_summary[gst_rate_float] = {
+                'rate': gst_rate_float,
                 'taxable_amount': Decimal('0.00'),
                 'cgst': Decimal('0.00'),
                 'sgst': Decimal('0.00'),
                 'total_gst': Decimal('0.00')
             }
         
-        gst_summary[gst_rate]['taxable_amount'] += item_subtotal
-        gst_summary[gst_rate]['cgst'] += item_cgst
-        gst_summary[gst_rate]['sgst'] += item_sgst
-        gst_summary[gst_rate]['total_gst'] += item_total_gst
+        gst_summary[gst_rate_float]['taxable_amount'] += item_subtotal
+        gst_summary[gst_rate_float]['cgst'] += item_cgst
+        gst_summary[gst_rate_float]['sgst'] += item_sgst
+        gst_summary[gst_rate_float]['total_gst'] += item_total_gst
 
-    # Update order with calculated totals (if fields exist)
-    if hasattr(order, 'subtotal'):
-        order.subtotal = order_subtotal
-        order.total_cgst = order_total_cgst
-        order.total_sgst = order_total_sgst
-        order.total_gst = order_total_cgst + order_total_sgst
-    else:
-        # Add attributes dynamically for template compatibility
-        order.subtotal = order_subtotal
-        order.total_cgst = order_total_cgst
-        order.total_sgst = order_total_sgst
-        order.total_gst = order_total_cgst + order_total_sgst
+    # Update order with calculated totals
+    order.subtotal = order_subtotal
+    order.total_cgst = order_total_cgst
+    order.total_sgst = order_total_sgst
+    order.total_gst = order_total_cgst + order_total_sgst
     
     # Add methods to order for template compatibility
     order.get_amount_in_words = lambda: f"Rupees {int(order.total_price)} Only"
     
     # Generate invoice number if not exists
-    if not hasattr(order, 'invoice_number') or not order.invoice_number:
+    if not hasattr(order, 'invoice_number') or not getattr(order, 'invoice_number', None):
         invoice_number = f"INV-{order.id}-{order.order_date.strftime('%Y%m')}"
         order.invoice_number = invoice_number
     
@@ -643,21 +553,24 @@ def generate_invoice_pdf(request, username, order_id):
     p = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
+    # Get company details - UPDATED to use new method
+    company_details = store_owner.get_company_details()
+
     # Invoice header
     p.setFont("Helvetica-Bold", 20)
     p.drawString(50, height - 50, "TAX INVOICE")
     
     # Company details
-    company_name = store_owner.company_name or store_owner.username
+    company_name = company_details['name']
     p.setFont("Helvetica-Bold", 14)
     p.drawString(50, height - 80, f"{company_name}")
     p.setFont("Helvetica", 10)
-    p.drawString(50, height - 100, getattr(store_owner, 'company_address', 'Company Address'))
-    city_line = f"{getattr(store_owner, 'company_city', 'City')}, {getattr(store_owner, 'company_state', 'State')} - {getattr(store_owner, 'company_pincode', '000000')}"
+    p.drawString(50, height - 100, company_details['address'])
+    city_line = f"{company_details['city']}, {company_details['state']} - {company_details['pincode']}"
     p.drawString(50, height - 115, city_line)
-    p.drawString(50, height - 130, f"Phone: {getattr(store_owner, 'company_phone', store_owner.phone)}")
-    p.drawString(50, height - 145, f"Email: {getattr(store_owner, 'company_email', store_owner.email)}")
-    p.drawString(50, height - 160, f"GSTIN: {getattr(store_owner, 'company_gstin', 'GSTIN not provided')}")
+    p.drawString(50, height - 130, f"Phone: {company_details['phone']}")
+    p.drawString(50, height - 145, f"Email: {company_details['email']}")
+    p.drawString(50, height - 160, f"GSTIN: {company_details['gstin']}")
     
     # Invoice details (right side)
     invoice_number = getattr(order, 'invoice_number', f'INV-{order.id}-{order.order_date.strftime("%Y%m")}')
@@ -720,13 +633,13 @@ def generate_invoice_pdf(request, username, order_id):
     total_sgst = Decimal('0.00')
     
     for i, item in enumerate(order.items.all(), 1):
-        # Calculate GST for each item
+        # Calculate GST for each item - FIXED: Proper Decimal handling
         item_subtotal = item.item_price * item.quantity
         gst_rate = Decimal(str(item.product.gst))  # Convert to Decimal
         gst_decimal = gst_rate / Decimal('100')    # Convert percentage to decimal
         item_total_gst = item_subtotal * gst_decimal
-        item_cgst = item_total_gst / 2
-        item_sgst = item_total_gst / 2
+        item_cgst = item_total_gst / Decimal('2')
+        item_sgst = item_total_gst / Decimal('2')
         item_total = item_subtotal + item_total_gst
         
         # Add to totals
@@ -782,110 +695,6 @@ def generate_invoice_pdf(request, username, order_id):
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="invoice_{invoice_number}.pdf"'
     return response
-
-# -------------------- UPDATE YOUR EXISTING CHECKOUT FUNCTION --------------------
-
-def checkout_view_updated(request, username):
-    """Updated checkout with GST calculations"""
-    store_owner = get_store_owner(username)
-    customer = get_logged_in_customer(request, store_owner)
-    
-    if not customer:
-        return redirect('customer_login', username=username)
-
-    cart_items = Cart.objects.filter(store_owner=store_owner, customer=customer)
-    if not cart_items.exists():
-        return redirect('cart_view', username=username)
-
-    # Calculate totals with GST breakdown
-    subtotal = Decimal('0.00')
-    total_cgst = Decimal('0.00')
-    total_sgst = Decimal('0.00')
-    
-    for item in cart_items:
-        # Calculate item subtotal (without GST)
-        item_subtotal = item.product.price * item.quantity
-        
-        # Calculate CGST and SGST for this item
-        gst_rate = float(item.product.gst)
-        item_total_gst = item_subtotal * (gst_rate / 100)
-        item_cgst = item_total_gst / 2  # CGST = GST/2
-        item_sgst = item_total_gst / 2  # SGST = GST/2
-        
-        # Add to totals
-        subtotal += item_subtotal
-        total_cgst += item_cgst
-        total_sgst += item_sgst
-
-    total_gst = total_cgst + total_sgst
-    grand_total = subtotal + total_gst
-
-    # Create order
-    order = Order.objects.create(
-        store_owner=store_owner,
-        customer=customer,
-        order_date=timezone.now(),
-        total_price=grand_total,
-        status='pending'
-    )
-
-    # Add GST breakdown to order if fields exist
-    if hasattr(order, 'subtotal'):
-        order.subtotal = subtotal
-        order.total_cgst = total_cgst
-        order.total_sgst = total_sgst
-        order.total_gst = total_gst
-        order.save()
-
-    # Create order items with GST calculations
-    for item in cart_items:
-        # Calculate GST for this item
-        item_subtotal = item.product.price * item.quantity
-        gst_rate = float(item.product.gst)
-        item_total_gst = item_subtotal * (gst_rate / 100)
-        item_cgst = item_total_gst / 2
-        item_sgst = item_total_gst / 2
-        item_total = item_subtotal + item_total_gst
-        
-        order_item = OrderItem.objects.create(
-            order=order,
-            product=item.product,
-            quantity=item.quantity,
-            item_price=item.product.price,
-            total_price=item_total
-        )
-        
-        # Add GST breakdown to order item if fields exist
-        if hasattr(order_item, 'subtotal'):
-            order_item.subtotal = item_subtotal
-            order_item.cgst_amount = item_cgst
-            order_item.sgst_amount = item_sgst
-            order_item.gst_amount = item_total_gst
-            order_item.save()
-
-        # Decrease stock
-        item.product.quantity -= item.quantity
-        item.product.save()
-
-        # Calculate profit (30% of subtotal, not including GST)
-        profit = item_subtotal * Decimal('0.30')
-
-        # Create sales report
-        SalesReport.objects.create(
-            store_owner=store_owner,
-            customer=customer,
-            product=item.product,
-            order=order,
-            quantity=item.quantity,
-            total_price=item_total,
-            profit=profit,
-            category=item.product.category or 'Uncategorized',
-            sale_date=timezone.now()
-        )
-
-    # Clear cart
-    cart_items.delete()
-    return redirect('my_orders', username=username)
 
 # Keep your existing generate_invoice function as well for backward compatibility
 def generate_invoice(request, username, order_id):

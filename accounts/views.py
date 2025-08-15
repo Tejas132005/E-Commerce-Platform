@@ -17,41 +17,60 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 def register_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        phone = request.POST.get('phone')
-        company_name = request.POST.get('company_name')
-        dob = request.POST.get('dob')
-        location = request.POST.get('location')
-        password1 = request.POST.get('password1')
-        password2 = request.POST.get('password2')
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            # Get all form data
+            username = form.cleaned_data['username']
+            email = form.cleaned_data['email']
+            phone = form.cleaned_data['phone']
+            company_name = form.cleaned_data['company_name']
+            dob = form.cleaned_data['dob']
+            location = form.cleaned_data['location']
+            company_address = form.cleaned_data.get('company_address', '')
+            company_city = form.cleaned_data.get('company_city', '')
+            company_state = form.cleaned_data.get('company_state', '')
+            company_pincode = form.cleaned_data.get('company_pincode', '')
+            company_phone = form.cleaned_data.get('company_phone', '')
+            company_email = form.cleaned_data.get('company_email', '')
+            company_gstin = form.cleaned_data.get('company_gstin', '')
+            password = form.cleaned_data['password']
 
-        if password1 != password2:
-            return render(request, 'register.html', {'error': 'Passwords do not match'})
+            # Check for existing users
+            if CustomUser.objects.filter(email=email).exists():
+                form.add_error('email', 'Email already exists')
+            elif CustomUser.objects.filter(phone=phone).exists():
+                form.add_error('phone', 'Phone already exists')
+            else:
+                # Create user with all company details
+                user = CustomUser.objects.create_user(
+                    username=username,
+                    email=email,
+                    phone=phone,
+                    dob=dob,
+                    location=location,
+                    company_name=company_name,
+                    company_address=company_address,
+                    company_city=company_city,
+                    company_state=company_state,
+                    company_pincode=company_pincode,
+                    company_phone=company_phone or phone,  # Use main phone if company phone not provided
+                    company_email=company_email or email,  # Use main email if company email not provided
+                    company_gstin=company_gstin,
+                    password=password,
+                )
 
-        if CustomUser.objects.filter(email=email).exists():
-            return render(request, 'register.html', {'error': 'Email already exists'})
-        
-        if CustomUser.objects.filter(phone=phone).exists():
-            return render(request, 'register.html', {'error': 'Phone already exists'})
+                # Create subscription with default tier='free'
+                Subscription.objects.create(user=user, tier='free')
 
-        user = CustomUser.objects.create_user(
-            username=username,
-            email=email,
-            phone=phone,
-            dob=dob,
-            location=location,
-            company_name=company_name,
-            password=password1,
-        )
+                login(request, user)
+                return redirect('home')
+        else:
+            # Form has errors, render with form errors
+            return render(request, 'register.html', {'form': form})
+    else:
+        form = RegisterForm()
 
-        # Create subscription with default tier='free'
-        Subscription.objects.create(user=user, tier='free')
-
-        login(request, user)
-        return redirect('home')
-
-    return render(request, 'register.html')
+    return render(request, 'register.html', {'form': form})
 
 def login_view(request):
     if request.method == 'POST':

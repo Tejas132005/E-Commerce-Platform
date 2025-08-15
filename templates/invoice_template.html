@@ -1,6 +1,4 @@
-<!-- invoice_template.html -->
-<!-- Save this as templates/invoice_template.html -->
-
+<!-- templates/invoice_template.html -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -37,6 +35,15 @@
         .company-info p {
             margin: 2px 0;
             color: #555;
+        }
+        
+        .company-gstin {
+            font-weight: bold;
+            color: #2c3e50;
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-top: 5px;
         }
         
         .invoice-details {
@@ -341,7 +348,7 @@
                 <p>{{ company.city }}, {{ company.state }} - {{ company.pincode }}</p>
                 <p>Phone: {{ company.phone }}</p>
                 <p>Email: {{ company.email }}</p>
-                <p><strong>GSTIN: {{ company.gstin }}</strong></p>
+                <div class="company-gstin">GSTIN: {{ company.gstin }}</div>
             </div>
             <div class="invoice-details">
                 <h2>TAX INVOICE</h2>
