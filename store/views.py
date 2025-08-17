@@ -339,8 +339,8 @@ def checkout_view(request, username):
         item.product.quantity -= item.quantity
         item.product.save()
 
-        # Calculate profit (30% of subtotal, not including GST)
-        profit = item_subtotal * Decimal('0.30')
+        # UPDATED: Calculate profit = item_subtotal (100% profit, not including GST)
+        profit = item_total 
 
         # Create sales report
         SalesReport.objects.create(
@@ -375,20 +375,56 @@ def my_orders_view(request, username):
     })
 
 def order_detail_view(request, username, order_id):
+    """View detailed information about a specific order"""
     store_owner = get_store_owner(username)
     customer = get_logged_in_customer(request, store_owner)
     
     if not customer:
         return redirect('customer_login', username=username)
 
+    # Get the order - ensure it belongs to the customer and store owner
     order = get_object_or_404(Order, id=order_id, store_owner=store_owner, customer=customer)
-    items = order.items.all()
-    return render(request, 'order_detail.html', {
+    
+    # Get all order items
+    order_items = order.items.all()
+    
+    # Calculate GST breakdown for display
+    updated_items = []
+    for item in order_items:
+        # Calculate item subtotal
+        item_subtotal = item.item_price * item.quantity
+        
+        # Calculate GST amounts
+        gst_rate = Decimal(str(item.product.gst))
+        gst_decimal = gst_rate / Decimal('100')
+        item_total_gst = item_subtotal * gst_decimal
+        item_cgst = item_total_gst / Decimal('2')
+        item_sgst = item_total_gst / Decimal('2')
+        item_total_with_gst = item_subtotal + item_total_gst
+        
+        # Create enhanced item object
+        item_data = {
+            'item': item,
+            'product': item.product,
+            'quantity': item.quantity,
+            'unit_price': item.item_price,
+            'subtotal': item_subtotal,
+            'gst_rate': item.product.gst,
+            'cgst_amount': item_cgst,
+            'sgst_amount': item_sgst,
+            'gst_amount': item_total_gst,
+            'total_with_gst': item_total_with_gst,
+        }
+        updated_items.append(item_data)
+
+    context = {
         'order': order,
-        'items': items,
+        'order_items': updated_items,
         'store_owner': store_owner,
         'customer': customer,
-    })
+    }
+    
+    return render(request, 'order_detail.html', context)
 
 # -------------------- STORE OWNER VIEWS --------------------
 

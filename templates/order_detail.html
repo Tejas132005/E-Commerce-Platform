@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order #{{ order.order_number }} Details - {{ store_owner.username }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 2.5rem;
+        }
+        
+        .breadcrumb {
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+        
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        .navigation {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .nav-btn.primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .nav-btn.secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .nav-btn.success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .nav-btn.info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .order-detail {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .order-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .order-info h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.3rem;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .info-value {
+            color: #2c3e50;
+        }
+        
+        .order-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            display: inline-block;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-confirmed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status-delivered {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .order-items {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+        
+        .item-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .item-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .item-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .item-total {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .item-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .detail-item {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .detail-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .gst-breakdown {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .gst-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #1976d2;
+            margin-bottom: 15px;
+        }
+        
+        .gst-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .gst-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .gst-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .gst-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #1976d2;
+        }
+        
+        .grand-total {
+            background: #28a745;
+            color: white;
+        }
+        
+        .grand-total .gst-label {
+            color: #e8f5e8;
+        }
+        
+        .grand-total .gst-value {
+            color: white;
+            font-size: 1.3rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            .order-header {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .item-header {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            .item-details {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .gst-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .navigation {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="breadcrumb">
+                <a href="{% url 'store_products' username=store_owner.username %}">🏪 {{ store_owner.company_name|default:store_owner.username }}</a> → <a href="{% url 'my_orders' username=store_owner.username %}">📦 My Orders</a> → Order #{{ order.order_number
+                }}
+            </div>
+
+            <h1>📋 Order Details</h1>
+
+            <div class="navigation">
+                <a href="{% url 'my_orders' username=store_owner.username %}" class="nav-btn secondary">📦 Back to Orders</a>
+                <a href="{% url 'generate_invoice_view' username=store_owner.username order_id=order.id %}" class="nav-btn info">📄 View Invoice</a>
+                <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=order.id %}" class="nav-btn success">📥 Download PDF</a>
+                <a href="{% url 'store_products' username=store_owner.username %}" class="nav-btn primary">🏪 Continue Shopping</a>
+            </div>
+        </div>
+
+        <!-- Order Detail -->
+        <div class="order-detail">
+            <!-- Order Header Information -->
+            <div class="order-header">
+                <div class="order-info">
+                    <h3>📋 Order Information</h3>
+                    <div class="info-item">
+                        <span class="info-label">Order Number:</span>
+                        <span class="info-value">#{{ order.order_number }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Invoice Number:</span>
+                        <span class="info-value">{{ order.invoice_number|default:order.order_number }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Order Date:</span>
+                        <span class="info-value">{{ order.order_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Order Time:</span>
+                        <span class="info-value">{{ order.order_date|time:"H:i" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Status:</span>
+                        <span class="order-status status-{{ order.status }}">{{ order.get_status_display }}</span>
+                    </div>
+                </div>
+
+                <div class="order-info">
+                    <h3>👤 Customer Information</h3>
+                    <div class="info-item">
+                        <span class="info-label">Name:</span>
+                        <span class="info-value">{{ customer.name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Phone:</span>
+                        <span class="info-value">{{ customer.phone }}</span>
+                    </div>
+                    {% if customer.email %}
+                    <div class="info-item">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value">{{ customer.email }}</span>
+                    </div>
+                    {% endif %} {% if customer.place %}
+                    <div class="info-item">
+                        <span class="info-label">Location:</span>
+                        <span class="info-value">{{ customer.place }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="info-item">
+                        <span class="info-label">Total Items:</span>
+                        <span class="info-value">{{ order_items|length }} item{{ order_items|length|pluralize }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="order-items">
+                <h2 class="section-title">🛍️ Order Items</h2>
+
+                {% for item_data in order_items %}
+                <div class="item-card">
+                    <div class="item-header">
+                        <div class="item-name">{{ item_data.product.name }}</div>
+                        <div class="item-total">₹{{ item_data.total_with_gst|floatformat:2 }}</div>
+                    </div>
+
+                    <div class="item-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Quantity</div>
+                            <div class="detail-value">{{ item_data.quantity }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Unit Price</div>
+                            <div class="detail-value">₹{{ item_data.unit_price|floatformat:2 }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Subtotal</div>
+                            <div class="detail-value">₹{{ item_data.subtotal|floatformat:2 }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">GST Rate</div>
+                            <div class="detail-value">{{ item_data.gst_rate }}%</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">CGST</div>
+                            <div class="detail-value">₹{{ item_data.cgst_amount|floatformat:2 }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">SGST</div>
+                            <div class="detail-value">₹{{ item_data.sgst_amount|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- GST Breakdown -->
+            <div class="gst-breakdown">
+                <div class="gst-title">💰 Payment Breakdown</div>
+                <div class="gst-grid">
+                    <div class="gst-item">
+                        <div class="gst-label">Subtotal (Before Tax)</div>
+                        <div class="gst-value">₹{{ order.subtotal|default:"0.00"|floatformat:2 }}</div>
+                    </div>
+                    <div class="gst-item">
+                        <div class="gst-label">Total CGST</div>
+                        <div class="gst-value">₹{{ order.total_cgst|default:"0.00"|floatformat:2 }}</div>
+                    </div>
+                    <div class="gst-item">
+                        <div class="gst-label">Total SGST</div>
+                        <div class="gst-value">₹{{ order.total_sgst|default:"0.00"|floatformat:2 }}</div>
+                    </div>
+                    <div class="gst-item grand-total">
+                        <div class="gst-label">Grand Total</div>
+                        <div class="gst-value">₹{{ order.total_price|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <a href="{% url 'my_orders' username=store_owner.username %}" class="nav-btn secondary">📦 Back to Orders</a>
+                <a href="{% url 'generate_invoice_view' username=store_owner.username order_id=order.id %}" class="nav-btn info">📄 View Invoice</a>
+                <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=order.id %}" class="nav-btn success">📥 Download PDF</a>
+                <a href="{% url 'store_products' username=store_owner.username %}" class="nav-btn primary">🏪 Continue Shopping</a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

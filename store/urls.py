@@ -15,11 +15,14 @@ urlpatterns = [
     path('<str:username>/cart/', views.cart_view, name='cart_view'),
     path('<str:username>/checkout/', views.checkout_view, name='checkout'),
     path('<str:username>/orders/', views.my_orders_view, name='my_orders'),
-    path('<str:username>/order/<int:order_id>/', views.order_detail_view, name='order_detail'),
     
-    # Invoice generation URLs - Updated
-    path('<str:username>/invoice/<int:order_id>/', views.generate_invoice, name='generate_invoice'),
+    # FIXED: Changed name from 'order_detail' to 'order_detail_view' to match template
+    path('<str:username>/order/<int:order_id>/', views.order_detail_view, name='order_detail_view'),
+    
+    # Invoice generation URLs - Fixed to match template expectations
+    path('<str:username>/invoice/<int:order_id>/', views.generate_invoice_view, name='generate_invoice_view'),
     path('<str:username>/invoice/<int:order_id>/pdf/', views.generate_invoice_pdf, name='generate_invoice_pdf'),
+    path('<str:username>/invoice/<int:order_id>/download/', views.generate_invoice, name='generate_invoice'),
 
     # Customer authentication for specific stores
     path('<str:username>/login/', views.customer_login, name='customer_login'),
