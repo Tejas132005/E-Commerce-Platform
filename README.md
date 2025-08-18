@@ -103,7 +103,7 @@ python manage.py runserver
 ![Orders](screenshots/myorders.png)
 
 ## Invoice 
-![Invoice](screenshot/Invoice.png)
+![Invoice](screenshots/Invoice.png)
 
 ---
 
