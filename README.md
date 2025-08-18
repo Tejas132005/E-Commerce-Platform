@@ -1,4 +1,3 @@
-cat << 'EOT' > README.md
 # 🧾 InvoxiaGST – GST Billing & Invoice Management System  
 
 A full-stack **E-Commerce & GST Billing Platform** that helps small and medium businesses manage:  
@@ -7,7 +6,7 @@ A full-stack **E-Commerce & GST Billing Platform** that helps small and medium b
 ✅ Sales history & analytics dashboards  
 ✅ PDF invoice export  
 
-This project was developed as part of a **Semester-2 project** to combine **Django + Flask concepts, frontend development, and analytics**.  
+This project was developed as part of a **Semester-2 project** to combine **Django concepts, frontend development, and analytics**.  
 
 ---
 
@@ -40,7 +39,6 @@ This project was developed as part of a **Semester-2 project** to combine **Djan
 - Monthly & yearly GST collection reports  
 - Product-wise sales summaries  
 - Top customer insights  
-- Interactive **charts & graphs** (Matplotlib + JavaScript)  
 
 ### 📤 Export  
 - Export invoices as PDF  
@@ -51,18 +49,13 @@ This project was developed as part of a **Semester-2 project** to combine **Djan
 
 **Backend**  
 - Python 3.11  
-- Django / Flask (hybrid architecture)  
-- SQLite / MySQL database  
-- SQLAlchemy ORM  
+- Django 
+- PostgreSQL 
 - Jinja2 templates  
 
 **Frontend**  
-- HTML, CSS, Bootstrap  
-- JavaScript for dynamic charts  
-
-**Analytics & Visualization**  
-- Pandas + Matplotlib (server-side)  
-- JavaScript charts (optional)  
+- HTML, CSS, Bootstrap , JavaScript 
+ 
 
 ---
 
