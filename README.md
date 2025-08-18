@@ -50,8 +50,10 @@ This project was developed as part of a **Semester-2 project** to combine **Djan
 **Backend**  
 - Python 3.11  
 - Django 
-- PostgreSQL 
 - Jinja2 templates  
+
+**Database**
+- PostgreSQL
 
 **Frontend**  
 - HTML, CSS, Bootstrap , JavaScript 
