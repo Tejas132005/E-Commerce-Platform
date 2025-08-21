@@ -1,12 +1,24 @@
 # store/urls.py
 
 from django.urls import path
-from . import views, manage_products
+from . import views, manage_products , analytics
 
 urlpatterns = [
     # Store owner dashboard and reports (for logged-in users)
     path('sales-report/', views.sales_report_view, name='sales_report'),
     path('sales-dashboard/', views.sales_dashboard_view, name='sales_dashboard'),
+    
+    # ✅ GLOBAL ANALYTICS (uses request.user)
+    path('analytics-dashboard/', views.analytics_dashboard_view, name='analytics_dashboard'),
+    path('analytics/items/', analytics.item_analytics_api, name='item_analytics_api'),
+    path('analytics/item/<int:product_id>/', analytics.single_item_analytics_api, name='single_item_analytics_api'),
+    path('analytics/categories/', analytics.category_analytics_api, name='category_analytics_api'),
+    
+    # ✅ USER-SPECIFIC ANALYTICS (uses username parameter)
+    path('<str:username>/analytics/', views.user_analytics_dashboard_view, name='user_analytics_dashboard'),
+    path('<str:username>/analytics/items/', analytics.user_item_analytics_api, name='user_item_analytics_api'),
+    path('<str:username>/analytics/item/<int:product_id>/', analytics.user_single_item_analytics_api, name='user_single_item_analytics_api'),
+    path('<str:username>/analytics/categories/', analytics.user_category_analytics_api, name='user_category_analytics_api'),
 
     # Personalized store URLs (public facing)
     path('<str:username>/', views.store_products_view, name='store_products'),

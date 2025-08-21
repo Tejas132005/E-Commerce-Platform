@@ -1,3 +1,5 @@
+<!-- templates/home.html -->
+
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -244,6 +246,11 @@
                             </a>
                         </li>
                         <li class="list-group-item">
+                            <a class="nav-link" href="/store/{{ user.username }}/analytics/">
+                                <i class="bi bi-bar-chart-line"></i> Item Analytics
+                            </a>
+                        </li>
+                        <li class="list-group-item">
                             <a class="nav-link" href="/store/manage/products/">
                                 <i class="bi bi-box-seam"></i> Manage Products
                             </a>
@@ -326,23 +333,28 @@
 
             {% if user.subscription.tier == "pro" %}
             <div class="row justify-content-center">
-                <div class="col-md-8">
+                <div class="col-md-10">
                     <div class="alert alert-success">
                         <h4>✅ Pro Plan Active!</h4>
                         <p>You have full access to all features. Your store is live and ready for customers!</p>
                     </div>
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <a href="/store/{{ user.username }}/" class="btn btn-primary w-100">
                                 <i class="bi bi-shop"></i> Visit My Store
                             </a>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <a href="/store/sales-dashboard/" class="btn btn-success w-100">
-                                <i class="bi bi-graph-up"></i> Analytics
+                                <i class="bi bi-graph-up"></i> Sales Dashboard
                             </a>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="/store/{{ user.username }}/analytics/" class="btn btn-warning w-100">
+                                <i class="bi bi-bar-chart-line"></i> Item Analytics
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <a href="/store/manage/add-product/" class="btn btn-info w-100">
                                 <i class="bi bi-plus-circle"></i> Add Products
                             </a>

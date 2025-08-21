@@ -13,6 +13,11 @@ import io
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.units import inch
+from reportlab.lib.colors import HexColor, black, white
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
+from reportlab.lib import colors
 from decimal import Decimal
 
 # -------------------- HELPER FUNCTIONS --------------------
@@ -571,7 +576,7 @@ def generate_invoice_view(request, username, order_id):
     return render(request, 'invoice_template.html', context)
 
 def generate_invoice_pdf(request, username, order_id):
-    """Generate PDF invoice for an order with GST breakdown"""
+    """Generate PDF invoice matching invoice_template.html exactly with proper GST calculation"""
     store_owner = get_store_owner(username)
     
     # Allow both customers and store owners to generate invoices
@@ -585,154 +590,468 @@ def generate_invoice_pdf(request, username, order_id):
             return redirect('customer_login', username=username)
         order = get_object_or_404(Order, id=order_id, store_owner=store_owner, customer=customer)
 
+    # Create response object
     buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-
-    # Get company details - UPDATED to use new method
+    
+    # Create PDF document
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=40,
+        bottomMargin=40
+    )
+    
+    # Get company details
     company_details = store_owner.get_company_details()
-
-    # Invoice header
-    p.setFont("Helvetica-Bold", 20)
-    p.drawString(50, height - 50, "TAX INVOICE")
     
-    # Company details
-    company_name = company_details['name']
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(50, height - 80, f"{company_name}")
-    p.setFont("Helvetica", 10)
-    p.drawString(50, height - 100, company_details['address'])
-    city_line = f"{company_details['city']}, {company_details['state']} - {company_details['pincode']}"
-    p.drawString(50, height - 115, city_line)
-    p.drawString(50, height - 130, f"Phone: {company_details['phone']}")
-    p.drawString(50, height - 145, f"Email: {company_details['email']}")
-    p.drawString(50, height - 160, f"GSTIN: {company_details['gstin']}")
+    # Create styles matching HTML template
+    styles = getSampleStyleSheet()
     
-    # Invoice details (right side)
-    invoice_number = getattr(order, 'invoice_number', f'INV-{order.id}-{order.order_date.strftime("%Y%m")}')
-    p.setFont("Helvetica", 10)
-    p.drawString(400, height - 80, f"Invoice No: {invoice_number}")
-    p.drawString(400, height - 95, f"Date: {order.order_date.strftime('%d/%m/%Y')}")
-    p.drawString(400, height - 110, f"Due Date: {(order.order_date + timezone.timedelta(days=30)).strftime('%d/%m/%Y')}")
+    # Custom styles matching CSS
+    title_style = ParagraphStyle(
+        'InvoiceTitle',
+        parent=styles['Normal'],
+        fontSize=28,
+        textColor=HexColor('#e74c3c'),  # Red color like HTML
+        alignment=TA_RIGHT,
+        spaceAfter=15,
+        fontName='Helvetica-Bold'
+    )
     
-    # Customer details
-    p.setFont("Helvetica-Bold", 12)
-    p.drawString(50, height - 200, "Bill To:")
-    p.setFont("Helvetica", 10)
-    p.drawString(50, height - 220, f"{order.customer.name}")
-    p.drawString(50, height - 235, f"Phone: {order.customer.phone}")
+    company_name_style = ParagraphStyle(
+        'CompanyName',
+        parent=styles['Normal'],
+        fontSize=24,
+        textColor=HexColor('#2c3e50'),
+        alignment=TA_LEFT,
+        fontName='Helvetica-Bold',
+        spaceAfter=20  # Increased space below company name
+    )
     
-    # Customer address
-    y_pos = height - 250
-    if hasattr(order.customer, 'address') and order.customer.address:
-        p.drawString(50, y_pos, f"{order.customer.address}")
-        y_pos -= 15
-    elif order.customer.place:
-        p.drawString(50, y_pos, f"{order.customer.place}")
-        y_pos -= 15
+    company_details_style = ParagraphStyle(
+        'CompanyDetails',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=HexColor('#555555'),
+        alignment=TA_LEFT,
+        spaceAfter=3
+    )
     
-    if hasattr(order.customer, 'city') and order.customer.city:
-        city_line = f"{order.customer.city}"
-        if hasattr(order.customer, 'state') and order.customer.state:
-            city_line += f", {order.customer.state}"
-        if hasattr(order.customer, 'pincode') and order.customer.pincode:
-            city_line += f" - {order.customer.pincode}"
-        p.drawString(50, y_pos, city_line)
-        y_pos -= 15
+    gstin_style = ParagraphStyle(
+        'GSTINStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=HexColor('#2c3e50'),
+        alignment=TA_LEFT,
+        fontName='Helvetica-Bold',
+        spaceAfter=10
+    )
     
-    if order.customer.email:
-        p.drawString(50, y_pos, f"Email: {order.customer.email}")
-        y_pos -= 15
-
-    # Items table header
-    y = height - 320
-    p.setFont("Helvetica-Bold", 9)
-    p.drawString(50, y, "S.No")
-    p.drawString(80, y, "Description")
-    p.drawString(200, y, "HSN")
-    p.drawString(240, y, "Qty")
-    p.drawString(270, y, "Rate")
-    p.drawString(310, y, "Amount")
-    p.drawString(350, y, "GST%")
-    p.drawString(380, y, "CGST")
-    p.drawString(420, y, "SGST")
-    p.drawString(460, y, "Total")
+    section_header_style = ParagraphStyle(
+        'SectionHeader',
+        parent=styles['Normal'],
+        fontSize=14,
+        textColor=HexColor('#2c3e50'),
+        alignment=TA_LEFT,
+        fontName='Helvetica-Bold',
+        spaceAfter=10
+    )
     
-    # Draw line under header
-    p.line(50, y-5, 550, y-5)
-    y -= 20
+    normal_style = ParagraphStyle(
+        'Normal',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=HexColor('#555555'),
+        alignment=TA_LEFT,
+        spaceAfter=3
+    )
     
-    # Items and calculations
-    p.setFont("Helvetica", 8)
-    subtotal = Decimal('0.00')
-    total_cgst = Decimal('0.00')
-    total_sgst = Decimal('0.00')
+    invoice_details_style = ParagraphStyle(
+        'InvoiceDetails',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=HexColor('#555555'),
+        alignment=TA_RIGHT,
+        spaceAfter=3
+    )
     
-    for i, item in enumerate(order.items.all(), 1):
-        # Calculate GST for each item - FIXED: Proper Decimal handling
+    # Build PDF content
+    story = []
+    
+    # Get all order items and calculate GST summary exactly like HTML template
+    invoice_items = order.items.all()
+    
+    # Calculate GST breakdown for each item and create summary like HTML template
+    updated_items = []
+    gst_summary = {}  # This will match the gst_summary from HTML template
+    
+    order_subtotal = Decimal('0.00')
+    order_total_cgst = Decimal('0.00')
+    order_total_sgst = Decimal('0.00')
+    
+    # Process each item exactly like the HTML template does
+    for item in invoice_items:
+        # Calculate item subtotal
         item_subtotal = item.item_price * item.quantity
+        
+        # Calculate GST amounts - EXACTLY like HTML template
         gst_rate = Decimal(str(item.product.gst))  # Convert to Decimal
         gst_decimal = gst_rate / Decimal('100')    # Convert percentage to decimal
         item_total_gst = item_subtotal * gst_decimal
-        item_cgst = item_total_gst / Decimal('2')
-        item_sgst = item_total_gst / Decimal('2')
-        item_total = item_subtotal + item_total_gst
+        item_cgst = item_total_gst / Decimal('2')  # CGST = GST/2
+        item_sgst = item_total_gst / Decimal('2')  # SGST = GST/2
         
-        # Add to totals
-        subtotal += item_subtotal
-        total_cgst += item_cgst
-        total_sgst += item_sgst
+        # Update item object with calculated values (like HTML template)
+        item.subtotal = item_subtotal
+        item.cgst_amount = item_cgst
+        item.sgst_amount = item_sgst
+        item.gst_amount = item_total_gst
         
-        p.drawString(50, y, str(i))
-        p.drawString(80, y, f"{item.product.name[:15]}")
-        p.drawString(200, y, f"{item.product.hsn_code or 'N/A'}")
-        p.drawString(240, y, str(item.quantity))
-        p.drawString(270, y, f"₹{item.item_price}")
-        p.drawString(310, y, f"₹{item_subtotal}")
-        p.drawString(350, y, f"{gst_rate}%")
-        p.drawString(380, y, f"₹{item_cgst:.2f}")
-        p.drawString(420, y, f"₹{item_sgst:.2f}")
-        p.drawString(460, y, f"₹{item_total:.2f}")
-        y -= 15
+        updated_items.append(item)
+        
+        # Add to order totals
+        order_subtotal += item_subtotal
+        order_total_cgst += item_cgst
+        order_total_sgst += item_sgst
+        
+        # Create GST summary by rate - EXACTLY like HTML template does
+        gst_rate_float = float(gst_rate)  # For dictionary key
+        if gst_rate_float not in gst_summary:
+            gst_summary[gst_rate_float] = {
+                'rate': gst_rate_float,
+                'taxable_amount': Decimal('0.00'),
+                'cgst': Decimal('0.00'),
+                'sgst': Decimal('0.00'),
+                'total_gst': Decimal('0.00')
+            }
+        
+        gst_summary[gst_rate_float]['taxable_amount'] += item_subtotal
+        gst_summary[gst_rate_float]['cgst'] += item_cgst
+        gst_summary[gst_rate_float]['sgst'] += item_sgst
+        gst_summary[gst_rate_float]['total_gst'] += item_total_gst
 
-    # Totals
-    y -= 30
-    p.setFont("Helvetica-Bold", 10)
-    p.drawString(350, y, f"Subtotal: ₹{subtotal}")
-    y -= 15
-    p.drawString(350, y, f"Total CGST: ₹{total_cgst:.2f}")
-    y -= 15
-    p.drawString(350, y, f"Total SGST: ₹{total_sgst:.2f}")
-    y -= 15
-    p.setFont("Helvetica-Bold", 12)
-    p.drawString(350, y, f"GRAND TOTAL: ₹{order.total_price}")
+    # Update order with calculated totals (like HTML template)
+    order.subtotal = order_subtotal
+    order.total_cgst = order_total_cgst
+    order.total_sgst = order_total_sgst
+    order.total_gst = order_total_cgst + order_total_sgst
     
-    # Amount in words
-    y -= 30
-    p.setFont("Helvetica", 10)
-    amount_words = f"Rupees {int(order.total_price)} Only"
-    p.drawString(50, y, f"Amount in Words: {amount_words}")
+    # Header section matching HTML template
+    header_data = [
+        [
+            # Company details (left column)
+            [
+                Paragraph(company_details['name'], company_name_style),
+                Paragraph(company_details['address'], company_details_style),
+                Paragraph(f"{company_details['city']}, {company_details['state']} - {company_details['pincode']}", company_details_style),
+                Paragraph(f"Phone: {company_details['phone']}", company_details_style),
+                Paragraph(f"Email: {company_details['email']}", company_details_style),
+                Paragraph(f"GSTIN: {company_details['gstin']}", gstin_style),
+            ],
+            
+            # Invoice details (right column)
+            [
+                Paragraph("TAX INVOICE", title_style),
+                Paragraph(f"<b>Invoice No:</b> {getattr(order, 'invoice_number', order.id)}", invoice_details_style),
+                Paragraph(f"<b>Date:</b> {order.order_date.strftime('%d/%m/%Y')}", invoice_details_style),
+                Paragraph(f"<b>Due Date:</b> {order.order_date.strftime('%d/%m/%Y')}", invoice_details_style),
+            ]
+        ]
+    ]
     
-    # Terms and signature
-    y -= 40
-    p.setFont("Helvetica", 8)
-    p.drawString(50, y, "Terms & Conditions:")
-    p.drawString(50, y-12, "• Payment is due within 30 days")
-    p.drawString(50, y-24, "• Goods once sold will not be taken back")
+    # Create header table
+    header_table = Table(header_data, colWidths=[3.5*inch, 3*inch])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
+        ('LINEBELOW', (0, 0), (-1, -1), 2, HexColor('#333333')),
+    ]))
     
-    # Signature
-    p.drawString(400, y-40, f"For {company_name}")
-    p.drawString(400, y-80, "Authorized Signatory")
-
-    p.showPage()
-    p.save()
+    story.append(header_table)
+    story.append(Spacer(1, 20))
+    
+    # Customer Details Section matching HTML
+    customer_data = [
+        [
+            # Bill To (left column)
+            [
+                Paragraph("Bill To:", section_header_style),
+                Paragraph(f"<b>{order.customer.name}</b>", normal_style),
+                Paragraph(f"{order.customer.address if hasattr(order.customer, 'address') and order.customer.address else order.customer.place or 'Address not provided'}", normal_style),
+                Paragraph(f"<b>Phone:</b> {order.customer.phone}", normal_style),
+                Paragraph(f"<b>Email:</b> {order.customer.email}" if order.customer.email else "", normal_style),
+            ],
+            
+            # Ship To (right column)
+            [
+                Paragraph("Ship To:", section_header_style),
+                Paragraph(f"<b>{order.customer.name}</b>", normal_style),
+                Paragraph(f"{order.customer.address if hasattr(order.customer, 'address') and order.customer.address else order.customer.place or 'Address not provided'}", normal_style),
+                Paragraph(f"<b>Phone:</b> {order.customer.phone}", normal_style),
+            ]
+        ]
+    ]
+    
+    customer_table = Table(customer_data, colWidths=[3.25*inch, 3.25*inch])
+    customer_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
+    ]))
+    
+    story.append(customer_table)
+    story.append(Spacer(1, 20))
+    
+    # Invoice Items Table matching HTML template exactly
+    items_data = [
+        ['Sr.', 'Description', 'HSN/SAC', 'Qty', 'Unit', 'Rate (Rs)', 'Amount (Rs)', 'GST Rate', 'GST Amount (Rs)']
+    ]
+    
+    # Add items exactly like HTML template
+    for i, item in enumerate(updated_items, 1):
+        # Add item row with calculated values
+        items_data.append([
+            str(i),
+            item.product.name,
+            getattr(item.product, 'hsn_code', '-') or '-',
+            str(item.quantity),
+            getattr(item.product, 'unit', 'Nos') or 'Nos',
+            f"{item.item_price:.2f}",
+            f"{item.subtotal:.2f}",
+            f"{item.product.gst}%",
+            f"{item.gst_amount:.2f}"
+        ])
+    
+    # Create items table
+    items_table = Table(items_data, colWidths=[0.4*inch, 2.2*inch, 0.8*inch, 0.4*inch, 0.5*inch, 0.8*inch, 0.8*inch, 0.7*inch, 0.9*inch])
+    
+    # Style the table matching HTML
+    items_table.setStyle(TableStyle([
+        # Header styling
+        ('BACKGROUND', (0, 0), (-1, 0), HexColor('#34495e')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('TOPPADDING', (0, 0), (-1, 0), 12),
+        
+        # Data rows styling
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('ALIGN', (0, 1), (0, -1), 'CENTER'),  # Sr. column
+        ('ALIGN', (1, 1), (1, -1), 'LEFT'),    # Description column
+        ('ALIGN', (2, 1), (-1, -1), 'CENTER'), # All other columns centered
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        
+        # Grid and borders
+        ('GRID', (0, 0), (-1, -1), 1, HexColor('#bdc3c7')),
+        ('BOX', (0, 0), (-1, -1), 1, HexColor('#2c3e50')),
+        
+        # Alternating row colors like HTML
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, HexColor('#f8f9fa')]),
+        
+        # Padding
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+    ]))
+    
+    story.append(items_table)
+    story.append(Spacer(1, 20))
+    
+    # GST Summary and Totals Section matching HTML exactly
+    total_gst = order_total_cgst + order_total_sgst
+    grand_total = order_subtotal + total_gst
+    
+    # Create GST Summary Table exactly like HTML template
+    gst_summary_data = [
+        ['GST Rate', 'Taxable Amount (Rs)', 'CGST (Rs)', 'SGST (Rs)', 'Total GST (Rs)']
+    ]
+    
+    # Add GST summary rows for each rate (like HTML template)
+    for gst_rate, gst_data in gst_summary.items():
+        gst_summary_data.append([
+            f"{gst_rate}%",
+            f"{gst_data['taxable_amount']:.2f}",
+            f"{gst_data['cgst']:.2f}",
+            f"{gst_data['sgst']:.2f}",
+            f"{gst_data['total_gst']:.2f}"
+        ])
+    
+    # Add total row (like HTML template footer)
+    gst_summary_data.append([
+        'Total',
+        f"{order_subtotal:.2f}",
+        f"{order_total_cgst:.2f}",
+        f"{order_total_sgst:.2f}",
+        f"{total_gst:.2f}"
+    ])
+    
+    # Create GST Summary and Totals layout (left side GST table, right side totals)
+    summary_totals_data = [
+        [
+            # GST Summary (left column)
+            [
+                Paragraph("<b>GST Summary</b>", section_header_style),
+                Spacer(1, 10),
+                # GST Summary Table
+                Table(gst_summary_data, colWidths=[0.6*inch, 1*inch, 0.7*inch, 0.7*inch, 0.8*inch],
+                style=TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), HexColor('#3498db')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 8),
+                    ('GRID', (0, 0), (-1, -1), 1, HexColor('#bdc3c7')),
+                    ('BOX', (0, 0), (-1, -1), 1, HexColor('#2980b9')),
+                    ('BACKGROUND', (0, -1), (-1, -1), HexColor('#ecf0f1')),  # Total row background
+                    ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),  # Total row bold
+                    ('TOPPADDING', (0, 0), (-1, -1), 6),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ]))
+            ],
+            
+            # Invoice Totals (right column)
+            [
+                Paragraph("", section_header_style),  # Empty space
+                Spacer(1, 30),
+                # Totals Table matching HTML layout
+                Table([
+                    ['Subtotal:', f'Rs{order_subtotal:.2f}'],
+                    ['CGST:', f'Rs{order_total_cgst:.2f}'],
+                    ['SGST:', f'Rs{order_total_sgst:.2f}'],
+                    ['Grand Total:', f'Rs{grand_total:.2f}']
+                ], colWidths=[1.2*inch, 1*inch],
+                style=TableStyle([
+                    ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+                    ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+                    ('FONTNAME', (0, 0), (-1, 2), 'Helvetica-Bold'),
+                    ('FONTNAME', (0, 3), (-1, 3), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 3), (-1, 3), 16),
+                    ('TEXTCOLOR', (0, 3), (-1, 3), HexColor('#2c3e50')),
+                    ('BACKGROUND', (0, 3), (-1, 3), HexColor('#f8f9fa')),
+                    
+                ]))
+            ]
+        ]
+    ]
+    
+    summary_totals_table = Table(summary_totals_data, colWidths=[4*inch, 2.5*inch])
+    summary_totals_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
+    ]))
+    
+    story.append(summary_totals_table)
+    story.append(Spacer(1, 20))
+    
+    # Amount in words (matching HTML template)
+    amount_words = f"Rupees {int(grand_total)} Only"
+    story.append(Paragraph(f"<b>Amount in Words:</b> {amount_words}", 
+                          ParagraphStyle('AmountWords', parent=normal_style, 
+                                       backColor=HexColor('#e8f4f8'), 
+                                       leftIndent=10, rightIndent=10, 
+                                       topPadding=10, bottomPadding=10,
+                                       borderWidth=0, borderColor=HexColor('#3498db'),
+                                       borderPadding=4)))
+    story.append(Spacer(1, 40))
+    
+    # Signature section only (matching HTML - no terms)
+    signature_data = [
+        [
+            Paragraph("", normal_style),  # Empty left column
+            Paragraph(f"<b>For {company_details['name']}</b><br/><br/><br/>"
+                     "____________________<br/>"
+                     "Authorized Signatory", 
+                     ParagraphStyle('Signature', parent=normal_style, 
+                                  alignment=TA_CENTER,
+                                  backColor=HexColor('#f8f9fa'),
+                                  borderWidth=1, borderColor=HexColor('#bdc3c7'),
+                                  leftIndent=10, rightIndent=10,
+                                  topPadding=20, bottomPadding=20))
+        ]
+    ]
+    
+    signature_table = Table(signature_data, colWidths=[4*inch, 2.5*inch])
+    signature_table.setStyle(TableStyle([
+        ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 20),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+    ]))
+    
+    story.append(signature_table)
+    
+    # Build PDF
+    doc.build(story)
+    
+    # Return response with proper headers for download
     buffer.seek(0)
+    invoice_number = getattr(order, 'invoice_number', f'INV-{order.id}')
     
-    response = HttpResponse(buffer, content_type='application/pdf')
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="invoice_{invoice_number}.pdf"'
+    response['Content-Length'] = len(buffer.getvalue())
+    
     return response
 
 # Keep your existing generate_invoice function as well for backward compatibility
 def generate_invoice(request, username, order_id):
     """Backward compatibility - redirect to PDF generation"""
     return generate_invoice_pdf(request, username, order_id)
+
+
+@login_required
+def analytics_dashboard_view(request):
+    """
+    Render the analytics dashboard template
+    """
+    return render(request, 'analytics_dashboard.html', {
+        'user': request.user,
+        'page_title': 'Item Analytics Dashboard'
+    })
+    
+
+@login_required
+def user_analytics_dashboard_view(request, username):
+    """
+    Render the analytics dashboard template for a specific user
+    Only the store owner can access their own analytics
+    """
+    try:
+        # Get the store owner by username
+        store_owner = get_object_or_404(CustomUser, username=username)
+        
+        # Security check: Only allow store owners to access their own analytics
+        if request.user != store_owner:
+            return render(request, 'error.html', {
+                'error_message': 'Access denied. You can only view your own analytics.',
+                'error_code': 403
+            }, status=403)
+        
+        return render(request, 'user_analytics_dashboard.html', {
+            'user': request.user,
+            'store_owner': store_owner,
+            'username': username,
+            'page_title': f'{username} - Item Analytics Dashboard'
+        })
+        
+    except Exception as e:
+        return render(request, 'error.html', {
+            'error_message': f'Error loading analytics dashboard: {str(e)}',
+            'error_code': 500
+        }, status=500)

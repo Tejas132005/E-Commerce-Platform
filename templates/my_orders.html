@@ -338,8 +338,8 @@
                 <div>
                     <h1>📦 My Orders</h1>
                     <div class="customer-info">
-                        <strong>{{ store_owner.company_name|default:store_owner.username }} Company</strong><br> 🏪 Store → My Orders<br> 👋 <strong>{{ customer.name }}</strong>'s Order History 📱 {{ customer.phone }} • 📍 {{ customer.place|default:"Location
-                        not provided" }}
+                        <strong>{{ store_owner.company_name|default:store_owner.username }} Company</strong><br> 🏪 Store → My Orders<br> 👋 <strong>{{ customer.name }}</strong>'s Order History 📱 {{ customer.phone }} • <span> <span> </span></span>📍
+                        {{ customer.place|default:"Location not provided" }}
                     </div>
                 </div>
                 <div class="navigation">

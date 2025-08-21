@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ store_owner.username }} - Analytics Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    {% csrf_token %}
+    <script>
+        const USERNAME = '{{ username }}';
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .summary-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .summary-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 0;
+        }
+        
+        .controls {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .controls select, .controls input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .controls button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        .controls button:hover {
+            background: #5a6fd8;
+        }
+        
+        .analytics-content {
+            padding: 30px;
+        }
+        
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .analytics-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .analytics-table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        
+        .analytics-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-in-stock {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-low-stock {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-out-of-stock {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            background: white;
+            border-bottom-color: #667eea;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>📊 {{ store_owner.username }}'s Analytics Dashboard</h1>
+            <p>Comprehensive insights into your product performance</p>
+        </div>
+        
+        <div class="summary-cards" id="summaryCards">
+            <!-- Summary cards will be populated by JavaScript -->
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('items')">Items Analytics</div>
+            <div class="tab" onclick="switchTab('categories')">Category Analytics</div>
+        </div>
+        
+        <div class="controls">
+            <select id="sortBy">
+                <option value="total_revenue_with_gst">Sort by Revenue</option>
+                <option value="sold_quantity">Sort by Quantity Sold</option>
+                <option value="current_stock">Sort by Current Stock</option>
+                <option value="product_name">Sort by Name</option>
+            </select>
+            
+            <select id="filterBy">
+                <option value="">All Items</option>
+                <option value="low_stock">Low Stock Items</option>
+                <option value="out_of_stock">Out of Stock</option>
+                <option value="fast_moving">Fast Moving</option>
+            </select>
+            
+            <input type="text" id="searchBox" placeholder="Search products..." />
+            <button onclick="refreshData()">🔄 Refresh</button>
+            <button onclick="exportData()">📥 Export CSV</button>
+        </div>
+        
+        <div id="itemsTab" class="tab-content active">
+            <div class="analytics-content">
+                <div id="loadingItems" class="loading">
+                    <p>Loading analytics data...</p>
+                </div>
+                <div id="errorItems" class="error" style="display: none;"></div>
+                <div id="itemsAnalytics" style="display: none;">
+                    <table class="analytics-table" id="itemsTable">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Current Stock</th>
+                                <th>Sold</th>
+                                <th>Revenue (₹)</th>
+                                <th>GST Collected (₹)</th>
+                                <th>Avg. Price (₹)</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsTableBody">
+                            <!-- Table rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div id="categoriesTab" class="tab-content">
+            <div class="analytics-content">
+                <div id="loadingCategories" class="loading">
+                    <p>Loading category analytics...</p>
+                </div>
+                <div id="errorCategories" class="error" style="display: none;"></div>
+                <div id="categoriesAnalytics" style="display: none;">
+                    <table class="analytics-table" id="categoriesTable">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Products</th>
+                                <th>Total Revenue (₹)</th>
+                                <th>GST Collected (₹)</th>
+                                <th>Items Sold</th>
+                                <th>Current Stock</th>
+                                <th>Revenue %</th>
+                                <th>Avg. Revenue/Product</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesTableBody">
+                            <!-- Category rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let itemsData = [];
+        let categoriesData = [];
+        let filteredItems = [];
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Loading analytics for user:', USERNAME);
+            loadItemsAnalytics();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('sortBy').addEventListener('change', applyFilters);
+            document.getElementById('filterBy').addEventListener('change', applyFilters);
+            document.getElementById('searchBox').addEventListener('input', applyFilters);
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'categories' && categoriesData.length === 0) {
+                loadCategoriesAnalytics();
+            }
+        }
+
+        async function loadItemsAnalytics() {
+            try {
+                document.getElementById('loadingItems').style.display = 'block';
+                document.getElementById('errorItems').style.display = 'none';
+                document.getElementById('itemsAnalytics').style.display = 'none';
+
+                const apiUrl = `/store/${USERNAME}/analytics/items/`;
+                console.log('Fetching from:', apiUrl);
+
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Analytics data received:', data);
+                
+                if (data.status === 'success') {
+                    itemsData = data.items;
+                    filteredItems = [...itemsData];
+                    
+                    displaySummaryCards(data.summary);
+                    displayItemsTable();
+                    
+                    document.getElementById('loadingItems').style.display = 'none';
+                    document.getElementById('itemsAnalytics').style.display = 'block';
+                } else {
+                    throw new Error('Failed to load analytics data: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                document.getElementById('loadingItems').style.display = 'none';
+                document.getElementById('errorItems').style.display = 'block';
+                document.getElementById('errorItems').textContent = 'Error loading analytics data: ' + error.message;
+            }
+        }
+
+        async function loadCategoriesAnalytics() {
+            try {
+                document.getElementById('loadingCategories').style.display = 'block';
+                document.getElementById('errorCategories').style.display = 'none';
+                document.getElementById('categoriesAnalytics').style.display = 'none';
+
+                const apiUrl = `/store/${USERNAME}/analytics/categories/`;
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    categoriesData = data.categories;
+                    displayCategoriesTable();
+                    document.getElementById('loadingCategories').style.display = 'none';
+                    document.getElementById('categoriesAnalytics').style.display = 'block';
+                } else {
+                    throw new Error('Failed to load category analytics data');
+                }
+            } catch (error) {
+                console.error('Error loading category analytics:', error);
+                document.getElementById('loadingCategories').style.display = 'none';
+                document.getElementById('errorCategories').style.display = 'block';
+                document.getElementById('errorCategories').textContent = 'Error loading category analytics: ' + error.message;
+            }
+        }
+
+        function displaySummaryCards(summary) {
+            const summaryCardsHtml = `
+                <div class="summary-card">
+                    <h3>Total Products</h3>
+                    <p class="value">${summary.total_products}</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Total Revenue</h3>
+                    <p class="value">₹${summary.total_revenue_with_gst.toLocaleString()}</p>
+                </div>
+                <div class="summary-card">
+                    <h3>GST Collected</h3>
+                    <p class="value">₹${summary.total_gst_collected.toLocaleString()}</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Items Sold</h3>
+                    <p class="value">${summary.total_items_sold}</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Items in Stock</h3>
+                    <p class="value">${summary.total_items_in_stock}</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Avg Revenue/Product</h3>
+                    <p class="value">₹${summary.average_revenue_per_product.toLocaleString()}</p>
+                </div>
+            `;
+            document.getElementById('summaryCards').innerHTML = summaryCardsHtml;
+        }
+
+        function displayItemsTable() {
+            const tbody = document.getElementById('itemsTableBody');
+            tbody.innerHTML = '';
+
+            filteredItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <strong>${item.product_name}</strong><br>
+                        <small>HSN: ${item.hsn_code}</small>
+                    </td>
+                    <td>${item.category}</td>
+                    <td>${item.current_stock}</td>
+                    <td>${item.sold_quantity}</td>
+                    <td>₹${item.total_revenue_with_gst.toLocaleString()}</td>
+                    <td>₹${item.total_gst_collected.toLocaleString()}</td>
+                    <td>₹${item.average_selling_price.toFixed(2)}</td>
+                    <td>
+                        <span class="status-badge ${getStatusClass(item.stock_status)}">
+                            ${item.stock_status}
+                        </span>
+                    </td>
+                    <td>
+                        <button onclick="viewItemDetail(${item.product_id})" style="background: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">View Details</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function displayCategoriesTable() {
+            const tbody = document.getElementById('categoriesTableBody');
+            tbody.innerHTML = '';
+
+            categoriesData.forEach(category => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${category.category_name}</strong></td>
+                    <td>${category.total_products}</td>
+                    <td>₹${category.total_revenue_with_gst.toLocaleString()}</td>
+                    <td>₹${category.total_gst_collected.toLocaleString()}</td>
+                    <td>${category.total_sold_quantity}</td>
+                    <td>${category.total_current_stock}</td>
+                    <td>${category.revenue_percentage}%</td>
+                    <td>₹${category.average_revenue_per_product.toLocaleString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function applyFilters() {
+            const sortBy = document.getElementById('sortBy').value;
+            const filterBy = document.getElementById('filterBy').value;
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+
+            filteredItems = itemsData.filter(item => {
+                if (searchTerm && !item.product_name.toLowerCase().includes(searchTerm) && 
+                    !item.category.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+
+                if (filterBy === 'low_stock' && item.stock_status !== 'Low Stock') return false;
+                if (filterBy === 'out_of_stock' && item.stock_status !== 'Out of Stock') return false;
+                if (filterBy === 'fast_moving' && !item.is_fast_moving) return false;
+
+                return true;
+            });
+
+            filteredItems.sort((a, b) => {
+                if (sortBy === 'product_name') {
+                    return a.product_name.localeCompare(b.product_name);
+                } else {
+                    return b[sortBy] - a[sortBy];
+                }
+            });
+
+            displayItemsTable();
+        }
+
+        function getStatusClass(status) {
+            switch (status) {
+                case 'In Stock': return 'status-in-stock';
+                case 'Low Stock': return 'status-low-stock';
+                case 'Out of Stock': return 'status-out-of-stock';
+                default: return '';
+            }
+        }
+
+        async function viewItemDetail(productId) {
+            try {
+                const apiUrl = `/store/${USERNAME}/analytics/item/${productId}/`;
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const detailHtml = `
+                        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center;" onclick="this.remove()">
+                            <div style="background: white; padding: 30px; border-radius: 10px; max-width: 800px; max-height: 80vh; overflow-y: auto;" onclick="event.stopPropagation()">
+                                <h2>${data.product.name} - Detailed Analytics</h2>
+                                
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                        <h4>Stock Analytics</h4>
+                                        <p>Current Stock: <strong>${data.stock_analytics.current_stock}</strong></p>
+                                        <p>Sold Quantity: <strong>${data.stock_analytics.sold_quantity}</strong></p>
+                                        <p>Stock Turnover: <strong>${data.stock_analytics.stock_turnover_percentage}%</strong></p>
+                                    </div>
+                                    
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                        <h4>Revenue Analytics</h4>
+                                        <p>Total Revenue: <strong>₹${data.revenue_analytics.total_revenue_with_gst.toLocaleString()}</strong></p>
+                                        <p>GST Collected: <strong>₹${data.revenue_analytics.total_gst_collected.toLocaleString()}</strong></p>
+                                        <p>Avg. Selling Price: <strong>₹${data.revenue_analytics.average_selling_price.toFixed(2)}</strong></p>
+                                    </div>
+                                    
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                        <h4>Sales Analytics</h4>
+                                        <p>Total Orders: <strong>${data.sales_analytics.total_orders}</strong></p>
+                                        <p>Avg. Qty/Order: <strong>${data.sales_analytics.average_quantity_per_order}</strong></p>
+                                    </div>
+                                </div>
+                                
+                                <h3>Recent Sales</h3>
+                                <div style="max-height: 200px; overflow-y: auto;">
+                                    ${data.sales_analytics.recent_sales.map(sale => `
+                                        <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
+                                            <strong>${sale.customer_name}</strong> - ${sale.quantity} units - ₹${sale.total_price.toLocaleString()}
+                                            <br><small>${new Date(sale.sale_date).toLocaleDateString()}</small>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                
+                                <button onclick="this.closest('[onclick]').remove()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 20px;">Close</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.insertAdjacentHTML('beforeend', detailHtml);
+                }
+            } catch (error) {
+                alert('Error loading item details: ' + error.message);
+            }
+        }
+
+        function refreshData() {
+            itemsData = [];
+            categoriesData = [];
+            loadItemsAnalytics();
+            if (document.getElementById('categoriesTab').classList.contains('active')) {
+                loadCategoriesAnalytics();
+            }
+        }
+
+        function exportData() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Product Name,Category,HSN Code,Current Stock,Sold Quantity,Revenue with GST,GST Collected,Average Selling Price,Stock Status\n";
+            
+            filteredItems.forEach(item => {
+                const row = [
+                    item.product_name,
+                    item.category,
+                    item.hsn_code,
+                    item.current_stock,
+                    item.sold_quantity,
+                    item.total_revenue_with_gst,
+                    item.total_gst_collected,
+                    item.average_selling_price,
+                    item.stock_status
+                ].map(field => `"${field}"`).join(",");
+                
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `${USERNAME}_analytics.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
