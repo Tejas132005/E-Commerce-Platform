@@ -10,7 +10,7 @@ This project was developed as part of a **Semester-2 project** to combine **Djan
 
 ---
 ## 📁 Folder Structure
-
+```bash
 🏗️ Root Directory
 E-Commerce/
 ├── manage.py                 # Django management script
@@ -111,7 +111,7 @@ E-Commerce/
 │   ├── customer_dashboard.png # Customer view
 │   ├── myorders.png         # Order management
 │   └── Invoice.png          # Invoice example
-
+```
 ---
 
 ## 🚀 Features  
