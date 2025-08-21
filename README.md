@@ -9,6 +9,110 @@ A full-stack **E-Commerce & GST Billing Platform** that helps small and medium b
 This project was developed as part of a **Semester-2 project** to combine **Django concepts, frontend development, and analytics**.  
 
 ---
+## 📁 Folder Structure
+
+🏗️ Root Directory
+E-Commerce/
+├── manage.py                 # Django management script
+├── requirements.txt          # Python dependencies
+├── README.md                # Project documentation
+
+🔧 Django Configuration
+E-Commerce/
+├── E-Commerce/              # Main Django project settings
+│   ├── settings.py          # Django settings configuration
+│   ├── urls.py             # Main URL routing
+│   ├── asgi.py             # ASGI configuration
+│   └── wsgi.py             # WSGI configuration
+
+👥 User Management (accounts app)
+E-Commerce/
+├── accounts/                # User authentication & profiles
+│   ├── models.py            # Custom user models
+│   ├── forms.py             # User registration/login forms
+│   ├── views.py             # Authentication views
+│   ├── urls.py              # User-related URLs
+
+
+🏪 Core Store Functionality (store app)
+E-Commerce/
+├── store/                   # Main e-commerce functionality
+│   ├── __init__.py
+│   ├── models.py            # Product, Order, Customer models
+│   ├── views.py             # Store views & logic
+│   ├── forms.py             # Product/Order forms
+│   ├── urls.py              # Store URL routing
+│   ├── analytics.py         # Sales analytics functions
+│   ├── manage_products.py   # Product management utilities
+│   ├── middleware.py        # Custom middleware
+
+
+🎯 Core App (core app)
+E-Commerce/
+├── core/                    # Core functionality & utilities
+│   ├── __init__.py
+│   ├── models.py            # Core models
+│   ├── views.py             # Core views
+│   ├── forms.py             # Core forms
+│   ├── urls.py              # Core URL routing
+│   ├── admin.py             # Admin interface configuration
+│   ├── apps.py              # App configuration
+
+🎨 Frontend Templates
+E-Commerce/
+├── templates/               # HTML templates
+│   ├── base.html            # Base template layout
+│   ├── home.html            # Homepage
+│   ├── dashboard.html       # Main dashboard
+│   ├── login.html           # Login page
+│   ├── register.html        # Registration page
+│   ├── customer_login.html  # Customer login
+│   ├── customer_register.html # Customer registration
+│   ├── products_page.html   # Product listing
+│   ├── product_detail.html  # Individual product view
+│   ├── cart.html            # Shopping cart
+│   ├── order.html           # Order processing
+│   ├── order_detail.html    # Order details
+│   ├── my_orders.html       # Customer order history
+│   ├── invoice_template.html # Invoice generation
+│   ├── payment_success.html # Payment confirmation
+│   ├── analytics_dashboard.html # Analytics view
+│   ├── sales_dashboard.html # Sales overview
+│   ├── sales_report.html    # Sales reports
+│   ├── stock_details.html   # Inventory management
+│   ├── add_product.html     # Add new product
+│   ├── update_product.html  # Edit product
+│   ├── delete_product.html  # Remove product
+│   ├── user_analytics_dashboard.html # User analytics
+│   ├── subscription_history.html # Subscription tracking
+│   ├── history.html         # Transaction history
+│   ├── about.html           # About page
+│   ├── contact.html         # Contact information
+│   ├── docs.html            # Documentation
+│   ├── plan.html            # Subscription plans
+│   └── error.html           # Error pages
+
+📁 Static Files & Media
+E-Commerce/
+├── static/                  # CSS, JS, images (static assets)
+├── media/                   # User-uploaded files
+│   └── products/            # Product images
+│       ├── aruns_notebook_D2rwnrJ.jpeg
+│       ├── aruns_notebook.jpeg
+│       ├── classmate_spiral_notebook.jpeg
+│       └── oreo_buscuit.jpeg
+
+📸 Documentation & Screenshots
+E-Commerce/
+├── screenshots/             # Application screenshots
+│   ├── home_page.png        # Homepage screenshot
+│   ├── dashboard.png        # Dashboard view
+│   ├── sales.png            # Sales dashboard
+│   ├── customer_dashboard.png # Customer view
+│   ├── myorders.png         # Order management
+│   └── Invoice.png          # Invoice example
+
+---
 
 ## 🚀 Features  
 
