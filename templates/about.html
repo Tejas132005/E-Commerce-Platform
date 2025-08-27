@@ -1,0 +1,197 @@
+<!-- templates/about.html -->
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us | InvoxiaGST</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <style>
+        body {
+            background: linear-gradient(-45deg, #ffffff, #dff1ff, #e6f7ff, #f8f9fa);
+            background-size: 100% 100%;
+            font-family: 'Segoe UI', sans-serif;
+            color: #131313d8;
+            min-height: 100vh;
+        }
+        
+        header {
+            background-color: rgba(255, 255, 255, 0.85);
+            border-radius: 1rem;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+            margin-top: 20px;
+            padding: 20px 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .invoxiagst {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #0056b3;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+            font-style: italic;
+        }
+        
+        h1,
+        h2,
+        h3 {
+            font-weight: 700;
+            color: #2a52be;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .about-section,
+        .company-section,
+        .docs-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
+        }
+        
+        .highlight-list li {
+            margin: 10px 0;
+            font-size: 1.05rem;
+        }
+        
+        .highlight-list li::before {
+            content: "⭐";
+            margin-right: 8px;
+            color: gold;
+        }
+        
+        .company-section {
+            background: linear-gradient(135deg, #fff6cc, #ffe680);
+        }
+        
+        .docs-section h4 {
+            color: #004085;
+            margin-top: 1rem;
+        }
+        
+        .docs-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .docs-list li {
+            margin: 8px 0;
+            font-size: 1rem;
+        }
+        
+        .docs-list li a {
+            font-weight: 600;
+            color: #0d6efd;
+            text-decoration: none;
+        }
+        
+        .docs-list li a:hover {
+            text-decoration: underline;
+        }
+        
+        footer {
+            background: #222;
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+
+<body class="container-fluid">
+
+    <header>
+        <div class="d-flex align-items-center">
+            <div class="invoxiagst">🏪 InvoxiaGST</div>
+        </div>
+        <nav class="menu">
+            <a class="btn btn-outline-dark" href="/">Home</a>
+            <a class="btn btn-outline-dark" href="#about-platform">Platform</a>
+            <a class="btn btn-outline-dark" href="#company">Company</a>
+            <a class="btn btn-outline-dark" href="#docs">Docs</a>
+        </nav>
+    </header>
+
+    <!-- About Section -->
+    <section class="about-section container mt-4" id="about-platform">
+        <h1 class="text-center mb-4">About InvoxiaGST</h1>
+        <p class="text-center fs-5">
+            Welcome to <strong>InvoxiaGST</strong>, the most refined platform for entrepreneurs, creators, and small businesses looking to launch their online presence with ease and sophistication.
+        </p>
+
+        <ul class="highlight-list mt-4">
+            <li><strong>Tailored Multi-Store Architecture:</strong> Each merchant gets a personalized store URL with complete data isolation.</li>
+            <li><strong>Insights-Driven Growth:</strong> Real-time analytics dashboard to track sales, revenue, and customer behavior.</li>
+            <li><strong>Seamless Payments & Invoicing:</strong> GST-compliant automated invoices and secure payment handling.</li>
+            <li><strong>All-in-One Business Management:</strong> Manage products, inventory, orders, and customers in one platform.</li>
+            <li><strong>Built for Scale & Trust:</strong> Secure infrastructure designed to grow with your business.</li>
+            <li><strong>Demo-Ready & Safe:</strong> Sandbox mode with simulated payments for risk-free testing.</li>
+        </ul>
+    </section>
+
+    <!-- Company Section -->
+    <section class="company-section container mt-5" id="company">
+        <h2 class="text-center">Our Company</h2>
+        <p class="fs-5 mt-3">
+            <strong>Invoxia Technologies Ltd.</strong> is at the forefront of e-commerce innovation, headquartered in <strong>Bengaluru</strong>. We are driven by the ethos of simplicity, reliability, and premium user experience.
+        </p>
+        <p class="fs-5">
+            With deep expertise in cloud deployment, analytics, and scalable architecture, we empower merchants to create elegant, powerful online stores without complexity.
+        </p>
+        <p class="fs-5">
+            Our mission is simple: to deliver a platform that feels premium in design, yet effortless to use.
+        </p>
+    </section>
+
+    <!-- Docs Section -->
+    <section class="docs-section container mt-5" id="docs">
+        <h2 class="text-center mb-4">📘 Documentation</h2>
+        <p class="text-center">Find all important pages and features of InvoxiaGST with their paths and purpose.</p>
+
+        <ul class="docs-list mt-3">
+            <li><a href="/">/</a> – Homepage with platform overview and upgrade options.</li>
+            <li><a href="/accounts/login/">/accounts/login/</a> – User login page.</li>
+            <li><a href="/accounts/register/">/accounts/register/</a> – New user registration & store setup.</li>
+            <li><a href="/accounts/logout/">/accounts/logout/</a> – Logout and end session.</li>
+            <li><a href="/accounts/upgrade/">/accounts/upgrade/</a> – Upgrade to Pro plan (Stripe checkout).</li>
+
+            <h4 class="mt-4">🛍 Store</h4>
+            <li><a href="/store/{{ user.username }}/">/store/&lt;username&gt;/</a> – Main storefront for the logged-in merchant.</li>
+            <li><a href="/store/manage/products/">/store/manage/products/</a> – Manage all products (add, update, delete).</li>
+            <li><a href="/store/manage/add-product/">/store/manage/add-product/</a> – Add a new product to the store.</li>
+            <li><a href="/store/sales-dashboard/">/store/sales-dashboard/</a> – Sales performance dashboard.</li>
+            <li><a href="/store/sales-report/">/store/sales-report/</a> – Downloadable & visualized sales reports.</li>
+            <li><a href="/store/{{ user.username }}/analytics/">/store/&lt;username&gt;/analytics/</a> – Item-wise analytics and insights.</li>
+        </ul>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container text-center">
+            <h5 class="mb-2">InvoxiaGST</h5>
+            <p class="mb-1">
+                <strong>Email:</strong>
+                <a href="mailto:invoxiagst@gmail.com">invoxiagst@gmail.com</a>
+            </p>
+            <p class="mb-1">
+                <strong>Phone:</strong>
+                <a href="tel:XXXXXXXXXX">XXXXXXXXXX</a>
+            </p>
+            <p class="small mt-3 mb-0">&copy; {% now "Y" %} InvoxiaGST. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
