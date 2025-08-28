@@ -1,19 +1,23 @@
-# store/urls.py
+# Add these URL patterns to your existing store/urls.py file
 
 from django.urls import path
-from . import views, manage_products , analytics
+from . import views, manage_products, analytics
 
 urlpatterns = [
     # Store owner dashboard and reports (for logged-in users)
     path('sales-report/', views.sales_report_view, name='sales_report'),
     path('sales-dashboard/', views.sales_dashboard_view, name='sales_dashboard'),
     
+    # ✅ STOCK REPORTS - NEW ADDITIONS
+    path('monthly-stock-report/', views.monthly_stock_report, name='monthly_stock_report'),
+    path('yearly-stock-summary/', views.yearly_stock_summary, name='yearly_stock_summary'),
+         
     # ✅ GLOBAL ANALYTICS (uses request.user)
     path('analytics-dashboard/', views.analytics_dashboard_view, name='analytics_dashboard'),
     path('analytics/items/', analytics.item_analytics_api, name='item_analytics_api'),
     path('analytics/item/<int:product_id>/', analytics.single_item_analytics_api, name='single_item_analytics_api'),
     path('analytics/categories/', analytics.category_analytics_api, name='category_analytics_api'),
-    
+         
     # ✅ USER-SPECIFIC ANALYTICS (uses username parameter)
     path('<str:username>/analytics/', views.user_analytics_dashboard_view, name='user_analytics_dashboard'),
     path('<str:username>/analytics/items/', analytics.user_item_analytics_api, name='user_item_analytics_api'),
@@ -27,10 +31,10 @@ urlpatterns = [
     path('<str:username>/cart/', views.cart_view, name='cart_view'),
     path('<str:username>/checkout/', views.checkout_view, name='checkout'),
     path('<str:username>/orders/', views.my_orders_view, name='my_orders'),
-    
+         
     # FIXED: Changed name from 'order_detail' to 'order_detail_view' to match template
     path('<str:username>/order/<int:order_id>/', views.order_detail_view, name='order_detail_view'),
-    
+         
     # Invoice generation URLs - Fixed to match template expectations
     path('<str:username>/invoice/<int:order_id>/', views.generate_invoice_view, name='generate_invoice_view'),
     path('<str:username>/invoice/<int:order_id>/pdf/', views.generate_invoice_pdf, name='generate_invoice_pdf'),

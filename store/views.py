@@ -20,6 +20,11 @@ from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
 from reportlab.lib import colors
 from decimal import Decimal
 
+from django.db.models import Q, Case, When, IntegerField, Sum, F
+from django.utils import timezone
+from datetime import datetime, timedelta
+import calendar
+
 # -------------------- HELPER FUNCTIONS --------------------
 
 def get_store_owner(username):
@@ -1055,3 +1060,289 @@ def user_analytics_dashboard_view(request, username):
             'error_message': f'Error loading analytics dashboard: {str(e)}',
             'error_code': 500
         }, status=500)
+    
+
+# Monthly Report Code
+
+import csv
+from django.http import HttpResponse
+
+@login_required
+def monthly_stock_report(request):
+    """Generate monthly stock report with GST calculation instead of profit"""
+    user = request.user
+    current_date = timezone.now()
+    
+    year = int(request.GET.get('year', current_date.year))
+    month = int(request.GET.get('month', current_date.month))
+    
+    # Get all products for the store owner
+    products = Product.objects.filter(store_owner=user)
+    
+    # Get sales data from SalesReport or Orders
+    try:
+        monthly_sales_reports = SalesReport.objects.filter(
+            store_owner=user,
+            sale_date__year=year,
+            sale_date__month=month
+        )
+    except:
+        monthly_sales_reports = None
+    
+    # Calculate stock details for each product
+    stock_details = []
+    total_stock_value = Decimal('0.00')
+    total_sales_value = Decimal('0.00')
+    total_gst_collected = Decimal('0.00')
+    
+    for product in products:
+        current_stock = product.quantity
+        sold_quantity = 0
+        sales_amount = Decimal('0.00')
+        gst_amount = Decimal('0.00')
+        
+        # Try SalesReport first
+        if monthly_sales_reports is not None:
+            product_sales = monthly_sales_reports.filter(product=product)
+            sold_quantity = product_sales.aggregate(total=Sum('quantity'))['total'] or 0
+            sales_amount = product_sales.aggregate(total=Sum('total_price'))['total'] or Decimal('0.00')
+        
+        # Fallback to Order data
+        if not sales_amount and not sold_quantity:
+            monthly_orders = Order.objects.filter(
+                store_owner=user,
+                order_date__year=year,
+                order_date__month=month
+            )
+            
+            for order in monthly_orders:
+                order_items = order.items.filter(product=product)
+                for item in order_items:
+                    sold_quantity += item.quantity
+                    item_subtotal = item.item_price * item.quantity
+                    
+                    # Calculate GST for this item
+                    gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
+                    item_gst = item_subtotal * gst_rate_decimal
+                    item_total = item_subtotal + item_gst
+                    
+                    sales_amount += item_total
+                    gst_amount += item_gst
+        else:
+            # Calculate GST from sales amount (assuming sales_amount includes GST)
+            if sales_amount > 0:
+                gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
+                # If sales_amount includes GST, extract it
+                base_amount = sales_amount / (Decimal('1') + gst_rate_decimal)
+                gst_amount = sales_amount - base_amount
+        
+        # Calculate stock value and status
+        stock_value = product.price * current_stock
+        
+        if current_stock == 0:
+            stock_status = 'Out of Stock'
+            status_class = 'danger'
+        elif current_stock <= 10:
+            stock_status = 'Low Stock'
+            status_class = 'warning'
+        else:
+            stock_status = 'In Stock'
+            status_class = 'success'
+        
+        stock_detail = {
+            'product': product,
+            'current_stock': current_stock,
+            'sold_quantity': sold_quantity,
+            'sales_amount': sales_amount,
+            'gst_amount': gst_amount,
+            'stock_value': stock_value,
+            'stock_status': stock_status,
+            'status_class': status_class,
+            'category': product.category or 'Uncategorized'
+        }
+        
+        stock_details.append(stock_detail)
+        total_stock_value += stock_value
+        total_sales_value += sales_amount
+        total_gst_collected += gst_amount
+    
+    # Category summary
+    category_summary = {}
+    for detail in stock_details:
+        category = detail['category']
+        if category not in category_summary:
+            category_summary[category] = {
+                'total_products': 0, 'total_stock': 0, 'total_sold': 0,
+                'total_sales_value': Decimal('0.00'), 'total_stock_value': Decimal('0.00'),
+                'total_gst_collected': Decimal('0.00'),
+                'out_of_stock_count': 0, 'low_stock_count': 0
+            }
+        
+        category_summary[category]['total_products'] += 1
+        category_summary[category]['total_stock'] += detail['current_stock']
+        category_summary[category]['total_sold'] += detail['sold_quantity']
+        category_summary[category]['total_sales_value'] += detail['sales_amount']
+        category_summary[category]['total_stock_value'] += detail['stock_value']
+        category_summary[category]['total_gst_collected'] += detail['gst_amount']
+        
+        if detail['stock_status'] == 'Out of Stock':
+            category_summary[category]['out_of_stock_count'] += 1
+        elif detail['stock_status'] == 'Low Stock':
+            category_summary[category]['low_stock_count'] += 1
+    
+    month_name = calendar.month_name[month]
+    
+    # Enhanced CSV export with GST
+    if request.GET.get('format') == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        filename = f"monthly_stock_report_{month_name}_{year}.csv"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['Monthly Stock Report', f'{month_name} {year}'])
+        writer.writerow(['Store Owner:', user.company_name or user.username])
+        writer.writerow(['Report Generated:', timezone.now().strftime('%Y-%m-%d %H:%M:%S')])
+        writer.writerow([])
+        
+        # Summary section
+        writer.writerow(['SUMMARY'])
+        writer.writerow(['Total Stock Value:', f'Rs{total_stock_value:.2f}'])
+        writer.writerow(['Monthly Sales:', f'Rs{total_sales_value:.2f}'])
+        writer.writerow(['Total GST Collected:', f'Rs{total_gst_collected:.2f}'])
+        writer.writerow(['Total Products:', len(stock_details)])
+        writer.writerow([])
+        
+        # Product details
+        writer.writerow(['PRODUCT DETAILS'])
+        writer.writerow(['Category', 'Product Name', 'Current Stock', 'Units Sold', 
+                        'Unit Price (Rs)', 'Stock Value (Rs)', 'Sales Amount (Rs)', 
+                        'GST Amount (Rs)', 'Status'])
+        
+        for detail in stock_details:
+            writer.writerow([
+                detail['category'], detail['product'].name, detail['current_stock'],
+                detail['sold_quantity'], f"{detail['product'].price:.2f}",
+                f"{detail['stock_value']:.2f}", f"{detail['sales_amount']:.2f}",
+                f"{detail['gst_amount']:.2f}", detail['stock_status']
+            ])
+        
+        return response
+    
+    context = {
+        'stock_details': stock_details,
+        'category_summary': category_summary,
+        'year': year,
+        'month': month,
+        'month_name': month_name,
+        'total_stock_value': total_stock_value,
+        'total_sales_value': total_sales_value,
+        'total_gst_collected': total_gst_collected,
+        'report_date': f"{month_name} {year}",
+        'user': user,
+        'prev_month': month - 1 if month > 1 else 12,
+        'prev_year': year if month > 1 else year - 1,
+        'next_month': month + 1 if month < 12 else 1,
+        'next_year': year if month < 12 else year + 1,
+        'months': [(i, calendar.month_name[i]) for i in range(1, 13)],
+        'years': list(range(2020, current_date.year + 2)),
+    }
+    
+    return render(request, 'monthly_stock_report.html', context)
+
+@login_required
+def yearly_stock_summary(request):
+    """Generate yearly summary with GST calculation instead of profit"""
+    user = request.user
+    current_date = timezone.now()
+    year = int(request.GET.get('year', current_date.year))
+    
+    monthly_data = []
+    for month in range(1, 13):
+        # Try SalesReport first
+        try:
+            month_sales = SalesReport.objects.filter(
+                store_owner=user,
+                sale_date__year=year,
+                sale_date__month=month
+            )
+            total_sales = month_sales.aggregate(total=Sum('total_price'))['total'] or Decimal('0.00')
+            total_quantity_sold = month_sales.aggregate(qty=Sum('quantity'))['qty'] or 0
+            
+            # Calculate GST from sales data
+            total_gst = Decimal('0.00')
+            for sale in month_sales:
+                if sale.product.gst > 0:
+                    gst_rate = Decimal(str(sale.product.gst)) / Decimal('100')
+                    base_amount = sale.total_price / (Decimal('1') + gst_rate)
+                    sale_gst = sale.total_price - base_amount
+                    total_gst += sale_gst
+            
+        except:
+            # Fallback to Order data
+            month_orders = Order.objects.filter(
+                store_owner=user,
+                order_date__year=year,
+                order_date__month=month
+            )
+            
+            total_sales = Decimal('0.00')
+            total_gst = Decimal('0.00')
+            total_quantity_sold = 0
+            
+            for order in month_orders:
+                total_sales += order.total_price or Decimal('0.00')
+                total_gst += getattr(order, 'total_gst', Decimal('0.00'))
+                
+                for item in order.items.all():
+                    total_quantity_sold += item.quantity
+        
+        monthly_data.append({
+            'month': month,
+            'month_name': calendar.month_name[month],
+            'total_sales': total_sales,
+            'total_gst': total_gst,
+            'quantity_sold': total_quantity_sold
+        })
+    
+    yearly_sales = sum(data['total_sales'] for data in monthly_data)
+    yearly_gst = sum(data['total_gst'] for data in monthly_data)
+    yearly_quantity = sum(data['quantity_sold'] for data in monthly_data)
+    
+    # CSV export for yearly summary
+    if request.GET.get('format') == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        filename = f"yearly_summary_{year}.csv"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['Yearly Stock Summary', str(year)])
+        writer.writerow(['Store Owner:', user.company_name or user.username])
+        writer.writerow([])
+        
+        # Yearly totals
+        writer.writerow(['YEARLY TOTALS'])
+        writer.writerow(['Total Sales:', f'Rs{yearly_sales:.2f}'])
+        writer.writerow(['Total GST Collected:', f'Rs{yearly_gst:.2f}'])
+        writer.writerow(['Units Sold:', yearly_quantity])
+        writer.writerow([])
+        
+        # Monthly breakdown
+        writer.writerow(['MONTHLY BREAKDOWN'])
+        writer.writerow(['Month', 'Sales (Rs)', 'GST Collected (Rs)', 'Units Sold'])
+        for data in monthly_data:
+            writer.writerow([data['month_name'], f"{data['total_sales']:.2f}", 
+                           f"{data['total_gst']:.2f}", data['quantity_sold']])
+        
+        return response
+    
+    context = {
+        'monthly_data': monthly_data,
+        'year': year,
+        'yearly_sales': yearly_sales,
+        'yearly_gst': yearly_gst,
+        'yearly_quantity': yearly_quantity,
+        'user': user,
+        'years': list(range(2020, current_date.year + 2)),
+    }
+    
+    return render(request, 'yearly_stock_summary.html', context)

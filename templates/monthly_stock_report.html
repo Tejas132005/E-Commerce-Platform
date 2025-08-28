@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Stock Report - {{ report_date }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+         :root {
+            --primary-color: #0d6efd;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #0dcaf0;
+            --dark-color: #212529;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .report-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .report-header h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .summary-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .summary-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--dark-color);
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        
+        .table-header {
+            background: var(--dark-color);
+            color: white;
+            padding: 1.25rem;
+        }
+        
+        .product-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        
+        .product-placeholder {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+        }
+        
+        .stock-badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-in-stock {
+            background-color: rgba(25, 135, 84, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(25, 135, 84, 0.3);
+        }
+        
+        .badge-low-stock {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: #856404;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+        
+        .badge-out-of-stock {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--danger-color);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+        
+        .category-card {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .category-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+        
+        .progress-custom {
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.25rem;
+        }
+        
+        .progress-bar-custom {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-color), var(--primary-color));
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .report-header h1 {
+                font-size: 2rem;
+            }
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+        }
+        
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid px-4 py-3">
+        <!-- Header -->
+        <div class="report-header">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1><i class="bi bi-graph-up me-3"></i>Monthly Stock Report</h1>
+                    <p class="mb-0 fs-5 opacity-90">{{ report_date }} • {{ user.company_name|default:user.username }}</p>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="row mt-4 no-print">
+                <div class="col-lg-8">
+                    <div class="d-flex flex-wrap gap-3 align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="month-select" class="form-label mb-0 fw-bold">Month:</label>
+                            <select id="month-select" class="form-select form-select-sm" style="width: auto;">
+                                {% for m_num, m_name in months %}
+                                    <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="year-select" class="form-label mb-0 fw-bold">Year:</label>
+                            <select id="year-select" class="form-select form-select-sm" style="width: auto;">
+                                {% for y in years %}
+                                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="d-flex gap-2 justify-content-lg-end">
+                        <a href="?month={{ prev_month }}&year={{ prev_year }}" class="btn btn-outline-light btn-sm">
+                            <i class="bi bi-arrow-left"></i> Previous
+                        </a>
+                        <a href="?month={{ next_month }}&year={{ next_year }}" class="btn btn-outline-light btn-sm">
+                            Next <i class="bi bi-arrow-right"></i>
+                        </a>
+                        <a href="?month={{ month }}&year={{ year }}&format=csv" class="btn btn-success btn-sm">
+                            <i class="bi bi-download"></i> CSV
+                        </a>
+                        <button onclick="window.print()" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-printer"></i> Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="summary-card">
+                    <div class="icon"><i class="bi bi-currency-rupee"></i></div>
+                    <h5 class="mb-2">Total Stock Value</h5>
+                    <div class="value">₹{{ total_stock_value|floatformat:2 }}</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="summary-card">
+                    <div class="icon"><i class="bi bi-graph-up"></i></div>
+                    <h5 class="mb-2">Monthly Sales</h5>
+                    <div class="value">₹{{ total_sales_value|floatformat:2 }}</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="summary-card">
+                    <div class="icon"><i class="bi bi-bullseye"></i></div>
+                    <h5 class="mb-2">Total GST Collected</h5>
+                    <div class="value">₹{{ total_gst_collected|floatformat:2 }}</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="summary-card">
+                    <div class="icon"><i class="bi bi-box-seam"></i></div>
+                    <h5 class="mb-2">Total Products</h5>
+                    <div class="value">{{ stock_details|length }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Details Table -->
+        <div class="table-container mb-4">
+            <div class="table-header no-print">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="bi bi-list-ul me-2"></i>Stock Details</h4>
+                    <div class="position-relative" style="max-width: 300px;">
+                        <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search products...">
+                        <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th>Current Stock</th>
+                            <th>Sold This Month</th>
+                            <th>Unit Price</th>
+                            <th>Stock Value</th>
+                            <th>Amount</th>
+                            <th>GST Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in stock_details %}
+                        <tr class="product-row" data-category="{{ detail.category }}" data-name="{{ detail.product.name|lower }}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if detail.product.image %}
+                                    <img src="{{ detail.product.image.url }}" alt="{{ detail.product.name }}" class="product-img me-3"> {% else %}
+                                    <div class="product-placeholder me-3">
+                                        <i class="bi bi-box-seam"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-semibold">{{ detail.product.name }}</div>
+                                        <small class="text-muted text-uppercase">{{ detail.category }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ detail.current_stock }}</div>
+                                {% if detail.current_stock > 0 %}
+                                <div class="progress-custom">
+                                    <div class="progress-bar-custom" style="width: {% if detail.current_stock > 100 %}100{% else %}{{ detail.current_stock }}{% endif %}%"></div>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fw-bold">{{ detail.sold_quantity }}</span> {% if detail.sold_quantity > 0 %}
+                                <small class="text-success ms-1">units</small> {% endif %}
+                            </td>
+                            <td class="fw-semibold">₹{{ detail.product.price|floatformat:2 }}</td>
+                            <td class="fw-semibold">₹{{ detail.stock_value|floatformat:2 }}</td>
+                            <td class="fw-semibold">
+                                {% if detail.sales_amount > 0 %} ₹{{ detail.sales_amount|floatformat:2 }} {% else %}
+                                <span class="text-muted">--</span> {% endif %}
+                            </td>
+                            <td class="fw-semibold">
+                                {% if detail.gst_amount > 0 %} ₹{{ detail.gst_amount|floatformat:2 }} {% else %}
+                                <span class="text-muted">--</span> {% endif %}
+                            </td>
+                            <td>
+                                {% if detail.status_class == 'success' %}
+                                <span class="stock-badge badge-in-stock">{{ detail.stock_status }}</span> {% elif detail.status_class == 'warning' %}
+                                <span class="stock-badge badge-low-stock">{{ detail.stock_status }}</span> {% else %}
+                                <span class="stock-badge badge-out-of-stock">{{ detail.stock_status }}</span> {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-box-seam display-1 mb-3"></i>
+                                <h4>No products found</h4>
+                                <p>Add some products to see your stock report.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Category Summary -->
+        {% if category_summary %}
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Category-wise Summary</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for category, summary in category_summary.items %}
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="category-card h-100">
+                            <h5 class="text-primary mb-3">{{ category }}</h5>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <strong>Products:</strong> {{ summary.total_products }}
+                                </div>
+                                <div class="col-6">
+                                    <strong>Total Stock:</strong> {{ summary.total_stock }}
+                                </div>
+                                <div class="col-6">
+                                    <strong>Units Sold:</strong> {{ summary.total_sold }}
+                                </div>
+                                <div class="col-6">
+                                    <strong>Stock Value:</strong> ₹{{ summary.total_stock_value|floatformat:2 }}
+                                </div>
+                                <div class="col-12">
+                                    <strong>Sales Value:</strong> ₹{{ summary.total_sales_value|floatformat:2 }}
+                                </div>
+                                {% if summary.out_of_stock_count > 0 %}
+                                <div class="col-12 text-danger">
+                                    <strong>Out of Stock:</strong> {{ summary.out_of_stock_count }}
+                                </div>
+                                {% endif %} {% if summary.low_stock_count > 0 %}
+                                <div class="col-12 text-warning">
+                                    <strong>Low Stock:</strong> {{ summary.low_stock_count }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="card mt-4">
+            <div class="card-body text-center text-muted">
+                <p class="mb-1"><strong>Report Generated:</strong> <span id="current-time"></span></p>
+                <p class="mb-1"><strong>Store Owner:</strong> {{ user.company_name|default:user.username }}</p>
+                <p class="mb-0"><em>This report contains {{ stock_details|length }} product{{ stock_details|length|pluralize }} across {{ category_summary|length }} categor{{ category_summary|length|pluralize:"y,ies" }}.</em></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Set current time
+        document.getElementById('current-time').textContent = new Date().toLocaleString();
+
+        // Search functionality
+        document.getElementById('search-input').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.product-row');
+
+            rows.forEach(row => {
+                const productName = row.getAttribute('data-name');
+                const category = row.getAttribute('data-category').toLowerCase();
+
+                if (productName.includes(searchTerm) || category.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Month/Year change functionality
+        function changeMonth() {
+            const month = document.getElementById('month-select').value;
+            const year = document.getElementById('year-select').value;
+            window.location.href = `?month=${month}&year=${year}`;
+        }
+
+        document.getElementById('month-select').addEventListener('change', changeMonth);
+        document.getElementById('year-select').addEventListener('change', changeMonth);
+
+        // Animation for progress bars
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressBars = document.querySelectorAll('.progress-bar-custom');
+            progressBars.forEach((bar, index) => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, index * 50 + 100);
+            });
+        });
+    </script>
+</body>
+
+</html>

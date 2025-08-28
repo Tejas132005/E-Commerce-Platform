@@ -19,6 +19,7 @@
             font-family: 'Segoe UI', sans-serif;
             color: #131313d8;
             min-height: 100vh;
+            padding: 6%;
         }
         
         @keyframes gradientBG {
@@ -36,18 +37,26 @@
         header {
             background-color: rgba(255, 255, 255, 0.85);
             /* backdrop-filter: blur(10px); */
-            border-radius: 1rem;
+            /* border-radius: 1rem; */
             box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
-            margin-top: 20px;
             padding: 20px 30px;
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
             gap: 1rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1030;
         }
         
-        .invoxiagst {
+        #successModal {
+            nij;
+        }
+        
+        .i nvoxiagst {
             font-size: 2.5rem;
             font-weight: 800;
             color: #0056b3;
@@ -212,6 +221,7 @@
                 flex-direction: column;
                 align-items: stretch;
                 text-align: center;
+                position: static;
             }
             .menu {
                 display: flex;
@@ -304,9 +314,16 @@
                         <a href="/accounts/upgrade/" class="btn premium-btn d-flex align-items-center justify-content-start special-upgrade">
                             <i class="bi bi-star-fill me-2"></i> Upgrade Plan
                         </a>
+                        <a href="/store/monthly-stock-report/" class="btn premium-btn d-flex align-items-center justify-content-start">
+                            <i class="bi bi-calendar3 me-2"></i> Monthly Stock Report
+                        </a>
+                        <a href="/store/yearly-stock-summary/" class="btn premium-btn d-flex align-items-center justify-content-start">
+                            <i class="bi bi-calendar-range me-2"></i> Yearly Stock Summary
+                        </a>
                         <a href="/accounts/logout/" class="btn premium-btn d-flex align-items-center justify-content-start">
                             <i class="bi bi-box-arrow-right me-2"></i> Logout
                         </a>
+
                     </div>
                 </div>
             </div>
@@ -502,6 +519,7 @@
                 <a href="mailto:invoxiagst@gmail.com" class="text-white text-decoration-none">
                     invoxiagst@gmail.com
                 </a>
+
             </p>
             <p class="mb-1">
                 <strong>Phone:</strong>
