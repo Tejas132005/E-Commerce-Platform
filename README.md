@@ -1,118 +1,114 @@
 # 🧾 InvoxiaGST – GST Billing & Invoice Management System  
 
 A full-stack **E-Commerce & GST Billing Platform** that helps small and medium businesses manage:  
-✅ Customer & product records  
+✅ Customer & product records and management  
 ✅ GST-compliant invoice generation  
-✅ Sales history & analytics dashboards  
-✅ PDF invoice export  
+✅ Sales history & analytics dashboards 
+✅ Monthly and Yearly Stock Details 
+✅ PDF invoice export 
 
-This project was developed as part of a **Semester-2 project** to combine **Django concepts, frontend development, and analytics**.  
+This project was developed as part of a **Semester-2 project** to combine **Django concepts, frontend development, database and analytics**.  
 
 ---
 ## 📁 Folder Structure
 ```bash
 🏗️ Root Directory
 E-Commerce/
-├── manage.py                 # Django management script
-├── requirements.txt          # Python dependencies
-├── README.md                # Project documentation
-
-🔧 Django Configuration
-E-Commerce/
-├── E-Commerce/              # Main Django project settings
-│   ├── settings.py          # Django settings configuration
-│   ├── urls.py             # Main URL routing
-│   ├── asgi.py             # ASGI configuration
-│   └── wsgi.py             # WSGI configuration
-
-👥 User Management (accounts app)
-E-Commerce/
-├── accounts/                # User authentication & profiles
-│   ├── models.py            # Custom user models
-│   ├── forms.py             # User registration/login forms
-│   ├── views.py             # Authentication views
-│   ├── urls.py              # User-related URLs
-
-
-🏪 Core Store Functionality (store app)
-E-Commerce/
-├── store/                   # Main e-commerce functionality
+├── manage.py
+├── requirements.txt
+├── README.md
+├── .gitignore
+│
+├── E-Commerce/                    # Main project configuration
 │   ├── __init__.py
-│   ├── models.py            # Product, Order, Customer models
-│   ├── views.py             # Store views & logic
-│   ├── forms.py             # Product/Order forms
-│   ├── urls.py              # Store URL routing
-│   ├── analytics.py         # Sales analytics functions
-│   ├── manage_products.py   # Product management utilities
-│   ├── middleware.py        # Custom middleware
-
-
-🎯 Core App (core app)
-E-Commerce/
-├── core/                    # Core functionality & utilities
+│   ├── settings.py
+│   ├── urls.py
+│   ├── wsgi.py
+│   └── asgi.py
+│
+├── accounts/                      # User authentication & management
 │   ├── __init__.py
-│   ├── models.py            # Core models
-│   ├── views.py             # Core views
-│   ├── forms.py             # Core forms
-│   ├── urls.py              # Core URL routing
-│   ├── admin.py             # Admin interface configuration
-│   ├── apps.py              # App configuration
-
-🎨 Frontend Templates
-E-Commerce/
-├── templates/               # HTML templates
-│   ├── base.html            # Base template layout
-│   ├── home.html            # Homepage
-│   ├── dashboard.html       # Main dashboard
-│   ├── login.html           # Login page
-│   ├── register.html        # Registration page
-│   ├── customer_login.html  # Customer login
-│   ├── customer_register.html # Customer registration
-│   ├── products_page.html   # Product listing
-│   ├── product_detail.html  # Individual product view
-│   ├── cart.html            # Shopping cart
-│   ├── order.html           # Order processing
-│   ├── order_detail.html    # Order details
-│   ├── my_orders.html       # Customer order history
-│   ├── invoice_template.html # Invoice generation
-│   ├── payment_success.html # Payment confirmation
-│   ├── analytics_dashboard.html # Analytics view
-│   ├── sales_dashboard.html # Sales overview
-│   ├── sales_report.html    # Sales reports
-│   ├── stock_details.html   # Inventory management
-│   ├── add_product.html     # Add new product
-│   ├── update_product.html  # Edit product
-│   ├── delete_product.html  # Remove product
-│   ├── user_analytics_dashboard.html # User analytics
-│   ├── subscription_history.html # Subscription tracking
-│   ├── history.html         # Transaction history
-│   ├── about.html           # About page
-│   ├── contact.html         # Contact information
-│   ├── docs.html            # Documentation
-│   ├── plan.html            # Subscription plans
-│   └── error.html           # Error pages
-
-📁 Static Files & Media
-E-Commerce/
-├── static/                  # CSS, JS, images (static assets)
-├── media/                   # User-uploaded files
-│   └── products/            # Product images
-│       ├── aruns_notebook_D2rwnrJ.jpeg
-│       ├── aruns_notebook.jpeg
+│   ├── admin.py
+│   ├── apps.py
+│   ├── forms.py
+│   ├── models.py
+│   ├── urls.py
+│   └── views.py
+│
+├── core/                         # Core functionality
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── forms.py
+│   ├── models.py
+│   ├── urls.py
+│   └── views.py
+│
+├── products/                     # Product management
+│   └── (empty directory)
+│
+├── store/                        # Main store functionality
+│   ├── analytics.py
+│   ├── forms.py
+│   ├── manage_products.py
+│   ├── middleware.py
+│   ├── models.py
+│   ├── urls.py
+│   └── views.py
+│
+├── templates/                    # HTML templates
+│   ├── base.html
+│   ├── home.html
+│   ├── login.html
+│   ├── register.html
+│   ├── customer_login.html
+│   ├── customer_register.html
+│   ├── products_page.html
+│   ├── product_detail.html
+│   ├── product_list.html
+│   ├── add_product.html
+│   ├── update_product.html
+│   ├── delete_product.html
+│   ├── cart.html
+│   ├── order.html
+│   ├── order_detail.html
+│   ├── my_orders.html
+│   ├── payment_success.html
+│   ├── analytics_dashboard.html
+│   ├── user_analytics_dashboard.html
+│   ├── sales_dashboard.html
+│   ├── sales_report.html
+│   ├── monthly_stock_report.html
+│   ├── yearly_stock_summary.html
+│   ├── stock_details.html
+│   ├── invoice_template.html
+│   ├── subscription_history.html
+│   ├── plan.html
+│   ├── about.html
+│   ├── contact.html
+│   ├── docs.html
+│   ├── data_analysis.html
+│   ├── history.html
+│   └── error.html
+│
+├── static/                       # Static files (CSS, JS, images)
+│   └── (empty directory)
+│
+├── media/                        # User-uploaded files
+│   └── products/
 │       ├── classmate_spiral_notebook.jpeg
-│       └── oreo_buscuit.jpeg
-
-📸 Documentation & Screenshots
-E-Commerce/
-├── screenshots/             # Application screenshots
-│   ├── home_page.png        # Homepage screenshot
-│   ├── dashboard.png        # Dashboard view
-│   ├── sales.png            # Sales dashboard
-│   ├── customer_dashboard.png # Customer view
-│   ├── myorders.png         # Order management
-│   └── Invoice.png          # Invoice example
+│       ├── oreo_buscuit.jpeg
+│       ├── aruns_notebook_D2rwnrJ.jpeg
+│       └── aruns_notebook.jpeg
+│
+└── screenshots/                  # Project documentation images
+    ├── dashboard.png
+    ├── home_page.png
+    ├── sales.png
+    ├── customer_dashboard.png
+    ├── myorders.png
+    └── Invoice.png
 ```
----
 
 ## 🚀 Features  
 
