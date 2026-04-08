@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ store_owner.username }} - Analytics Dashboard</title>
+    <title>{{ user.username }} - Analytics Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     {% csrf_token %}
     <script>
-        const USERNAME = '{{ username }}';
+        const USERNAME = '{{ username|default:user.username }}';
     </script>
     <style>
         body {
@@ -22,7 +23,7 @@
             margin: 0 auto;
             background: white;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
         
@@ -51,7 +52,7 @@
             background: white;
             padding: 25px;
             border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             text-align: center;
             transition: transform 0.2s;
         }
@@ -85,7 +86,8 @@
             flex-wrap: wrap;
         }
         
-        .controls select, .controls input {
+        .controls select,
+        .controls input {
             padding: 8px 12px;
             border: 1px solid #ddd;
             border-radius: 5px;
@@ -118,7 +120,7 @@
             background: white;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
         
         .analytics-table th {
@@ -207,22 +209,25 @@
         }
     </style>
 </head>
+
 <body>
     <div class="dashboard-container">
         <div class="header">
-            <h1>📊 {{ store_owner.username }}'s Analytics Dashboard</h1>
+            <h1>📊 {{ user.username }}'s Analytics Dashboard</h1>
             <p>Comprehensive insights into your product performance</p>
+            <p style="margin-top:12px;"><a href="/" style="color:#fff;text-decoration:underline;font-weight:600;">🏠 Home</a></p>
         </div>
-        
+
         <div class="summary-cards" id="summaryCards">
             <!-- Summary cards will be populated by JavaScript -->
         </div>
-        
+
         <div class="tabs">
             <div class="tab active" onclick="switchTab('items')">Items Analytics</div>
             <div class="tab" onclick="switchTab('categories')">Category Analytics</div>
+            <div class="tab" onclick="switchTab('ad')">AD Section (Advanced Data)</div>
         </div>
-        
+
         <div class="controls">
             <select id="sortBy">
                 <option value="total_revenue_with_gst">Sort by Revenue</option>
@@ -230,19 +235,19 @@
                 <option value="current_stock">Sort by Current Stock</option>
                 <option value="product_name">Sort by Name</option>
             </select>
-            
+
             <select id="filterBy">
                 <option value="">All Items</option>
                 <option value="low_stock">Low Stock Items</option>
                 <option value="out_of_stock">Out of Stock</option>
                 <option value="fast_moving">Fast Moving</option>
             </select>
-            
+
             <input type="text" id="searchBox" placeholder="Search products..." />
             <button onclick="refreshData()">🔄 Refresh</button>
             <button onclick="exportData()">📥 Export CSV</button>
         </div>
-        
+
         <div id="itemsTab" class="tab-content active">
             <div class="analytics-content">
                 <div id="loadingItems" class="loading">
@@ -259,7 +264,8 @@
                                 <th>Sold</th>
                                 <th>Revenue (₹)</th>
                                 <th>GST Collected (₹)</th>
-                                <th>Avg. Price (₹)</th>
+                                <th>Batch</th>
+                                <th>Initial Stock</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -271,7 +277,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="categoriesTab" class="tab-content">
             <div class="analytics-content">
                 <div id="loadingCategories" class="loading">
@@ -299,12 +305,82 @@
                 </div>
             </div>
         </div>
+
+        <div id="adTab" class="tab-content">
+            <div class="analytics-content">
+                <div class="ad-controls mb-4 p-3 bg-light rounded border border-primary d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="fw-bold m-0">Month:</label>
+                        <select id="adMonth" class="form-select form-select-sm" style="width: auto;">
+                            <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+                            <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+                            <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+                            <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="fw-bold m-0">Year:</label>
+                        <select id="adYear" class="form-select form-select-sm" style="width: auto;">
+                            <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+                        </select>
+                    </div>
+                    <button onclick="loadADAnalytics()" class="btn btn-sm btn-primary">Go</button>
+                    <div class="ms-auto">
+                        <span class="badge bg-info text-dark">Includes Archived Items</span>
+                    </div>
+                </div>
+                <div id="loadingAD" class="loading">
+                    <p>Loading advanced data analytics...</p>
+                </div>
+                <div id="errorAD" class="error" style="display: none;"></div>
+                <div id="adAnalytics" style="display: none;">
+                    <div class="table-responsive" style="max-height: 600px;">
+                        <table class="analytics-table" id="adTable" style="white-space: nowrap;">
+                            <thead>
+                                <tr>
+                                    <th>Company Name</th>
+                                    <th>GSTIN</th>
+                                    <th>Purchase Date</th>
+                                    <th>Invoice #</th>
+                                    <th>Product Name</th>
+                                    <th>Category</th>
+                                    <th>GST%</th>
+                                    <th>HSN</th>
+                                    <th>Batch</th>
+                                    <th>Quantity</th>
+                                    <th>Type</th>
+                                    <th>Unit Price</th>
+                                    <th>Net Amt</th>
+                                    <th>Init Stock</th>
+                                    <th>Curr Stock</th>
+                                    <th>Sold</th>
+                                    <th>GST Collected</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         let itemsData = [];
         let categoriesData = [];
+        let adData = [];
         let filteredItems = [];
+
+        // Set default month/year for AD section
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const monthSelect = document.getElementById('adMonth');
+            const yearSelect = document.getElementById('adYear');
+            if (monthSelect) monthSelect.value = now.getMonth() + 1;
+            if (yearSelect) yearSelect.value = now.getFullYear();
+        });
 
         function getCookie(name) {
             let cookieValue = null;
@@ -342,9 +418,12 @@
             });
             document.getElementById(tabName + 'Tab').classList.add('active');
             event.target.classList.add('active');
-            
+
             if (tabName === 'categories' && categoriesData.length === 0) {
                 loadCategoriesAnalytics();
+            }
+            if (tabName === 'ad') {
+                loadADAnalytics();
             }
         }
 
@@ -364,21 +443,21 @@
                         'X-CSRFToken': getCookie('csrftoken')
                     }
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
                 console.log('Analytics data received:', data);
-                
+
                 if (data.status === 'success') {
                     itemsData = data.items;
                     filteredItems = [...itemsData];
-                    
+
                     displaySummaryCards(data.summary);
                     displayItemsTable();
-                    
+
                     document.getElementById('loadingItems').style.display = 'none';
                     document.getElementById('itemsAnalytics').style.display = 'block';
                 } else {
@@ -406,13 +485,13 @@
                         'X-CSRFToken': getCookie('csrftoken')
                     }
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
-                
+
                 if (data.status === 'success') {
                     categoriesData = data.categories;
                     displayCategoriesTable();
@@ -474,8 +553,9 @@
                     <td>${item.current_stock}</td>
                     <td>${item.sold_quantity}</td>
                     <td>₹${item.total_revenue_with_gst.toLocaleString()}</td>
-                    <td>₹${item.total_gst_collected.toLocaleString()}</td>
-                    <td>₹${item.average_selling_price.toFixed(2)}</td>
+                    <td>₹${(item.total_gst_collected != null ? item.total_gst_collected : 0).toLocaleString()}</td>
+                    <td>${item.batch_number || 'N/A'}</td>
+                    <td>${item.initial_stock != null ? item.initial_stock : '—'}</td>
                     <td>
                         <span class="status-badge ${getStatusClass(item.stock_status)}">
                             ${item.stock_status}
@@ -515,7 +595,7 @@
             const searchTerm = document.getElementById('searchBox').value.toLowerCase();
 
             filteredItems = itemsData.filter(item => {
-                if (searchTerm && !item.product_name.toLowerCase().includes(searchTerm) && 
+                if (searchTerm && !item.product_name.toLowerCase().includes(searchTerm) &&
                     !item.category.toLowerCase().includes(searchTerm)) {
                     return false;
                 }
@@ -540,10 +620,14 @@
 
         function getStatusClass(status) {
             switch (status) {
-                case 'In Stock': return 'status-in-stock';
-                case 'Low Stock': return 'status-low-stock';
-                case 'Out of Stock': return 'status-out-of-stock';
-                default: return '';
+                case 'In Stock':
+                    return 'status-in-stock';
+                case 'Low Stock':
+                    return 'status-low-stock';
+                case 'Out of Stock':
+                    return 'status-out-of-stock';
+                default:
+                    return '';
             }
         }
 
@@ -558,7 +642,7 @@
                     }
                 });
                 const data = await response.json();
-                
+
                 if (data.status === 'success') {
                     const detailHtml = `
                         <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center;" onclick="this.remove()">
@@ -577,7 +661,8 @@
                                         <h4>Revenue Analytics</h4>
                                         <p>Total Revenue: <strong>₹${data.revenue_analytics.total_revenue_with_gst.toLocaleString()}</strong></p>
                                         <p>GST Collected: <strong>₹${data.revenue_analytics.total_gst_collected.toLocaleString()}</strong></p>
-                                        <p>Avg. Selling Price: <strong>₹${data.revenue_analytics.average_selling_price.toFixed(2)}</strong></p>
+                                        <p>Batch: <strong>${data.product.batch_number || 'N/A'}</strong></p>
+                                        <p>Initial Stock: <strong>${data.product.initial_stock != null ? data.product.initial_stock : '—'}</strong></p>
                                     </div>
                                     
                                     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
@@ -609,31 +694,115 @@
             }
         }
 
+        async function loadADAnalytics() {
+            try {
+                document.getElementById('loadingAD').style.display = 'block';
+                document.getElementById('errorAD').style.display = 'none';
+                document.getElementById('adAnalytics').style.display = 'none';
+
+                const month = document.getElementById('adMonth').value;
+                const year = document.getElementById('adYear').value;
+                const apiUrl = `/store/analytics/ad-section/?month=${month}&year=${year}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    adData = data.data;
+                    displayADTable();
+                    document.getElementById('loadingAD').style.display = 'none';
+                    document.getElementById('adAnalytics').style.display = 'block';
+                } else {
+                    throw new Error(data.message || 'Failed to load AD data');
+                }
+            } catch (error) {
+                console.error('Error loading AD analytics:', error);
+                document.getElementById('loadingAD').style.display = 'none';
+                document.getElementById('errorAD').style.display = 'block';
+                document.getElementById('errorAD').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function displayADTable() {
+            const tbody = document.getElementById('adTableBody');
+            tbody.innerHTML = '';
+
+            adData.forEach(item => {
+                const row = document.createElement('tr');
+                if (item.is_archived) row.style.backgroundColor = '#fff5f5';
+                
+                row.innerHTML = `
+                    <td>${item.purchased_from}</td>
+                    <td>${item.company_gstin}</td>
+                    <td>${item.purchase_date}</td>
+                    <td>${item.purchase_invoice_number}</td>
+                    <td><strong>${item.product_name}</strong></td>
+                    <td>${item.category}</td>
+                    <td>${item.gst_percentage}%</td>
+                    <td>${item.hsn_code}</td>
+                    <td>${item.batch_number}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.measurement_type}</td>
+                    <td>₹${item.unit_amount.toFixed(2)}</td>
+                    <td>₹${item.net_amount.toFixed(2)}</td>
+                    <td class="fw-bold">${item.initial_stock}</td>
+                    <td class="fw-bold">${item.current_stock}</td>
+                    <td class="text-success fw-bold">${item.units_sold}</td>
+                    <td>₹${item.gst_amount.toFixed(2)}</td>
+                    <td>
+                        <span class="badge ${item.is_archived ? 'bg-secondary' : 'bg-success'}">
+                            ${item.is_archived ? 'Archived' : 'Active'}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="/store/manage/update-product/${item.id}/?ad=true" class="btn btn-sm btn-warning">Edit (AD)</a>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
         function refreshData() {
             itemsData = [];
             categoriesData = [];
-            loadItemsAnalytics();
-            if (document.getElementById('categoriesTab').classList.contains('active')) {
-                loadCategoriesAnalytics();
-            }
+            adData = [];
+            
+            if (document.getElementById('itemsTab').classList.contains('active')) loadItemsAnalytics();
+            if (document.getElementById('categoriesTab').classList.contains('active')) loadCategoriesAnalytics();
+            if (document.getElementById('adTab').classList.contains('active')) loadADAnalytics();
         }
 
         function exportData() {
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Product Name,Category,HSN Code,Current Stock,Sold Quantity,Revenue with GST,GST Collected,Average Selling Price,Stock Status\n";
+            csvContent += "Company Name,Company GSTIN,Purchase Date,Purchase Invoice No,Product Name,Category,GST %,HSN Code,Batch No,Measurement Type,Quantity (stock),Initial Stock,Sold Quantity,Revenue with GST,GST Collected,Stock Status\n";
             
             filteredItems.forEach(item => {
                 const row = [
+                    item.purchased_from || '',
+                    item.company_gstin || '',
+                    item.purchase_date || '',
+                    item.purchase_invoice_number || '',
                     item.product_name,
                     item.category,
+                    item.gst_rate != null ? item.gst_rate : '',
                     item.hsn_code,
+                    item.batch_number || '',
+                    item.measurement_type_label || '',
                     item.current_stock,
+                    item.initial_stock != null ? item.initial_stock : '',
                     item.sold_quantity,
                     item.total_revenue_with_gst,
-                    item.total_gst_collected,
-                    item.average_selling_price,
+                    item.total_gst_collected != null ? item.total_gst_collected : 0,
                     item.stock_status
-                ].map(field => `"${field}"`).join(",");
+                ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(",");
                 
                 csvContent += row + "\n";
             });
@@ -648,4 +817,5 @@
         }
     </script>
 </body>
+
 </html>

@@ -1,13 +1,51 @@
-# store/analytics.py - Final Complete File
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
+from .models import Product, SalesReport, OrderItem
+from accounts.models import CustomUser
+from django.utils import timezone
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404, render
 from django.db.models import Sum, Count
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
+import csv
+import calendar
 import traceback
 from decimal import Decimal
-from .models import Product, SalesReport, OrderItem
-from accounts.models import CustomUser
+
+
+def _gst_amount_from_invoiced_total(total_with_gst, gst_percent) -> Decimal:
+    """
+    SalesReport.total_price is stored VAT/GST-inclusive in this project.
+    Extract GST component: total - total/(1+rate).
+    """
+    total_with_gst = total_with_gst or Decimal('0.00')
+    rate = Decimal(str(gst_percent or 0)) / Decimal('100')
+    divisor = Decimal('1') + rate
+    if divisor == 0:
+        return Decimal('0.00')
+    return total_with_gst - (total_with_gst / divisor)
+
+
+def _month_sales_totals(store_owner, product, year, month):
+    qs = SalesReport.objects.filter(
+        store_owner=store_owner,
+        product=product,
+        sale_date__year=year,
+        sale_date__month=month,
+    )
+    sold_qty = qs.aggregate(total=Sum('quantity'))['total'] or 0
+    sales_total = qs.aggregate(total=Sum('total_price'))['total'] or Decimal('0.00')
+    return int(sold_qty), sales_total
+
+
+def _product_purchase_export_fields(product):
+    return {
+        'purchased_from': getattr(product, 'purchased_from', '') or '',
+        'company_gstin': getattr(product, 'company_gstin', '') or '',
+        'purchase_date': product.purchase_date.isoformat() if getattr(product, 'purchase_date', None) else '',
+        'purchase_invoice_number': getattr(product, 'purchase_invoice_number', '') or '',
+        'measurement_type_label': product.get_measurement_type_display(),
+    }
+
 
 # ============== USER-SPECIFIC ANALYTICS (NEW - Username Parameter) ==============
 
@@ -34,7 +72,6 @@ def user_item_analytics_api(request, username):
         
         print(f"User-specific analytics request for: {store_owner.username}")
         
-        # Get all products for this specific store owner
         products = Product.objects.filter(store_owner=store_owner)
         
         if not products.exists():
@@ -101,11 +138,6 @@ def user_item_analytics_api(request, username):
             current_stock = product.quantity
             total_stock = sold_quantity + current_stock
             
-            # Calculate average selling price
-            avg_selling_price = Decimal('0.00')
-            if sold_quantity > 0:
-                avg_selling_price = total_revenue_with_gst / sold_quantity
-            
             # Get last sale date
             last_sale = SalesReport.objects.filter(
                 store_owner=store_owner,
@@ -122,6 +154,8 @@ def user_item_analytics_api(request, username):
                 'product_name': product.name,
                 'category': product.category or 'Uncategorized',
                 'hsn_code': product.hsn_code or 'N/A',
+                'batch_number': product.batch_number or 'N/A',
+                'initial_stock': int(product.initial_stock),
                 'current_price': float(product.price),
                 'gst_rate': float(product.gst),
                 'current_stock': current_stock,
@@ -134,13 +168,14 @@ def user_item_analytics_api(request, username):
                 'total_gst_collected': float(total_gst_amount),
                 'total_revenue_with_gst': float(total_revenue_with_gst),
                 'total_orders': total_orders,
-                'average_selling_price': float(avg_selling_price),
-                'profit_margin_percentage': 100.00,
                 'revenue_per_unit': float(total_revenue_with_gst / sold_quantity) if sold_quantity > 0 else 0,
                 'is_fast_moving': sold_quantity > (total_stock * 0.7) if total_stock > 0 else False,
-                'stock_status': 'Low Stock' if current_stock < 10 else 'In Stock' if current_stock > 0 else 'Out of Stock',
+                'stock_status': 'Out of Stock' if current_stock == 0 else (
+                    'Low Stock' if current_stock < 10 else 'In Stock'
+                ),
                 'created_at': product.created_at.isoformat(),
-                'last_sale_date': last_sale_date
+                'last_sale_date': last_sale_date,
+                **_product_purchase_export_fields(product),
             }
             
             analytics_data.append(item_data)
@@ -195,7 +230,9 @@ def user_single_item_analytics_api(request, username, product_id):
                 'message': 'Access denied.'
             }, status=403)
         
-        product = get_object_or_404(Product, id=product_id, store_owner=store_owner)
+        product = get_object_or_404(
+            Product, id=product_id, store_owner=store_owner,
+        )
         
         # Calculate sales data for this specific user's product
         sales_data = SalesReport.objects.filter(
@@ -262,6 +299,8 @@ def user_single_item_analytics_api(request, username, product_id):
                 'name': product.name,
                 'category': product.category or 'Uncategorized',
                 'hsn_code': product.hsn_code or 'N/A',
+                'batch_number': product.batch_number or 'N/A',
+                'initial_stock': int(product.initial_stock),
                 'current_price': float(product.price),
                 'gst_rate': float(product.gst),
                 'created_at': product.created_at.isoformat(),
@@ -271,7 +310,9 @@ def user_single_item_analytics_api(request, username, product_id):
                 'sold_quantity': total_sold,
                 'total_initial_stock': total_initial_stock,
                 'stock_turnover_percentage': round(float((total_sold / total_initial_stock) * 100), 2) if total_initial_stock > 0 else 0,
-                'stock_status': 'Low Stock' if current_stock < 10 else 'In Stock' if current_stock > 0 else 'Out of Stock'
+                'stock_status': 'Out of Stock' if current_stock == 0 else (
+                    'Low Stock' if current_stock < 10 else 'In Stock'
+                ),
             },
             'revenue_analytics': {
                 'total_revenue_without_gst': float(total_revenue_without_gst),
@@ -279,7 +320,6 @@ def user_single_item_analytics_api(request, username, product_id):
                 'total_sgst_collected': float(total_sgst_amount),
                 'total_gst_collected': float(total_gst_amount),
                 'total_revenue_with_gst': float(total_revenue_with_gst),
-                'average_selling_price': float(total_revenue_with_gst / total_sold) if total_sold > 0 else 0,
                 'revenue_per_unit_in_stock': float(total_revenue_with_gst / current_stock) if current_stock > 0 else 0
             },
             'sales_analytics': {
@@ -479,13 +519,14 @@ def item_analytics_api(request):
             
             current_stock = product.quantity
             total_stock = total_sold + current_stock
-            avg_selling_price = total_revenue_with_gst / total_sold if total_sold > 0 else Decimal('0.00')
-            
+
             item_data = {
                 'product_id': product.id,
                 'product_name': product.name,
                 'category': product.category or 'Uncategorized',
                 'hsn_code': product.hsn_code or 'N/A',
+                'batch_number': product.batch_number or 'N/A',
+                'initial_stock': int(product.initial_stock),
                 'current_price': float(product.price),
                 'gst_rate': float(product.gst),
                 'current_stock': current_stock,
@@ -494,10 +535,12 @@ def item_analytics_api(request):
                 'total_gst_collected': float(total_gst_amount),
                 'total_revenue_with_gst': float(total_revenue_with_gst),
                 'total_orders': total_orders,
-                'average_selling_price': float(avg_selling_price),
-                'stock_status': 'Low Stock' if current_stock < 10 else 'In Stock' if current_stock > 0 else 'Out of Stock',
+                'stock_status': 'Out of Stock' if current_stock == 0 else (
+                    'Low Stock' if current_stock < 10 else 'In Stock'
+                ),
                 'is_fast_moving': total_sold > (total_stock * 0.7) if total_stock > 0 else False,
-                'created_at': product.created_at.isoformat()
+                'created_at': product.created_at.isoformat(),
+                **_product_purchase_export_fields(product),
             }
             
             analytics_data.append(item_data)
@@ -538,7 +581,9 @@ def single_item_analytics_api(request, product_id):
     """Global single item analytics using request.user"""
     try:
         store_owner = request.user
-        product = get_object_or_404(Product, id=product_id, store_owner=store_owner)
+        product = get_object_or_404(
+            Product, id=product_id, store_owner=store_owner,
+        )
         
         # Same logic as user_single_item_analytics_api but using request.user
         sales_data = SalesReport.objects.filter(
@@ -559,13 +604,18 @@ def single_item_analytics_api(request, product_id):
                 'id': product.id,
                 'name': product.name,
                 'category': product.category or 'Uncategorized',
+                'hsn_code': product.hsn_code or 'N/A',
+                'batch_number': product.batch_number or 'N/A',
+                'initial_stock': int(product.initial_stock),
                 'current_price': float(product.price),
                 'gst_rate': float(product.gst),
             },
             'stock_analytics': {
                 'current_stock': current_stock,
                 'sold_quantity': total_sold,
-                'stock_status': 'Low Stock' if current_stock < 10 else 'In Stock' if current_stock > 0 else 'Out of Stock'
+                'stock_status': 'Out of Stock' if current_stock == 0 else (
+                    'Low Stock' if current_stock < 10 else 'In Stock'
+                ),
             },
             'sales_analytics': {
                 'total_orders': total_orders
@@ -626,3 +676,177 @@ def category_analytics_api(request):
             'status': 'error',
             'message': str(e)
         }, status=500)
+@login_required
+@require_http_methods(["GET"])
+def ad_section_api(request):
+    """
+    Advanced Data (AD) Section API
+    Includes all product fields + calculated analytics fields.
+    URL: /store/analytics/ad-section/
+    """
+    try:
+        user = request.user
+        import datetime
+
+        now = datetime.datetime.now()
+        year = int(request.GET.get('year', now.year))
+        month = int(request.GET.get('month', now.month))
+
+        products = Product.objects.filter(store_owner=user)
+        results = []
+
+        for product in products:
+            sold_qty, sales_amt = _month_sales_totals(user, product, year, month)
+            gst_amt = _gst_amount_from_invoiced_total(sales_amt, product.gst)
+
+            current_stock = int(product.quantity)
+            initial_stock_month_start = current_stock + sold_qty
+            units_sold = initial_stock_month_start - current_stock
+
+            results.append({
+                'id': product.id,
+                'purchased_from': product.purchased_from or '',
+                'company_gstin': product.company_gstin or '',
+                'purchase_date': product.purchase_date.isoformat() if product.purchase_date else '',
+                'purchase_invoice_number': product.purchase_invoice_number or '',
+                'product_name': product.name,
+                'category': product.category or '',
+                'gst_percentage': float(product.gst),
+                'hsn_code': product.hsn_code or '',
+                'batch_number': product.batch_number or '',
+                'quantity': product.quantity,
+                'measurement_type': product.get_measurement_type_display(),
+                'unit_amount': float(product.unit_amount or 0),
+                'net_amount': float(product.net_amount or 0),
+                'initial_stock': initial_stock_month_start,
+                'current_stock': product.quantity,
+                'units_sold': units_sold,
+                'gst_amount': float(gst_amt),
+                'is_archived': product.is_archived,
+            })
+
+        return JsonResponse({
+            'status': 'success',
+            'year': year,
+            'month': month,
+            'data': results,
+        })
+    except Exception as e:
+        print(f"AD Section Error: {traceback.format_exc()}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+def ad_section_page(request):
+    """
+    Renders the Advanced Data (AD) Section UI page.
+    """
+    user = request.user
+    current_date = timezone.now()
+    year = int(request.GET.get('year', current_date.year))
+    month = int(request.GET.get('month', current_date.month))
+    
+    products = Product.objects.filter(store_owner=user)
+    
+    data_list = []
+    for p in products:
+        sold_qty, sales_amt = _month_sales_totals(user, p, year, month)
+        initial_stock = p.quantity + sold_qty
+        
+        # Calculations based on unit taxable amount (Purchase)
+        unit_amt = p.unit_amount or Decimal('0.00')
+        gst_rate = p.gst or Decimal('0.00')
+        
+        # Sold units value and GST (based on purchase cost/taxable value)
+        sold_value = (unit_amt * Decimal(str(sold_qty))).quantize(Decimal('0.01'))
+        sold_gst_value = (sold_value * (gst_rate / Decimal('100'))).quantize(Decimal('0.01'))
+        
+        # Remaining stock value and GST
+        remaining_qty = p.quantity
+        remaining_stock_value = (Decimal(str(remaining_qty)) * unit_amt).quantize(Decimal('0.01'))
+        remaining_stock_gst = (remaining_stock_value * (gst_rate / Decimal('100'))).quantize(Decimal('0.01'))
+        
+        data_list.append({
+            'product': p,
+            'initial_stock': initial_stock,
+            'current_stock': p.quantity,
+            'units_sold': sold_qty,
+            'sold_value': sold_value,
+            'sold_gst_value': sold_gst_value,
+            'remaining_stock_value': remaining_stock_value,
+            'remaining_stock_gst': remaining_stock_gst,
+        })
+        
+    context = {
+        'data_list': data_list,
+        'year': year,
+        'month': month,
+        'month_name': calendar.month_name[month],
+        'months': [(i, calendar.month_name[i]) for i in range(1, 13)],
+        'years': list(range(2020, current_date.year + 2)),
+    }
+    return render(request, 'ad_section.html', context)
+
+
+@login_required
+def export_ad_section_csv(request):
+    """
+    Exports the AD section data to CSV.
+    """
+    user = request.user
+    current_date = timezone.now()
+    year = int(request.GET.get('year', current_date.year))
+    month = int(request.GET.get('month', current_date.month))
+    month_name = calendar.month_name[month]
+    
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    filename = f'ad_section_report_{month_name}_{year}.csv'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Company Name', 'Company GSTIN', 'Purchase Date', 'Invoice Number',
+        'Product Name', 'Category', 'GST %', 'HSN', 'Batch No', 
+        'Quantity (Stock)', 'Measurement Type', 'Unit Amount (Purchase)', 'Net Amount (Purchase)',
+        'Initial Stock', 'Current Stock', 'Units Sold', 
+        'Sold Value', 'Sold GST Value', 'Remaining Stock Value', 'Remaining Stock GST'
+    ])
+    
+    products = Product.objects.filter(store_owner=user)
+    for p in products:
+        sold_qty, _ = _month_sales_totals(user, p, year, month)
+        
+        unit_amt = p.unit_amount or Decimal('0.00')
+        gst_rate = p.gst or Decimal('0.00')
+        
+        sold_value = (unit_amt * Decimal(str(sold_qty))).quantize(Decimal('0.01'))
+        sold_gst_value = (sold_value * (gst_rate / Decimal('100'))).quantize(Decimal('0.01'))
+        
+        remaining_qty = p.quantity
+        remaining_stock_value = (Decimal(str(remaining_qty)) * unit_amt).quantize(Decimal('0.01'))
+        remaining_stock_gst = (remaining_stock_value * (gst_rate / Decimal('100'))).quantize(Decimal('0.01'))
+        
+        writer.writerow([
+            p.purchased_from or '',
+            p.company_gstin or '',
+            p.purchase_date.strftime('%d/%m/%Y') if p.purchase_date else '',
+            p.purchase_invoice_number or '',
+            p.name,
+            p.category or '',
+            p.gst,
+            p.hsn_code or '',
+            p.batch_number or '',
+            p.quantity,
+            p.get_measurement_type_display(),
+            f"{p.unit_amount or 0:.2f}",
+            f"{p.net_amount or 0:.2f}",
+            p.quantity + sold_qty,
+            p.quantity,
+            sold_qty,
+            f"{sold_value:.2f}",
+            f"{sold_gst_value:.2f}",
+            f"{remaining_stock_value:.2f}",
+            f"{remaining_stock_gst:.2f}"
+        ])
+    
+    return response

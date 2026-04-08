@@ -343,6 +343,7 @@
                     </div>
                 </div>
                 <div class="navigation">
+                    <a href="/" class="nav-btn secondary">🏠 Home</a>
                     <a href="{% url 'store_products' username=store_owner.username %}" class="nav-btn primary">🏪 Continue Shopping</a>
                     <a href="{% url 'cart_view' username=store_owner.username %}" class="nav-btn secondary">🛒 View Cart</a>
                     <a href="{% url 'customer_logout' username=store_owner.username %}" class="nav-btn danger">🚪 Logout</a>
@@ -362,7 +363,7 @@
                 <div class="order-header">
                     <div class="order-number">Order #{{ order.order_number }}</div>
                     <div class="order-meta">
-                        <div><strong>Date:</strong> {{ order.order_date|date:"M d, Y" }}</div>
+                        <div><strong>Date:</strong> {{ order.order_date|date:"d/m/Y" }}</div>
                         <div><strong>Time:</strong> {{ order.order_date|time:"H:i" }}</div>
                         <div><strong>Items:</strong> {{ order.items.count }} item{{ order.items.count|pluralize }}</div>
                         <div><strong>Invoice:</strong> {{ order.invoice_number|default:order.order_number }}</div>

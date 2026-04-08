@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Data (AD) Section</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-bg: #f8f9fa;
+        }
+        body { background-color: var(--secondary-bg); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .table-responsive { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); padding: 1rem; }
+        .ad-header { background: linear-gradient(135deg, #0d6efd 0%, #004fb8 100%); color: white; padding: 2.5rem 0; border-radius: 0 0 2rem 2rem; margin-bottom: 2rem; }
+        .card-stat { border: none; border-radius: 12px; transition: transform 0.2s; }
+        .card-stat:hover { transform: translateY(-5px); }
+        .table thead th { background-color: #f1f4f9; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border: none; }
+        .table td { vertical-align: middle; font-size: 0.875rem; color: #212529; }
+        .badge-category { background-color: #e9ecef; color: #495057; font-weight: 500; }
+        .btn-export { border-radius: 8px; font-weight: 600; padding: 0.6rem 1.2rem; }
+    </style>
+</head>
+<body>
+
+<header class="ad-header shadow-sm">
+    <div class="container text-center">
+        <h1 class="display-6 fw-bold mb-2">Advanced Data (AD) Section</h1>
+        <p class="lead mb-0 opacity-75">Detailed inventory tracking and purchase analytics</p>
+    </div>
+</header>
+
+<div class="container-fluid px-lg-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div class="d-flex gap-2">
+            <a href="/" class="btn btn-outline-secondary">
+                <i class="bi bi-house-door"></i> Home
+            </a>
+            <a href="{% url 'sales_dashboard' %}" class="btn btn-outline-primary">
+                <i class="bi bi-graph-up"></i> Dashboard
+            </a>
+        </div>
+        
+        <form method="get" class="d-flex gap-2 align-items-center">
+            <select name="month" class="form-select form-select-sm" style="width: auto;">
+                {% for m_val, m_name in months %}
+                <option value="{{ m_val }}" {% if m_val == month %}selected{% endif %}>{{ m_name }}</option>
+                {% endfor %}
+            </select>
+            <select name="year" class="form-select form-select-sm" style="width: auto;">
+                {% for y in years %}
+                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            <a href="{% url 'export_ad_section_csv' %}?month={{ month }}&year={{ year }}" class="btn btn-success btn-export ms-2">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+            </a>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Company / Supplier</th>
+                    <th>GSTIN</th>
+                    <th>Purchase Date</th>
+                    <th>Invoice #</th>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>GST%</th>
+                    <th>HSN</th>
+                    <th>Batch #</th>
+                    <th>Qty (Stock)</th>
+                    <th>Unit</th>
+                    <th>Unit Amt</th>
+                    <th>Net Amt</th>
+                    <th>Initial Stock</th>
+                    <th>Current Stock</th>
+                    <th>Units Sold</th>
+                    <th>Sold Value</th>
+                    <th>Sold GST</th>
+                    <th>Rem. Stock Value</th>
+                    <th>Rem. Stock GST</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data_list %}
+                <tr>
+                    <td class="fw-semibold">{{ item.product.purchased_from|default:"—" }}</td>
+                    <td><small class="text-muted">{{ item.product.company_gstin|default:"—" }}</small></td>
+                    <td>{{ item.product.purchase_date|date:"d/m/Y"|default:"—" }}</td>
+                    <td>{{ item.product.purchase_invoice_number|default:"—" }}</td>
+                    <td class="text-primary fw-bold">{{ item.product.name }}</td>
+                    <td><span class="badge badge-category">{{ item.product.category|default:"General" }}</span></td>
+                    <td>{{ item.product.gst }}%</td>
+                    <td><small>{{ item.product.hsn_code|default:"—" }}</small></td>
+                    <td><small>{{ item.product.batch_number|default:"—" }}</small></td>
+                    <td class="fw-bold">{{ item.product.quantity }}</td>
+                    <td><small>{{ item.product.get_measurement_type_display }}</small></td>
+                    <td class="text-nowrap">₹{{ item.product.unit_amount|default:"0.00" }}</td>
+                    <td class="text-nowrap">₹{{ item.product.net_amount|default:"0.00" }}</td>
+                    <td>{{ item.initial_stock }}</td>
+                    <td class="text-success fw-bold">{{ item.current_stock }}</td>
+                    <td class="text-danger fw-bold">{{ item.units_sold }}</td>
+                    <td class="fw-bold">₹{{ item.sold_value|floatformat:2 }}</td>
+                    <td class="fw-bold">₹{{ item.sold_gst_value|floatformat:2 }}</td>
+                    <td class="fw-bold text-primary">₹{{ item.remaining_stock_value|floatformat:2 }}</td>
+                    <td class="fw-bold text-dark">₹{{ item.remaining_stock_gst|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="17" class="text-center py-5 text-muted">
+                        <i class="bi bi-info-circle fs-4 d-block mb-2"></i>
+                        No products found for this period.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<footer class="mt-5 py-4 text-center text-muted border-top">
+    <p class="small">&copy; {{ year }} InvoxiaGST Advanced Analytics. All rights reserved.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -314,8 +314,10 @@
         <!-- Header -->
         <div class="header">
             <div class="breadcrumb">
-                <a href="{% url 'store_products' username=store_owner.username %}">🏪 {{ store_owner.company_name|default:store_owner.username }}</a> → <a href="{% url 'my_orders' username=store_owner.username %}">📦 My Orders</a> → Order #{{ order.order_number
-                }}
+                <a href="/">🏠 Home</a> →
+                <a href="{% url 'store_products' username=store_owner.username %}">🏪 {{ store_owner.company_name|default:store_owner.username }}</a> →
+                <a href="{% url 'my_orders' username=store_owner.username %}">📦 My Orders</a> →
+                Order #{{ order.order_number }}
             </div>
 
             <h1>📋 Order Details</h1>
@@ -344,7 +346,7 @@
                     </div>
                     <div class="info-item">
                         <span class="info-label">Order Date:</span>
-                        <span class="info-value">{{ order.order_date|date:"M d, Y" }}</span>
+                        <span class="info-value">{{ order.order_date|date:"d/m/Y" }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Order Time:</span>

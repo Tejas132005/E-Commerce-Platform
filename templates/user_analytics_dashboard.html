@@ -215,6 +215,7 @@
         <div class="header">
             <h1>📊 {{ store_owner.username }}'s Analytics Dashboard</h1>
             <p>Comprehensive insights into your product performance</p>
+            <p style="margin-top:12px;"><a href="/" style="color:#fff;text-decoration:underline;font-weight:600;">🏠 Home</a></p>
         </div>
 
         <div class="summary-cards" id="summaryCards">
@@ -242,7 +243,7 @@
             </select>
 
             <input type="text" id="searchBox" placeholder="Search products..." />
-            <button onclick="refreshData()">🔄 Refresh</button>
+            <!-- <button onclick="refreshData()">🔄 Refresh</button> -->
             <button onclick="exportData()">📥 Export CSV</button>
         </div>
 
@@ -262,7 +263,8 @@
                                 <th>Sold</th>
                                 <th>Revenue (₹)</th>
                                 <th>GST Collected (₹)</th>
-                                <th>Avg. Price (₹)</th>
+                                <th>Batch</th>
+                                <th>Initial Stock</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -477,8 +479,9 @@
                     <td>${item.current_stock}</td>
                     <td>${item.sold_quantity}</td>
                     <td>₹${item.total_revenue_with_gst.toLocaleString()}</td>
-                    <td>₹${item.total_gst_collected.toLocaleString()}</td>
-                    <td>₹${item.average_selling_price.toFixed(2)}</td>
+                    <td>₹${(item.total_gst_collected != null ? item.total_gst_collected : 0).toLocaleString()}</td>
+                    <td>${item.batch_number || 'N/A'}</td>
+                    <td>${item.initial_stock != null ? item.initial_stock : '—'}</td>
                     <td>
                         <span class="status-badge ${getStatusClass(item.stock_status)}">
                             ${item.stock_status}
@@ -584,7 +587,8 @@
                                         <h4>Revenue Analytics</h4>
                                         <p>Total Revenue: <strong>₹${data.revenue_analytics.total_revenue_with_gst.toLocaleString()}</strong></p>
                                         <p>GST Collected: <strong>₹${data.revenue_analytics.total_gst_collected.toLocaleString()}</strong></p>
-                                        <p>Avg. Selling Price: <strong>₹${data.revenue_analytics.average_selling_price.toFixed(2)}</strong></p>
+                                        <p>Batch: <strong>${data.product.batch_number || 'N/A'}</strong></p>
+                                        <p>Initial Stock: <strong>${data.product.initial_stock != null ? data.product.initial_stock : '—'}</strong></p>
                                     </div>
                                     
                                     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
@@ -627,20 +631,27 @@
 
         function exportData() {
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Product Name,Category,HSN Code,Current Stock,Sold Quantity,Revenue with GST,GST Collected,Average Selling Price,Stock Status\n";
+            csvContent += "Company Name,Company GSTIN,Purchase Date,Purchase Invoice No,Product Name,Category,GST %,HSN Code,Batch No,Measurement Type,Quantity (stock),Initial Stock,Sold Quantity,Revenue with GST,GST Collected,Stock Status\n";
             
             filteredItems.forEach(item => {
                 const row = [
+                    item.purchased_from || '',
+                    item.company_gstin || '',
+                    item.purchase_date || '',
+                    item.purchase_invoice_number || '',
                     item.product_name,
                     item.category,
+                    item.gst_rate != null ? item.gst_rate : '',
                     item.hsn_code,
+                    item.batch_number || '',
+                    item.measurement_type_label || '',
                     item.current_stock,
+                    item.initial_stock != null ? item.initial_stock : '',
                     item.sold_quantity,
                     item.total_revenue_with_gst,
-                    item.total_gst_collected,
-                    item.average_selling_price,
+                    item.total_gst_collected != null ? item.total_gst_collected : 0,
                     item.stock_status
-                ].map(field => `"${field}"`).join(",");
+                ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(",");
                 
                 csvContent += row + "\n";
             });

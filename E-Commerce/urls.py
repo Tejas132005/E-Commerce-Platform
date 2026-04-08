@@ -6,12 +6,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import render
 
-def home_view(request):
-    return render(request, 'home.html')
+from core.views import home as core_home
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', home_view, name='home'),
+    path('', core_home, name='home'),
     path('accounts/', include('accounts.urls')),
     path('store/', include('store.urls')),
     path('core/', include('core.urls')),

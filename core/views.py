@@ -5,11 +5,7 @@ from django.utils import timezone
 
 def home(request):
     user = request.user
-    show_plans = True
-
-    if user.is_authenticated:
-        if user.is_paid and user.subscription_expiry and user.subscription_expiry > timezone.now():
-            show_plans = False
+    show_plans = False
 
     return render(request, 'home.html', {
         'show_plans': show_plans,

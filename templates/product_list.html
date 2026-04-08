@@ -375,12 +375,16 @@
                 <div class="label">Total Products</div>
             </div>
             <div class="stat-item">
-                <div class="number">{{ products|length|add:0 }}</div>
+                <div class="number">{{ category_count }}</div>
                 <div class="label">Categories</div>
             </div>
             <div class="stat-item">
-                <div class="number">₹{% for product in products %}{{ product.price|add:0 }}{% endfor %}</div>
-                <div class="label">Total Value</div>
+                <div class="number">₹{{ total_revenue|floatformat:2 }}</div>
+                <div class="label">Revenue (all time)</div>
+            </div>
+            <div class="stat-item">
+                <div class="number">{{ total_units }}</div>
+                <div class="label">Units in stock</div>
             </div>
             <div class="stat-item">
                 <div class="number">{{ low_stock_count|default:0 }}</div>
@@ -402,6 +406,7 @@
             </div>
 
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="/" class="btn btn-primary">🏠 Home</a>
                 <a href="{% url 'add_product' %}" class="btn btn-success">
                     ➕ Add Product
                 </a>
@@ -410,6 +415,9 @@
                 </a>
                 <a href="{% url 'delete_product' %}" class="btn btn-danger">
                     🗑️ Delete Product
+                </a>
+                <a href="{% url 'archived_products' %}" class="btn" style="background:#636e72;color:white;">
+                    📁 Archived
                 </a>
                 <a href="{% url 'sales_dashboard' %}" class="btn btn-info">
                     📊 Dashboard
@@ -438,14 +446,22 @@
 
                         <div class="product-details">
                             <div class="detail-item">
-                                <span class="detail-label">Price:</span>
-                                <span class="detail-value price-value">₹{{ product.price }}</span>
+                                <span class="detail-label">Company:</span>
+                                <span class="detail-value">{{ product.purchased_from }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Pack / unit:</span>
+                                <span class="detail-value">{{ product.get_unit_label }}</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Stock:</span>
                                 <span class="detail-value {% if product.quantity < 10 %}stock-low{% else %}stock-value{% endif %}">
-                                            {{ product.quantity }}
-                                        </span>
+                                    {{ product.quantity }}
+                                </span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Initial:</span>
+                                <span class="detail-value">{{ product.initial_stock }}</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">GST:</span>
@@ -454,6 +470,10 @@
                             <div class="detail-item">
                                 <span class="detail-label">HSN:</span>
                                 <span class="detail-value">{{ product.hsn_code|default:"-" }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Batch:</span>
+                                <span class="detail-value">{{ product.batch_number|default:"-" }}</span>
                             </div>
                         </div>
 
@@ -464,15 +484,24 @@
                         {% endif %}
 
                         <div class="product-actions">
-                            <a href="{% url 'update_product' %}" class="btn btn-warning btn-sm">
-                                        ✏️ Edit
-                                    </a>
-                            <a href="{% url 'store_products' username=user.username %}" class="btn btn-primary btn-sm">
-                                        👁️ View
-                                    </a>
-                            <a href="{% url 'delete_product' %}" class="btn btn-danger btn-sm">
-                                        🗑️ Delete
-                                    </a>
+                            <a href="{% url 'product_manage_detail' product.id %}" class="btn btn-info btn-sm">
+                                View details
+                            </a>
+                            <a href="{% url 'update_product_id' product.id %}" class="btn btn-warning btn-sm">
+                                ✏️ Edit
+                            </a>
+                            {% if product.quantity == 0 %}
+                            <form method="post" action="{% url 'archive_product' product.id %}" style="flex:1;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm" style="background:#636e72;color:white;width:100%;">
+                                    📁 Archive
+                                </button>
+                            </form>
+                            {% endif %}
+                            <a href="{% url 'delete_product_id' product.id %}" class="btn btn-danger btn-sm"
+                               onclick="return confirm('Are you sure you want to delete {{ product.name }}?');">
+                                🗑️ Delete
+                            </a>
                         </div>
                     </div>
                 </div>

@@ -5,261 +5,185 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add New Product</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f8f9fa;
-            min-height: 100vh;
-            padding: 2rem 1rem;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #e9ecef;
-        }
-        
-        .header h1 {
-            color: #333;
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .header p {
-            color: #666;
-            font-size: 1.1rem;
-        }
-        
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-group.full-width {
-            grid-column: 1 / -1;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #333;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .form-group textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-        
-        .form-group input[type="file"] {
-            padding: 8px 15px;
-            background: #f8f9fa;
-        }
-        
-        .btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            margin-right: 1rem;
-        }
-        
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #5a6fd8;
-            transform: translateY(-2px);
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-        
-        .success-message {
-            background: #d4edda;
-            color: #155724;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #28a745;
-        }
-        
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #dc3545;
-        }
-        
-        .actions {
-            text-align: center;
-            padding-top: 1.5rem;
-            border-top: 2px solid #e9ecef;
-        }
-        
-        .navigation {
-            text-align: center;
-            margin-top: 2rem;
-        }
-        
-        .navigation a {
-            color: #667eea;
-            text-decoration: none;
-            margin: 0 1rem;
-            font-weight: 500;
-        }
-        
-        .navigation a:hover {
-            text-decoration: underline;
-        }
-        
-        @media (max-width: 600px) {
-            .container {
-                padding: 1.5rem;
-                margin: 1rem;
-            }
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            .btn {
-                width: 100%;
-                margin-bottom: 1rem;
-                margin-right: 0;
-            }
-        }
+        body { background: #f8f9fa; min-height: 100vh; padding: 1.5rem 0; }
+        .card-form { max-width: 920px; margin: 0 auto; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .req { color: #dc3545; }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <div class="header">
-            <h1>Add New Product</h1>
-            <p>Add a new product to your store inventory</p>
+        <div class="mb-3">
+            <a href="/" class="btn btn-outline-secondary btn-sm">🏠 Home</a>
         </div>
 
-        {% if messages %} {% for message in messages %}
-        <div class="{% if message.tags == 'error' %}error-message{% else %}success-message{% endif %}">
-            {{ message }}
-        </div>
-        {% endfor %} {% endif %}
+        <div class="card card-form">
+            <div class="card-body p-4">
+                <h1 class="h3 text-center mb-2">Add New Product</h1>
+                <p class="text-muted text-center small mb-4">Fields marked <span class="req">*</span> are required. Unit price is set when customers add items to the cart.</p>
 
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %}">{{ message }}</div>
+                {% endfor %}
+                {% endif %}
 
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="{{ form.name.id_for_label }}">Product Name *</label> {{ form.name }} {% if form.name.errors %}
-                    <div class="error-message">{{ form.name.errors.0 }}</div>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="ad_section" value="{% if ad_section %}1{% else %}0{% endif %}">
+
+                    <div class="row g-3">
+                        <div class="col-12"><h2 class="h6 text-secondary border-bottom pb-2">Purchase / supplier</h2></div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.purchased_from.id_for_label }}">Company name (purchased from) <span class="req">*</span></label>
+                            {{ form.purchased_from }}
+                            {% if form.purchased_from.errors %}<div class="invalid-feedback d-block">{{ form.purchased_from.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.company_gstin.id_for_label }}">Company GSTIN</label>
+                            {{ form.company_gstin }}
+                            {% if form.company_gstin.errors %}<div class="invalid-feedback d-block">{{ form.company_gstin.errors.0 }}</div>{% endif %}
+                            <div class="form-text">Optional — 15 characters if provided.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.purchase_date.id_for_label }}">Purchase date <span class="req">*</span></label>
+                            {{ form.purchase_date }}
+                            {% if form.purchase_date.errors %}<div class="invalid-feedback d-block">{{ form.purchase_date.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.purchase_invoice_number.id_for_label }}">Purchase invoice number <span class="req">*</span></label>
+                            {{ form.purchase_invoice_number }}
+                            {% if form.purchase_invoice_number.errors %}<div class="invalid-feedback d-block">{{ form.purchase_invoice_number.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-12 mt-2"><h2 class="h6 text-secondary border-bottom pb-2">Product</h2></div>
+                        <div class="col-md-12">
+                            <label class="form-label" for="{{ form.name.id_for_label }}">Product name <span class="req">*</span></label>
+                            {{ form.name }}
+                            {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.category.id_for_label }}">Category <span class="req">*</span></label>
+                            {{ form.category }}
+                            {% if form.category.errors %}<div class="invalid-feedback d-block">{{ form.category.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.gst.id_for_label }}">GST (%) <span class="req">*</span></label>
+                            {{ form.gst }}
+                            {% if form.gst.errors %}<div class="invalid-feedback d-block">{{ form.gst.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.hsn_code.id_for_label }}">HSN <span class="req">*</span></label>
+                            {{ form.hsn_code }}
+                            {% if form.hsn_code.errors %}<div class="invalid-feedback d-block">{{ form.hsn_code.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.batch_number.id_for_label }}">Batch no. <span class="req">*</span></label>
+                            {{ form.batch_number }}
+                            {% if form.batch_number.errors %}<div class="invalid-feedback d-block">{{ form.batch_number.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="{{ form.image.id_for_label }}">Image</label>
+                            {{ form.image }}
+                            {% if form.image.errors %}<div class="invalid-feedback d-block">{{ form.image.errors.0 }}</div>{% endif %}
+                            <div class="form-text">Optional — JPEG, PNG, or WebP.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.quantity.id_for_label }}">Quantity (total number) <span class="req">*</span></label>
+                            {{ form.quantity }}
+                            {% if form.quantity.errors %}<div class="invalid-feedback d-block">{{ form.quantity.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.measurement_type.id_for_label }}">Measurement type <span class="req">*</span></label>
+                            {{ form.measurement_type }}
+                            {% if form.measurement_type.errors %}<div class="invalid-feedback d-block">{{ form.measurement_type.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.unit_value.id_for_label }}">Unit value (pack size) <span class="req">*</span></label>
+                            {{ form.unit_value }}
+                            {% if form.unit_value.errors %}<div class="invalid-feedback d-block">{{ form.unit_value.errors.0 }}</div>{% endif %}
+                            <div class="form-text">e.g. 1 kg, 500 grams, 2 ltr.</div>
+                        </div>
+
+                        <!-- AD Section Only Fields -->
+                        <div id="ad-section-fields" class="col-12">
+                            <div class="row g-3">
+                                <div class="col-12 mt-2"><h2 class="h6 text-primary border-bottom pb-2">Pricing and Stock Valuation</h2></div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="{{ form.unit_amount.id_for_label }}">Taxable Unit Amount <span class="req">*</span></label>
+                                    {{ form.unit_amount }}
+                                    {% if form.unit_amount.errors %}<div class="invalid-feedback d-block">{{ form.unit_amount.errors.0 }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="{{ form.net_amount.id_for_label }}">Taxable Total Amount <span class="req">*</span></label>
+                                    {{ form.net_amount }}
+                                    {% if form.net_amount.errors %}<div class="invalid-feedback d-block">{{ form.net_amount.errors.0 }}</div>{% endif %}
+                                    <div class="form-text">Defaults to Unit Price × Quantity. Check override to edit freely.</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="1" id="net-manual-override" name="net_manual_override" {% if form.data.net_manual_override %}checked{% endif %}>
+                                        <label class="form-check-label" for="net-manual-override">Manual override taxable total amount</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger mt-3">{{ form.non_field_errors.0 }}</div>
                     {% endif %}
-                </div>
 
-                <div class="form-group">
-                    <label for="{{ form.category.id_for_label }}">Category</label> {{ form.category }} {% if form.category.errors %}
-                    <div class="error-message">{{ form.category.errors.0 }}</div>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="{{ form.price.id_for_label }}">Price (₹) *</label> {{ form.price }} {% if form.price.errors %}
-                    <div class="error-message">{{ form.price.errors.0 }}</div>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="{{ form.quantity.id_for_label }}">Quantity *</label> {{ form.quantity }} {% if form.quantity.errors %}
-                    <div class="error-message">{{ form.quantity.errors.0 }}</div>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="{{ form.gst.id_for_label }}">GST (%)</label> {{ form.gst }} {% if form.gst.errors %}
-                    <div class="error-message">{{ form.gst.errors.0 }}</div>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="{{ form.hsn_code.id_for_label }}">HSN Code</label> {{ form.hsn_code }} {% if form.hsn_code.errors %}
-                    <div class="error-message">{{ form.hsn_code.errors.0 }}</div>
-                    {% endif %}
-                </div>
-
-                <div class="form-group full-width">
-                    <label for="{{ form.image.id_for_label }}">Product Image</label> {{ form.image }} {% if form.image.errors %}
-                    <div class="error-message">{{ form.image.errors.0 }}</div>
-                    {% endif %}
-                </div>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center mt-4 pt-3 border-top">
+                        <button type="submit" class="btn btn-primary">Add product</button>
+                        <a href="{% url 'product_list' %}" class="btn btn-outline-secondary">View all products</a>
+                    </div>
+                </form>
             </div>
-
-            <div class="actions">
-                <button type="submit" class="btn btn-primary">Add Product</button>
-                <a href="{% url 'product_list' %}" class="btn btn-secondary">View All Products</a>
-            </div>
-        </form>
-
-        <div class="navigation">
-            <a href="{% url 'product_list' %}">📋 View Products</a>
-            <a href="{% url 'update_product' %}">✏️ Update Product</a>
-            <a href="{% url 'delete_product' %}">🗑️ Delete Product</a>
-            <a href="{% url 'sales_dashboard' %}">📊 Sales Dashboard</a>
         </div>
+
+        <p class="text-center text-muted small mt-4">
+            <a href="{% url 'update_product' %}">Update</a> ·
+            <a href="{% url 'delete_product' %}">Delete</a> ·
+            <a href="{% url 'sales_dashboard' %}">Dashboard</a>
+        </p>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isAD = urlParams.get('ad') === 'true' || "{{ ad_section }}" === "True";
+            
+            // Always show the pricing fields
+            const adWrap = document.getElementById('ad-section-fields');
+            
+            // Auto-calculation logic always reachable
+            const qtyInput = document.getElementById('{{ form.quantity.id_for_label }}');
+                const unitAmtInput = document.getElementById('{{ form.unit_amount.id_for_label }}');
+                const netAmtInput = document.getElementById('{{ form.net_amount.id_for_label }}');
+                const override = document.getElementById('net-manual-override');
+                
+                function calculateNet() {
+                    if (override && override.checked) return;
+                    const qty = parseFloat(qtyInput.value) || 0;
+                    const unitAmt = parseFloat(unitAmtInput.value) || 0;
+                    netAmtInput.value = (qty * unitAmt).toFixed(2);
+                }
+                
+                qtyInput.addEventListener('input', calculateNet);
+                unitAmtInput.addEventListener('input', calculateNet);
+                if (override) override.addEventListener('change', calculateNet);
+
+                // Auto-check override if user types in net total
+                netAmtInput.addEventListener('input', function() {
+                    if (override) override.checked = true;
+                });
+
+                calculateNet();
+        });
+    </script>
 </body>
 
 </html>

@@ -5,445 +5,215 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Update Product - {{ user.company_name|default:user.username }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        body { background: #f8f9fa; min-height: 100vh; padding: 1.5rem 0; }
+        .card-form { max-width: 920px; margin: 0 auto; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .pick-section { background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        .product-links { display: flex; flex-wrap: wrap; gap: 10px; }
+        .product-links a {
+            padding: 10px 16px; background: #fff3cd; color: #856404; border-radius: 8px;
+            text-decoration: none; font-weight: 600; border: 1px solid #ffc107;
         }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f8f9fa;
-            min-height: 100vh;
-            padding: 2rem 1rem;
-        }
-        
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #e9ecef;
-        }
-        
-        .header h1 {
-            color: #333;
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .header p {
-            color: #666;
-            font-size: 1.1rem;
-        }
-        
-        .search-section {
-            background: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-        }
-        
-        .search-section h3 {
-            color: #333;
-            margin-bottom: 1rem;
-        }
-        
-        .product-search {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        
-        .product-search input,
-        .product-search select {
-            flex: 1;
-            padding: 12px 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-        
-        .product-search input:focus,
-        .product-search select:focus {
-            outline: none;
-            border-color: #ffc107;
-            box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.1);
-        }
-        
-        .products-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .product-item {
-            background: white;
-            padding: 1rem;
-            border-radius: 8px;
-            border: 2px solid #e9ecef;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-        
-        .product-item:hover {
-            border-color: #ffc107;
-            transform: translateY(-2px);
-        }
-        
-        .product-item.selected {
-            border-color: #ffc107;
-            background: #fff3cd;
-        }
-        
-        .form-section {
-            display: none;
-            background: #f8f9fa;
-            padding: 2rem;
-            border-radius: 8px;
-            margin-top: 2rem;
-        }
-        
-        .form-section.active {
-            display: block;
-            animation: fadeIn 0.5s ease-out;
-        }
-        
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #333;
-            font-weight: 600;
-        }
-        
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-        
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #ffc107;
-            box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.1);
-        }
-        
-        .btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            margin-right: 1rem;
-        }
-        
-        .btn-warning {
-            background: #ffc107;
-            color: #212529;
-        }
-        
-        .btn-warning:hover {
-            background: #e0a800;
-            transform: translateY(-2px);
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-        
-        .success-message {
-            background: #d4edda;
-            color: #155724;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #28a745;
-        }
-        
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #dc3545;
-        }
-        
-        .actions {
-            text-align: center;
-            padding-top: 1.5rem;
-            border-top: 2px solid #e9ecef;
-        }
-        
-        .current-info {
-            background: #e3f2fd;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            border-left: 4px solid #2196f3;
-        }
-        
-        .current-info h4 {
-            color: #0d47a1;
-            margin-bottom: 0.5rem;
-        }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding: 1.5rem;
-                margin: 1rem;
-            }
-            .product-search {
-                flex-direction: column;
-            }
-            .products-list {
-                grid-template-columns: 1fr;
-            }
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        .product-links a:hover { background: #ffc107; color: #212529; }
+        .req { color: #dc3545; }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <div class="header">
-            <h1>✏️ Update Product</h1>
-            <p>Modify existing products in your inventory</p>
+        <div class="mb-3">
+            <a href="/" class="btn btn-outline-secondary btn-sm">🏠 Home</a>
         </div>
 
-        {% if messages %} {% for message in messages %}
-        <div class="{% if message.tags == 'error' %}error-message{% else %}success-message{% endif %}">
-            {{ message }}
+        <div class="text-center mb-4">
+            <h1 class="h3">Update product</h1>
+            <p class="text-muted small mb-0">Fields marked <span class="req">*</span> are required.</p>
         </div>
-        {% endfor %} {% endif %}
 
-        <!-- Product Selection -->
-        <div class="search-section">
-            <h3>Select Product to Update</h3>
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
 
-            <div class="product-search">
-                <input type="text" id="searchInput" placeholder="🔍 Search by product name..." onkeyup="filterProducts()">
-                <select id="categoryFilter" onchange="filterProducts()">
-                    <option value="">All Categories</option>
-                    {% regroup products by category as category_list %}
-                    {% for category in category_list %}
-                        <option value="{{ category.grouper }}">{{ category.grouper|title|default:"Uncategorized" }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
+        {% if not product %}
+        <div class="pick-section">
+            <h2 class="h5 mb-3">Select a product</h2>
             {% if products %}
-            <div class="products-list" id="productsList">
-                {% for product in products %}
-                <div class="product-item" data-name="{{ product.name|lower }}" data-category="{{ product.category|default:'uncategorized'|lower }}" onclick="selectProduct('{{ product.name }}', '{{ product.price }}', '{{ product.quantity }}', '{{ product.category|default:'' }}', '{{ product.gst }}', '{{ product.hsn_code|default:'' }}')">
-                    <strong>{{ product.name }}</strong>
-                    <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
-                        ₹{{ product.price }} | Stock: {{ product.quantity }}
-                    </div>
-                </div>
+            <div class="product-links">
+                {% for p in products %}
+                <a href="{% url 'update_product_id' p.id %}">{{ p.name }}</a>
                 {% endfor %}
             </div>
             {% else %}
-            <div style="text-align: center; padding: 2rem; color: #666;">
-                <h3>No products found</h3>
-                <p>Add some products first before you can update them.</p>
-                <br>
-                <a href="{% url 'add_product' %}" class="btn btn-warning">Add Product</a>
-            </div>
+            <p class="text-muted mb-0">No active products. <a href="{% url 'add_product' %}">Add a product</a> first.</p>
             {% endif %}
         </div>
+        {% else %}
+        <div class="mb-3">
+            <a href="{% url 'update_product' %}" class="btn btn-outline-secondary btn-sm">← Back to list</a>
+        </div>
 
-        <!-- Update Form -->
-        <div class="form-section" id="updateForm">
-            <h3>Update Product Details</h3>
+        <div class="card card-form">
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <input type="hidden" name="ad_section" value="{% if ad_section %}1{% else %}0{% endif %}">
 
-            <div class="current-info" id="currentInfo">
-                <h4>Current Product Information</h4>
-                <div id="currentDetails"></div>
-            </div>
+                    <div class="row g-3">
+                        <div class="col-12"><h2 class="h6 text-secondary border-bottom pb-2">Purchase / supplier</h2></div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.purchased_from.id_for_label }}">Company name (purchased from) <span class="req">*</span></label>
+                            {{ form.purchased_from }}
+                            {% if form.purchased_from.errors %}<div class="invalid-feedback d-block">{{ form.purchased_from.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.company_gstin.id_for_label }}">Company GSTIN</label>
+                            {{ form.company_gstin }}
+                            {% if form.company_gstin.errors %}<div class="invalid-feedback d-block">{{ form.company_gstin.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.purchase_date.id_for_label }}">Purchase date <span class="req">*</span></label>
+                            {{ form.purchase_date }}
+                            {% if form.purchase_date.errors %}<div class="invalid-feedback d-block">{{ form.purchase_date.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.purchase_invoice_number.id_for_label }}">Purchase invoice number <span class="req">*</span></label>
+                            {{ form.purchase_invoice_number }}
+                            {% if form.purchase_invoice_number.errors %}<div class="invalid-feedback d-block">{{ form.purchase_invoice_number.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-12 mt-2"><h2 class="h6 text-secondary border-bottom pb-2">Product</h2></div>
+                        <div class="col-md-12">
+                            <label class="form-label" for="{{ form.name.id_for_label }}">Product name <span class="req">*</span></label>
+                            {{ form.name }}
+                            {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.category.id_for_label }}">Category <span class="req">*</span></label>
+                            {{ form.category }}
+                            {% if form.category.errors %}<div class="invalid-feedback d-block">{{ form.category.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.gst.id_for_label }}">GST (%) <span class="req">*</span></label>
+                            {{ form.gst }}
+                            {% if form.gst.errors %}<div class="invalid-feedback d-block">{{ form.gst.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.hsn_code.id_for_label }}">HSN <span class="req">*</span></label>
+                            {{ form.hsn_code }}
+                            {% if form.hsn_code.errors %}<div class="invalid-feedback d-block">{{ form.hsn_code.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.batch_number.id_for_label }}">Batch no. <span class="req">*</span></label>
+                            {{ form.batch_number }}
+                            {% if form.batch_number.errors %}<div class="invalid-feedback d-block">{{ form.batch_number.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="{{ form.image.id_for_label }}">Image</label>
+                            {{ form.image }}
+                            {% if form.image.errors %}<div class="invalid-feedback d-block">{{ form.image.errors.0 }}</div>{% endif %}
+                            <div class="form-text">Optional — leave empty to keep the current image.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.quantity.id_for_label }}">Quantity (total number) <span class="req">*</span></label>
+                            {{ form.quantity }}
+                            {% if form.quantity.errors %}<div class="invalid-feedback d-block">{{ form.quantity.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.measurement_type.id_for_label }}">Measurement type <span class="req">*</span></label>
+                            {{ form.measurement_type }}
+                            {% if form.measurement_type.errors %}<div class="invalid-feedback d-block">{{ form.measurement_type.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.unit_value.id_for_label }}">Unit value (pack size) <span class="req">*</span></label>
+                            {{ form.unit_value }}
+                            {% if form.unit_value.errors %}<div class="invalid-feedback d-block">{{ form.unit_value.errors.0 }}</div>{% endif %}
+                        </div>
 
-            <form method="post">
-                {% csrf_token %}
-                <input type="hidden" id="product_name" name="product_name">
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="hsn_code">HSN Code</label>
-                        <input type="text" id="hsn_code" name="hsn_code" placeholder="HSN/SAC Code">
+                        <!-- Pricing Fields (Visible in Update Form) -->
+                        <div id="ad-section-fields" class="col-12">
+                            <div class="row g-3">
+                                <div class="col-12 mt-2"><h2 class="h6 text-primary border-bottom pb-2">Pricing and Stock Valuation</h2></div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="{{ form.unit_amount.id_for_label }}">Taxable Unit Amount <span class="req">*</span></label>
+                                    {{ form.unit_amount }}
+                                    {% if form.unit_amount.errors %}<div class="invalid-feedback d-block">{{ form.unit_amount.errors.0 }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="{{ form.net_amount.id_for_label }}">Taxable Total Amount <span class="req">*</span></label>
+                                    {{ form.net_amount }}
+                                    {% if form.net_amount.errors %}<div class="invalid-feedback d-block">{{ form.net_amount.errors.0 }}</div>{% endif %}
+                                    <div class="form-text">Defaults to Unit Price × Quantity. Check override to edit freely.</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="1" id="net-manual-override" name="net_manual_override" {% if form.data.net_manual_override %}checked{% endif %}>
+                                        <label class="form-check-label" for="net-manual-override">Manual override taxable total amount</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="actions">
-                    <button type="submit" class="btn btn-warning">✏️ Update Product</button>
-                    <a href="{% url 'product_list' %}" class="btn btn-secondary">📋 Back to Products</a>
-                </div>
-            </form>
-        </div>
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger mt-3">{{ form.non_field_errors.0 }}</div>
+                    {% endif %}
 
-        <!-- Navigation -->
-        <div style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e9ecef;">
-            <a href="{% url 'product_list' %}" style="color: #ffc107; text-decoration: none; margin: 0 1rem;">📋 Product List</a>
-            <a href="{% url 'add_product' %}" style="color: #ffc107; text-decoration: none; margin: 0 1rem;">➕ Add Product</a>
-            <a href="{% url 'delete_product' %}" style="color: #ffc107; text-decoration: none; margin: 0 1rem;">🗑️ Delete Product</a>
-            <a href="{% url 'sales_dashboard' %}" style="color: #ffc107; text-decoration: none; margin: 0 1rem;">📊 Dashboard</a>
+                    <div class="d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
+                        <button type="submit" class="btn btn-warning">Save changes</button>
+                        <a href="{% url 'product_list' %}" class="btn btn-outline-secondary">Product list</a>
+                    </div>
+                </form>
+            </div>
         </div>
+        {% endif %}
+
+        <p class="text-center text-muted small mt-4">
+            <a href="/">Home</a> ·
+            <a href="{% url 'add_product' %}">Add</a> ·
+            <a href="{% url 'delete_product' %}">Delete</a>
+        </p>
     </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    {% if product and form %}
     <script>
-        function filterProducts() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const categoryFilter = document.getElementById('categoryFilter').value.toLowerCase();
-            const productItems = document.querySelectorAll('.product-item');
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isAD = urlParams.get('ad') === 'true' || "{{ ad_section }}" === "True";
+            
+            // Always visible in update form, but we keep the logic setup
+            const adFields = document.getElementById('ad-section-fields');
+            
+            // Auto-calculation logic setup anyway
+            const qtyInput = document.getElementById('{{ form.quantity.id_for_label }}');
+                const unitAmtInput = document.getElementById('{{ form.unit_amount.id_for_label }}');
+                const netAmtInput = document.getElementById('{{ form.net_amount.id_for_label }}');
+                const override = document.getElementById('net-manual-override');
+                
+                if (qtyInput && unitAmtInput && netAmtInput) {
+                    function calculateNet() {
+                        if (override && override.checked) return;
+                        const qty = parseFloat(qtyInput.value) || 0;
+                        const unitAmt = parseFloat(unitAmtInput.value) || 0;
+                        netAmtInput.value = (qty * unitAmt).toFixed(2);
+                    }
+                    
+                    qtyInput.addEventListener('input', calculateNet);
+                    unitAmtInput.addEventListener('input', calculateNet);
+                    if (override) override.addEventListener('change', calculateNet);
 
-            productItems.forEach(item => {
-                const name = item.getAttribute('data-name');
-                const category = item.getAttribute('data-category');
+                    // Auto-check override if user types in net total
+                    netAmtInput.addEventListener('input', function() {
+                        if (override) override.checked = true;
+                    });
 
-                const matchesSearch = name.includes(searchTerm);
-                const matchesCategory = !categoryFilter || category === categoryFilter;
-
-                if (matchesSearch && matchesCategory) {
-                    item.style.display = 'block';
-                } else {
-                    item.style.display = 'none';
+                    calculateNet();
                 }
-            });
-        }
-
-        function selectProduct(name, price, quantity, category, gst, hsn_code) {
-            // Remove previous selection
-            document.querySelectorAll('.product-item').forEach(item => {
-                item.classList.remove('selected');
-            });
-
-            // Mark current selection
-            event.target.closest('.product-item').classList.add('selected');
-
-            // Fill form fields
-            document.getElementById('product_name').value = name;
-            document.getElementById('price').value = price;
-            document.getElementById('quantity').value = quantity;
-            document.getElementById('category').value = category;
-            document.getElementById('gst').value = gst;
-            document.getElementById('hsn_code').value = hsn_code;
-
-            // Show current info
-            document.getElementById('currentDetails').innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                    <div><strong>Product:</strong> ${name}</div>
-                    <div><strong>Current Price:</strong> ₹${price}</div>
-                    <div><strong>Current Stock:</strong> ${quantity}</div>
-                    <div><strong>Category:</strong> ${category || 'Uncategorized'}</div>
-                    <div><strong>GST:</strong> ${gst}%</div>
-                    <div><strong>HSN Code:</strong> ${hsn_code || 'Not set'}</div>
-                </div>
-            `;
-
-            // Show update form
-            document.getElementById('updateForm').classList.add('active');
-
-            // Scroll to form
-            document.getElementById('updateForm').scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-        }
-
-        // Add form validation
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const productName = document.getElementById('product_name').value;
-            if (!productName) {
-                e.preventDefault();
-                alert('Please select a product first!');
-                return false;
-            }
-
-            const price = document.getElementById('price').value;
-            const quantity = document.getElementById('quantity').value;
-
-            if (price <= 0) {
-                e.preventDefault();
-                alert('Price must be greater than 0!');
-                return false;
-            }
-
-            if (quantity < 0) {
-                e.preventDefault();
-                alert('Quantity cannot be negative!');
-                return false;
-            }
-
-            return confirm(`Are you sure you want to update "${productName}"?`);
         });
     </script>
+    {% endif %}
 </body>
 
 </html>
-<label for="price">New Price (₹) *</label>
-<input type="number" step="0.01" id="price" name="price" required>
-</div>
-
-<div class="form-group">
-    <label for="quantity">New Quantity *</label>
-    <input type="number" id="quantity" name="quantity" min="0" required>
-</div>
-
-<div class="form-group">
-    <label for="category">Category</label>
-    <input type="text" id="category" name="category" placeholder="e.g., Electronics, Clothing">
-</div>
-
-<div class="form-group">
-    <label for="gst">GST (%)</label>
-    <input type="number" step="0.01" id="gst" name="gst" min="0" max="100">
-</div>
-
-<div class="form-group">

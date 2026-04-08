@@ -6,54 +6,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ store_owner.company_name|default:store_owner.username }} Store</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f5f5f5;
             color: #333;
             line-height: 1.6;
         }
         
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        /* Header */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         
         .header {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
             margin-bottom: 20px;
             text-align: center;
         }
         
-        .store-name {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-        
-        .store-tagline {
-            color: #7f8c8d;
-            font-size: 0.9rem;
-        }
-        /* Navigation */
+        .store-name { font-size: 2rem; font-weight: 700; margin-bottom: 5px; }
+        .store-tagline { opacity: 0.9; font-size: 0.95rem; }
         
         .nav-bar {
             background: white;
             padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
             margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
@@ -62,330 +44,179 @@
             gap: 15px;
         }
         
-        .customer-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .customer-info { display: flex; align-items: center; gap: 10px; }
         
         .customer-avatar {
-            width: 35px;
-            height: 35px;
-            background: #3498db;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
+            width: 38px; height: 38px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1rem;
         }
         
-        .nav-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
+        .nav-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
         
         .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
+            padding: 10px 18px; border: none; border-radius: 8px;
+            text-decoration: none; font-size: 0.9rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 6px;
         }
         
-        .btn-primary {
-            background: #3498db;
-            color: white;
-        }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         
-        .btn-primary:hover {
-            background: #2980b9;
-        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-outline { background: transparent; border: 2px solid #667eea; color: #667eea; }
         
-        .btn-secondary {
-            background: #95a5a6;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #7f8c8d;
-        }
-        
-        .btn-danger {
-            background: #e74c3c;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: #c0392b;
-        }
-        /* Search */
-        
-        .search-section {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-        
-        .search-box {
-            display: flex;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-        
-        .search-input {
-            flex: 1;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px 0 0 4px;
-            font-size: 0.9rem;
-            outline: none;
-        }
-        
-        .search-input:focus {
-            border-color: #3498db;
-        }
-        
-        .search-btn {
-            padding: 10px 20px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 0 4px 4px 0;
-            cursor: pointer;
-        }
-        
-        .search-btn:hover {
-            background: #2980b9;
-        }
-        /* Categories */
-        
-        .category {
-            background: white;
-            margin-bottom: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        
-        .category-header {
-            background: #34495e;
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .category-section { margin-bottom: 30px; }
         
         .category-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin: 0;
-        }
-        
-        .category-count {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.8rem;
+            background: white; padding: 15px 20px;
+            border-radius: 10px; margin-bottom: 15px;
+            font-size: 1.4rem; font-weight: 700; color: #2c3e50;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
         
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            padding: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 18px;
         }
-        /* Product Cards */
         
         .product-card {
-            border: 1px solid #e1e8ed;
-            border-radius: 6px;
-            overflow: hidden;
-            background: white;
-            transition: box-shadow 0.2s;
+            background: white; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
         }
         
         .product-card:hover {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
         
         .product-image {
-            width: 100%;
-            height: 200px;
-            background: #f8f9fa;
-            position: relative;
-            overflow: hidden;
+            height: 180px; background: #f0f0f0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; color: #ccc; overflow: hidden;
         }
         
-        .product-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        .product-image img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .product-info { padding: 16px; }
+        
+        .product-name {
+            font-size: 1.1rem; font-weight: 700; color: #2c3e50;
+            margin-bottom: 8px;
         }
         
-        .no-image {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            color: #bdc3c7;
-            background: #ecf0f1;
+        .product-meta {
+            display: flex; flex-wrap: wrap; gap: 6px;
+            margin-bottom: 10px; font-size: 0.82rem;
+        }
+        
+        .meta-tag {
+            background: #f0f0f0; padding: 3px 10px;
+            border-radius: 20px; color: #555; font-weight: 500;
         }
         
         .stock-badge {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 0.7rem;
-            font-weight: bold;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 0.8rem; font-weight: 600;
+        }
+        
+        .in-stock { background: #d4edda; color: #155724; }
+        .low-stock { background: #fff3cd; color: #856404; }
+        .out-stock { background: #f8d7da; color: #721c24; }
+        
+        .product-actions { margin-top: 12px; display: flex; gap: 8px; }
+        
+        .no-products {
+            text-align: center; padding: 60px 20px;
+            background: white; border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        
+        .no-products-icon { font-size: 4rem; opacity: 0.3; margin-bottom: 10px; }
+
+        /* Cart modal: Bootstrap handles backdrop; keep custom breakdown box */
+        #cartModal .modal-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
         }
+        #cartModal .modal-content { border-radius: 16px; overflow: hidden; }
         
-        .in-stock {
-            background: #27ae60;
+        .form-row { margin-bottom: 16px; }
+        
+        .form-row label {
+            display: block; font-weight: 600; color: #333;
+            margin-bottom: 6px; font-size: 0.9rem;
         }
         
-        .out-of-stock {
-            background: #e74c3c;
+        .form-row input, .form-row select {
+            width: 100%; padding: 12px 14px;
+            border: 2px solid #e1e5e9; border-radius: 8px;
+            font-size: 1rem; transition: border-color 0.2s;
         }
         
-        .product-info {
-            padding: 15px;
+        .form-row input:focus {
+            outline: none; border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
         }
         
-        .product-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 8px;
-            line-height: 1.3;
+        .form-row input[readonly] {
+            background: #f8f9fa; color: #6c757d; cursor: not-allowed;
         }
         
-        .product-price {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: #27ae60;
-            margin-bottom: 8px;
+        .gst-breakdown {
+            background: #f8f9fa; border-radius: 10px;
+            padding: 16px; margin: 16px 0;
+            border: 1px solid #e1e5e9;
         }
         
-        .product-stock {
-            font-size: 0.85rem;
-            color: #7f8c8d;
-            margin-bottom: 15px;
-        }
-        
-        .product-actions {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .product-btn {
-            flex: 1;
-            padding: 8px 12px;
-            text-align: center;
-            text-decoration: none;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        
-        .product-btn-outline {
-            background: white;
-            color: #3498db;
-            border: 1px solid #3498db;
-        }
-        
-        .product-btn-outline:hover {
-            background: #f8f9fa;
-        }
-        
-        .product-btn-primary {
-            background: #3498db;
-            color: white;
-        }
-        
-        .product-btn-primary:hover {
-            background: #2980b9;
-        }
-        
-        .product-btn:disabled {
-            background: #bdc3c7;
-            color: white;
-            cursor: not-allowed;
-        }
-        /* Empty State */
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #7f8c8d;
-        }
-        
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-        }
-        
-        .empty-title {
-            font-size: 1.3rem;
+        .gst-breakdown h4 {
+            font-size: 0.95rem; color: #667eea;
             margin-bottom: 10px;
+        }
+        
+        .calc-row {
+            display: flex; justify-content: space-between;
+            padding: 5px 0; font-size: 0.92rem;
+        }
+        
+        .calc-row.total {
+            border-top: 2px solid #667eea;
+            margin-top: 8px; padding-top: 10px;
+            font-weight: 700; font-size: 1.1rem;
             color: #2c3e50;
         }
-        /* Responsive */
         
+        .modal-footer {
+            padding: 16px 24px 24px; display: flex; gap: 10px;
+        }
+        
+        .modal-footer .btn { flex: 1; justify-content: center; padding: 12px; font-size: 1rem; }
+
+        /* Messages */
+        .messages { margin-bottom: 15px; }
+        .message {
+            padding: 12px 18px; border-radius: 8px;
+            margin-bottom: 8px; font-weight: 500;
+        }
+        .message.error { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+        .message.success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+
         @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-            .nav-bar {
-                flex-direction: column;
-                text-align: center;
-            }
-            .nav-buttons {
-                justify-content: center;
-            }
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-                gap: 15px;
-                padding: 15px;
-            }
-            .search-box {
-                flex-direction: column;
-                max-width: 100%;
-            }
-            .search-input {
-                border-radius: 4px;
-                margin-bottom: 10px;
-            }
-            .search-btn {
-                border-radius: 4px;
-            }
+            .products-grid { grid-template-columns: 1fr 1fr; }
+            .nav-bar { flex-direction: column; align-items: stretch; }
         }
         
         @media (max-width: 480px) {
-            .products-grid {
-                grid-template-columns: 1fr;
-            }
-            .product-actions {
-                flex-direction: column;
-            }
+            .products-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -393,140 +224,224 @@
 <body>
     <div class="container">
         <!-- Header -->
-        <header class="header">
-            <h1 class="store-name">{{ store_owner.company_name|default:store_owner.username }}</h1>
-            <p class="store-tagline">Your trusted online store</p>
-        </header>
+        <div class="header">
+            <div class="store-name">🏪 {{ store_owner.company_name|default:store_owner.username }}</div>
+            <div class="store-tagline">Welcome to our store — Browse & shop with ease</div>
+        </div>
 
         <!-- Navigation -->
-        <nav class="nav-bar">
+        <div class="nav-bar">
             <div class="customer-info">
-                <div class="customer-avatar">{{ customer.name|first|upper }}</div>
-                <div>
-                    <strong>{{ customer.name }}</strong><br>
-                    <small>{{ customer.phone }} • {{ customer.place|default:"Customer" }}</small>
-                </div>
+                <div class="customer-avatar">{{ customer.name|truncatechars:1 }}</div>
+                <span>Welcome, <strong>{{ customer.name }}</strong></span>
             </div>
             <div class="nav-buttons">
-                <a href="{% url 'cart_view' username=store_owner.username %}" class="btn btn-primary">
-                    🛒 Cart
-                </a>
-                <a href="{% url 'my_orders' username=store_owner.username %}" class="btn btn-secondary">
-                    📦 Orders
-                </a>
-                <a href="{% url 'customer_logout' username=store_owner.username %}" class="btn btn-danger">
-                    Logout
-                </a>
+                <a href="/" class="btn btn-outline">🏠 Home</a>
+                <a href="{% url 'cart_view' username=store_owner.username %}" class="btn btn-primary">🛒 Cart</a>
+                <a href="{% url 'my_orders' username=store_owner.username %}" class="btn btn-secondary">📦 Orders</a>
+                <a href="{% url 'customer_logout' username=store_owner.username %}" class="btn btn-danger">🚪 Logout</a>
             </div>
-        </nav>
-
-        <!-- Search -->
-        <section class="search-section">
-            <div class="search-box">
-                <input type="text" class="search-input" placeholder="Search products..." id="searchInput">
-                <button class="search-btn" onclick="searchProducts()">Search</button>
-            </div>
-        </section>
-
-        <!-- Products by Category -->
-        {% for category, products in categorized_products.items %}
-        <section class="category" data-category="{{ category|lower }}">
-            <div class="category-header">
-                <h2 class="category-title">{{ category }}</h2>
-                <span class="category-count">{{ products|length }} items</span>
-            </div>
-
-            {% if products %}
-            <div class="products-grid">
-                {% for product in products %}
-                <div class="product-card" data-product-name="{{ product.name|lower }}">
-                    <div class="product-image">
-                        {% if product.image %}
-                        <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy"> {% else %}
-                        <div class="no-image">📦</div>
-                        {% endif %} {% if product.quantity > 0 %}
-                        <span class="stock-badge in-stock">In Stock</span> {% else %}
-                        <span class="stock-badge out-of-stock">Out of Stock</span> {% endif %}
-                    </div>
-
-                    <div class="product-info">
-                        <h3 class="product-name">{{ product.name }}</h3>
-                        <div class="product-price">₹{{ product.price|floatformat:2 }}</div>
-                        <div class="product-stock">
-                            {% if product.quantity > 0 %} {{ product.quantity }} available {% else %} Currently unavailable {% endif %}
-                        </div>
-
-                        <div class="product-actions">
-                            <a href="{% url 'product_detail' username=store_owner.username product_id=product.id %}" class="product-btn product-btn-outline">
-                                View Details
-                            </a> {% if product.quantity > 0 %}
-                            <a href="{% url 'product_detail' username=store_owner.username product_id=product.id %}" class="product-btn product-btn-primary">
-                                Add to Cart
-                            </a> {% else %}
-                            <button class="product-btn" disabled>
-                                Out of Stock
-                            </button> {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="empty-state">
-                <div class="empty-icon">📦</div>
-                <h3 class="empty-title">No products in {{ category }}</h3>
-                <p>This category will be updated soon.</p>
-            </div>
-            {% endif %}
-        </section>
-        {% empty %}
-        <div class="empty-state">
-            <div class="empty-icon">🏪</div>
-            <h3 class="empty-title">Store Opening Soon</h3>
-            <p>We're setting up our inventory. Please check back later!</p>
         </div>
-        {% endfor %}
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="message {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Products by Category (using regroup) -->
+        {% load store_extras %}
+        {% regroup all_products by category as product_categories %}
+
+        {% if all_products %}
+            {% for group in product_categories %}
+            <div class="category-section">
+                <div class="category-title">📂 {{ group.grouper|default:"Uncategorized" }}</div>
+                <div class="products-grid">
+                    {% for product in group.list %}
+                    <div class="product-card">
+                        <div class="product-image">
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                            {% else %}
+                            📦
+                            {% endif %}
+                        </div>
+                        <div class="product-info">
+                            <div class="product-name">{{ product.name }}</div>
+                            <div class="product-meta">
+                                {% if product.purchased_from %}<span class="meta-tag">From: {{ product.purchased_from }}</span>{% endif %}
+                                <span class="meta-tag">GST: {{ product.gst }}%</span>
+                                {% if product.hsn_code %}<span class="meta-tag">HSN: {{ product.hsn_code }}</span>{% endif %}
+                                {% if product.batch_number %}<span class="meta-tag">Batch: {{ product.batch_number }}</span>{% endif %}
+                                <span class="meta-tag">{{ product.get_unit_label }}</span>
+                            </div>
+                            <div>
+                                {% if product.quantity == 0 %}
+                                    <span class="stock-badge out-stock">Out of Stock</span>
+                                {% elif product.quantity <= 10 %}
+                                    <span class="stock-badge low-stock">Low Stock ({{ product.quantity }})</span>
+                                {% else %}
+                                    <span class="stock-badge in-stock">In Stock ({{ product.quantity }})</span>
+                                {% endif %}
+                            </div>
+                            <div class="product-actions">
+                                {% if product.quantity > 0 %}
+                                <button type="button" class="btn btn-success" style="flex:1;"
+                                    onclick="openCartModal(
+                                        '{{ product.id }}',
+                                        '{{ product.name|escapejs }}',
+                                        '{{ product.hsn_code|default:""|escapejs }}',
+                                        '{{ product.batch_number|default:""|escapejs }}',
+                                        '{{ product.get_unit_label|escapejs }}',
+                                        '{{ product.gst }}',
+                                        '{{ product.quantity }}',
+                                        '{{ store_owner.username|escapejs }}'
+                                    )">
+                                    🛒 Add to Cart
+                                </button>
+                                {% else %}
+                                <button class="btn btn-secondary" style="flex:1;" disabled>Out of Stock</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-products">
+                <div class="no-products-icon">📦</div>
+                <h3>No products available</h3>
+                <p>This store doesn't have any products yet. Check back later!</p>
+            </div>
+        {% endif %}
     </div>
 
+    <!-- Cart Modal (Bootstrap) -->
+    <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title fs-5" id="cartModalLabel">🛒 Add to Cart</h3>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="cartForm" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <div class="modal-body">
+                        <h4 id="modalProductName" class="mb-3 text-secondary"></h4>
+                        <div class="form-row mb-3">
+                            <label class="form-label fw-semibold">💰 Amount / Unit Price (₹)</label>
+                            <input type="number" class="form-control" id="modalAmount" name="amount" step="0.01" min="0.01" required oninput="calculateGST()">
+                        </div>
+                        <div class="form-row mb-3">
+                            <label class="form-label fw-semibold">📦 Quantity</label>
+                            <input type="number" class="form-control" id="modalQuantity" name="quantity" min="1" value="1" required oninput="calculateGST()">
+                        </div>
+                        <div class="form-row mb-3">
+                            <label class="form-label fw-semibold">📅 Date</label>
+                            <input type="date" class="form-control" id="modalTransactionDate" name="transaction_date" required>
+                        </div>
+                        <div class="form-row mb-2">
+                            <label class="form-label fw-semibold">📋 HSN Code</label>
+                            <input type="text" class="form-control" id="modalHSN" readonly tabindex="-1">
+                        </div>
+                        <div class="form-row mb-2">
+                            <label class="form-label fw-semibold">🏷️ Batch Number</label>
+                            <input type="text" class="form-control" id="modalBatch" readonly tabindex="-1">
+                        </div>
+                        <div class="form-row mb-3">
+                            <label class="form-label fw-semibold">📏 Pack / unit</label>
+                            <input type="text" class="form-control" id="modalMeasurement" readonly tabindex="-1">
+                        </div>
+                        <div class="gst-breakdown">
+                            <h4>📊 Price Breakdown</h4>
+                            <div class="calc-row"><span>Subtotal</span><span id="calcSubtotal">₹0.00</span></div>
+                            <div class="calc-row"><span>GST (<span id="calcGSTRate">0</span>%)</span><span id="calcGST">₹0.00</span></div>
+                            <div class="calc-row"><span>CGST (<span id="calcCGSTRate">0</span>%)</span><span id="calcCGST">₹0.00</span></div>
+                            <div class="calc-row"><span>SGST (<span id="calcSGSTRate">0</span>%)</span><span id="calcSGST">₹0.00</span></div>
+                            <div class="calc-row total"><span>Total Amount</span><span id="calcTotal">₹0.00</span></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">🛒 Add to Cart</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function searchProducts() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const products = document.querySelectorAll('.product-card');
-            const categories = document.querySelectorAll('.category');
+        let currentGSTRate = 0;
+        let maxStock = 0;
+        let cartModalInstance = null;
 
-            if (searchTerm === '') {
-                products.forEach(product => product.style.display = 'block');
-                categories.forEach(category => category.style.display = 'block');
-                return;
+        function getCartModal() {
+            if (!cartModalInstance) {
+                cartModalInstance = new bootstrap.Modal(document.getElementById('cartModal'));
             }
-
-            categories.forEach(category => {
-                const categoryProducts = category.querySelectorAll('.product-card');
-                let hasVisibleProducts = false;
-
-                categoryProducts.forEach(product => {
-                    const productName = product.dataset.productName;
-                    if (productName.includes(searchTerm)) {
-                        product.style.display = 'block';
-                        hasVisibleProducts = true;
-                    } else {
-                        product.style.display = 'none';
-                    }
-                });
-
-                category.style.display = hasVisibleProducts ? 'block' : 'none';
-            });
+            return cartModalInstance;
         }
 
-        // Search on enter
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchProducts();
+        function openCartModal(productId, productName, hsn, batchNumber, measurementType, gstRate, maxQty, storeUsername) {
+            currentGSTRate = parseFloat(gstRate) || 0;
+            maxStock = parseInt(maxQty) || 1;
+
+            document.getElementById('modalProductName').textContent = productName;
+            document.getElementById('modalAmount').value = '';
+            document.getElementById('modalQuantity').value = 1;
+            document.getElementById('modalQuantity').max = maxStock;
+            document.getElementById('modalHSN').value = hsn || 'N/A';
+            document.getElementById('modalBatch').value = batchNumber || 'N/A';
+            document.getElementById('modalMeasurement').value = measurementType || 'kg';
+            document.getElementById('modalTransactionDate').value = new Date().toISOString().split('T')[0];
+
+            document.getElementById('cartForm').action = '/store/' + storeUsername + '/add-to-cart/' + productId + '/';
+
+            document.getElementById('calcGSTRate').textContent = currentGSTRate;
+            document.getElementById('calcCGSTRate').textContent = (currentGSTRate / 2).toFixed(1);
+            document.getElementById('calcSGSTRate').textContent = (currentGSTRate / 2).toFixed(1);
+
+            calculateGST();
+            getCartModal().show();
+
+            setTimeout(function() {
+                document.getElementById('modalAmount').focus();
+            }, 400);
+        }
+
+        function calculateGST() {
+            const amount = parseFloat(document.getElementById('modalAmount').value) || 0;
+            let quantity = parseInt(document.getElementById('modalQuantity').value) || 0;
+            if (quantity > maxStock) {
+                document.getElementById('modalQuantity').value = maxStock;
+                quantity = maxStock;
+            }
+            const subtotal = amount * quantity;
+            const gstAmount = subtotal * (currentGSTRate / 100);
+            const cgst = gstAmount / 2;
+            const sgst = gstAmount / 2;
+            const total = subtotal + gstAmount;
+
+            document.getElementById('calcSubtotal').textContent = '₹' + subtotal.toFixed(2);
+            document.getElementById('calcGST').textContent = '₹' + gstAmount.toFixed(2);
+            document.getElementById('calcCGST').textContent = '₹' + cgst.toFixed(2);
+            document.getElementById('calcSGST').textContent = '₹' + sgst.toFixed(2);
+            document.getElementById('calcTotal').textContent = '₹' + total.toFixed(2);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && cartModalInstance) {
+                cartModalInstance.hide();
             }
         });
-
-        // Real-time search
-        document.getElementById('searchInput').addEventListener('input', searchProducts);
     </script>
 </body>
 

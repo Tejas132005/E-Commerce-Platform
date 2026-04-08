@@ -1,320 +1,165 @@
-<!--  product_detail.html  -->
-
-<!-- Enhanced Product Details with GST -->
-<div class="product-details">
-    <div class="detail-grid">
-        {% if product.category %}
-        <div class="detail-item">
-            <div class="detail-label">Category</div>
-            <div class="detail-value">{{ product.category }}</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.name }} — {{ store_owner.company_name|default:store_owner.username }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; }
+        .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+        .card-prod { border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .img-box { max-height: 280px; overflow: hidden; border-radius: 12px 12px 0 0; background: #eee; }
+        .img-box img { width: 100%; object-fit: cover; }
+        .gst-breakdown {
+            background: #f8f9fa; border-radius: 10px; padding: 16px; margin-top: 12px;
+            border: 1px solid #e1e5e9;
+        }
+        .calc-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.95rem; }
+        .calc-row.total { border-top: 2px solid #667eea; margin-top: 8px; padding-top: 10px; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a href="/" class="btn btn-outline-secondary btn-sm">🏠 Home</a>
+            <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-outline-primary btn-sm">← Store</a>
+            <a href="{% url 'cart_view' username=store_owner.username %}" class="btn btn-primary btn-sm">🛒 Cart</a>
         </div>
-        {% endif %}
 
-        <div class="detail-item">
-            <div class="detail-label">Base Price</div>
-            <div class="detail-value price-value">₹{{ product.price }}</div>
-        </div>
+        <div class="card card-prod">
+            <div class="img-box text-center p-4">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                {% else %}
+                <span class="display-4 text-muted">📦</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <h1 class="h4">{{ product.name }}</h1>
+                <p class="text-muted small mb-1">Supplier: <strong>{{ product.purchased_from }}</strong></p>
+                <p class="text-muted small mb-2">GST {{ product.gst }}% · HSN {{ product.hsn_code|default:"—" }} · Batch {{ product.batch_number|default:"—" }}</p>
+                <p class="mb-3"><span class="badge bg-secondary">{{ product.get_unit_label }}</span>
+                    {% if product.quantity > 0 %}
+                    <span class="badge bg-success">In stock: {{ product.quantity }}</span>
+                    {% else %}
+                    <span class="badge bg-danger">Out of Stock</span>
+                    {% endif %}
+                </p>
 
-        <div class="detail-item">
-            <div class="detail-label">GST Rate</div>
-            <div class="detail-value">{{ product.gst }}%</div>
-        </div>
-
-        {% if product.hsn_code %}
-        <div class="detail-item">
-            <div class="detail-label">HSN Code</div>
-            <div class="detail-value">{{ product.hsn_code }}</div>
-        </div>
-        {% endif %}
-
-        <div class="detail-item">
-            <div class="detail-label">Store Owner</div>
-            <div class="detail-value">{{ store_owner.username }}</div>
-        </div>
-    </div>
-
-    <!-- GST Calculation Display -->
-    <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 1rem; margin-top: 1rem;">
-        <h4 style="color: #856404; margin-bottom: 0.5rem;">💰 Price Breakdown:</h4>
-        <div style="display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; font-family: monospace;">
-            <span>Base Price:</span>
-            <span>₹{{ product.price }}</span>
-            <span>GST ({{ product.gst }}%):</span>
-            <span id="gst-amount">₹0.00</span>
-            <hr style="grid-column: 1 / -1; margin: 0.5rem 0; border: 1px solid #ffc107;">
-            <strong>Total Price:</strong>
-            <strong id="total-price">₹{{ product.price }}</strong>
-        </div>
-    </div>
-</div>
-
-<!-- Enhanced Quantity Selector with Real-time GST Calculation -->
-{% if product.quantity > 0 %}
-<div class="quantity-selector">
-    <h3>Select Quantity</h3>
-    <form method="post" action="{% url 'add_to_cart' username=store_owner.username product_id=product.id %}" class="add-to-cart-form">
-        {% csrf_token %}
-        <div class="quantity-controls">
-            <button type="button" class="quantity-btn" onclick="decreaseQuantity()">−</button>
-            <input type="number" name="quantity" id="quantity" value="1" min="1" max="{{ product.quantity }}" class="quantity-input" onchange="updatePricing()">
-            <button type="button" class="quantity-btn" onclick="increaseQuantity()">+</button>
-        </div>
-        <small style="color: #666;">Maximum {{ product.quantity }} items available</small>
-
-        <!-- Real-time Total Display -->
-        <div style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
-            <h4 style="color: #1976d2; margin-bottom: 0.5rem;">🧮 Order Total:</h4>
-            <div style="display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; font-family: monospace;">
-                <span>Quantity:</span>
-                <span id="display-quantity">1</span>
-                <span>Subtotal:</span>
-                <span id="display-subtotal">₹{{ product.price }}</span>
-                <span>GST ({{ product.gst }}%):</span>
-                <span id="display-gst">₹0.00</span>
-                <hr style="grid-column: 1 / -1; margin: 0.5rem 0; border: 1px solid #2196f3;">
-                <strong>Final Total:</strong>
-                <strong id="display-total">₹{{ product.price }}</strong>
+                {% if product.quantity > 0 %}
+                <p class="small text-muted mb-2">Set unit price and quantity below, then add to cart. HSN, batch, and measurement are fixed for this product.</p>
+                <button type="button" class="btn btn-success w-100 mb-2"
+                    onclick="openCartModal(
+                        '{{ product.id }}',
+                        '{{ product.name|escapejs }}',
+                        '{{ product.hsn_code|default:""|escapejs }}',
+                        '{{ product.batch_number|default:""|escapejs }}',
+                        '{{ product.get_unit_label|escapejs }}',
+                        '{{ product.gst }}',
+                        '{{ product.quantity }}',
+                        '{{ store_owner.username|escapejs }}'
+                    )">🛒 Add to Cart</button>
+                {% else %}
+                <button class="btn btn-secondary w-100" disabled>Out of Stock</button>
+                {% endif %}
             </div>
         </div>
+    </div>
 
-        <div class="actions">
-            <button type="submit" class="btn btn-success">
-                🛒 Add to Cart
-            </button>
-            <a href="{% url 'cart_view' username=store_owner.username %}" class="btn btn-primary">
-                👁️ View Cart
-            </a>
+    <div class="modal fade" id="cartModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    <h2 class="modal-title fs-5">🛒 Add to Cart</h2>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="cartForm" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <div class="modal-body">
+                        <h3 id="modalProductName" class="h6 text-secondary"></h3>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Amount / Unit Price (₹)</label>
+                            <input type="number" class="form-control" id="modalAmount" name="amount" step="0.01" min="0.01" required oninput="calculateGST()">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Quantity</label>
+                            <input type="number" class="form-control" id="modalQuantity" name="quantity" min="1" value="1" required oninput="calculateGST()">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Date</label>
+                            <input type="date" class="form-control" id="modalTransactionDate" name="transaction_date" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">HSN</label>
+                            <input type="text" class="form-control" id="modalHSN" readonly tabindex="-1">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">Batch</label>
+                            <input type="text" class="form-control" id="modalBatch" readonly tabindex="-1">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Measurement</label>
+                            <input type="text" class="form-control" id="modalMeasurement" readonly tabindex="-1">
+                        </div>
+                        <div class="gst-breakdown">
+                            <div class="fw-semibold text-primary mb-2">Price breakdown</div>
+                            <div class="calc-row"><span>Subtotal</span><span id="calcSubtotal">₹0.00</span></div>
+                            <div class="calc-row"><span>GST (<span id="calcGSTRate">0</span>%)</span><span id="calcGST">₹0.00</span></div>
+                            <div class="calc-row"><span>CGST (<span id="calcCGSTRate">0</span>%)</span><span id="calcCGST">₹0.00</span></div>
+                            <div class="calc-row"><span>SGST (<span id="calcSGSTRate">0</span>%)</span><span id="calcSGST">₹0.00</span></div>
+                            <div class="calc-row total"><span>Total</span><span id="calcTotal">₹0.00</span></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Add to Cart</button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </form>
-</div>
-{% endif %}
+    </div>
 
-<script>
-    // Debug: Log the template values
-    console.log('Template Debug:');
-    console.log('product.price:', '{{ product.price }}');
-    console.log('product.gst:', '{{ product.gst }}');
-    console.log('product.quantity:', '{{ product.quantity }}');
-
-    // Convert template values to JavaScript with proper error handling
-    const basePrice = parseFloat('{{ product.price }}') || 0;
-    const gstRate = parseFloat('{{ product.gst }}') / 100 || 0;
-    const maxQuantity = parseInt('{{ product.quantity }}') || 1;
-
-    // Debug: Log the converted values
-    console.log('JavaScript Values:');
-    console.log('basePrice:', basePrice);
-    console.log('gstRate:', gstRate);
-    console.log('maxQuantity:', maxQuantity);
-
-    function updatePricing() {
-        console.log('updatePricing called');
-
-        const quantityInput = document.getElementById('quantity');
-        const quantity = parseInt(quantityInput.value) || 1;
-
-        console.log('Current quantity:', quantity);
-
-        // Calculate prices
-        const subtotal = basePrice * quantity;
-        const gstAmount = subtotal * gstRate;
-        const totalPrice = subtotal + gstAmount;
-
-        console.log('Calculations:');
-        console.log('subtotal:', subtotal);
-        console.log('gstAmount:', gstAmount);
-        console.log('totalPrice:', totalPrice);
-
-        // Update single unit display
-        const singleGst = basePrice * gstRate;
-        const singleTotal = basePrice + singleGst;
-
-        const gstAmountEl = document.getElementById('gst-amount');
-        const totalPriceEl = document.getElementById('total-price');
-
-        if (gstAmountEl) gstAmountEl.textContent = '₹' + singleGst.toFixed(2);
-        if (totalPriceEl) totalPriceEl.textContent = '₹' + singleTotal.toFixed(2);
-
-        // Update order total display
-        const displayElements = {
-            quantity: document.getElementById('display-quantity'),
-            subtotal: document.getElementById('display-subtotal'),
-            gst: document.getElementById('display-gst'),
-            total: document.getElementById('display-total')
-        };
-
-        if (displayElements.quantity) displayElements.quantity.textContent = quantity;
-        if (displayElements.subtotal) displayElements.subtotal.textContent = '₹' + subtotal.toFixed(2);
-        if (displayElements.gst) displayElements.gst.textContent = '₹' + gstAmount.toFixed(2);
-        if (displayElements.total) displayElements.total.textContent = '₹' + totalPrice.toFixed(2);
-
-        console.log('Updated all display elements');
-    }
-
-    function decreaseQuantity() {
-        console.log('decreaseQuantity called');
-        const quantityInput = document.getElementById('quantity');
-        const currentValue = parseInt(quantityInput.value);
-        console.log('Current value:', currentValue);
-
-        if (currentValue > 1) {
-            quantityInput.value = currentValue - 1;
-            console.log('New value:', quantityInput.value);
-            updatePricing();
-        } else {
-            console.log('Cannot decrease below 1');
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentGSTRate = 0, maxStock = 0, cartModalInstance = null;
+        function getCartModal() {
+            if (!cartModalInstance) cartModalInstance = new bootstrap.Modal(document.getElementById('cartModal'));
+            return cartModalInstance;
         }
-    }
-
-    function increaseQuantity() {
-        console.log('increaseQuantity called');
-        const quantityInput = document.getElementById('quantity');
-        const currentValue = parseInt(quantityInput.value);
-        console.log('Current value:', currentValue, 'Max:', maxQuantity);
-
-        if (currentValue < maxQuantity) {
-            quantityInput.value = currentValue + 1;
-            console.log('New value:', quantityInput.value);
-            updatePricing();
-        } else {
-            console.log('Cannot increase above', maxQuantity);
+        function openCartModal(productId, productName, hsn, batchNumber, measurementType, gstRate, maxQty, storeUsername) {
+            currentGSTRate = parseFloat(gstRate) || 0;
+            maxStock = parseInt(maxQty) || 1;
+            document.getElementById('modalProductName').textContent = productName;
+            document.getElementById('modalAmount').value = '';
+            document.getElementById('modalQuantity').value = 1;
+            document.getElementById('modalQuantity').max = maxStock;
+            document.getElementById('modalHSN').value = hsn || 'N/A';
+            document.getElementById('modalBatch').value = batchNumber || 'N/A';
+            document.getElementById('modalMeasurement').value = measurementType || '';
+            document.getElementById('modalTransactionDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('cartForm').action = '/store/' + storeUsername + '/add-to-cart/' + productId + '/';
+            document.getElementById('calcGSTRate').textContent = currentGSTRate;
+            document.getElementById('calcCGSTRate').textContent = (currentGSTRate / 2).toFixed(1);
+            document.getElementById('calcSGSTRate').textContent = (currentGSTRate / 2).toFixed(1);
+            calculateGST();
+            getCartModal().show();
+            setTimeout(() => document.getElementById('modalAmount').focus(), 400);
         }
-    }
-
-    // Initialize pricing on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        updatePricing();
-    });
-</script>
-
-<style>
-    .product-details {
-        margin-bottom: 2rem;
-    }
-    
-    .detail-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
-    
-    .detail-item {
-        background: #f8f9fa;
-        padding: 0.75rem;
-        border-radius: 6px;
-        border-left: 3px solid #007bff;
-    }
-    
-    .detail-label {
-        font-weight: 600;
-        color: #495057;
-        font-size: 0.9rem;
-        margin-bottom: 0.25rem;
-    }
-    
-    .detail-value {
-        color: #212529;
-        font-size: 1rem;
-    }
-    
-    .price-value {
-        font-weight: 700;
-        color: #28a745;
-        font-size: 1.1rem;
-    }
-    
-    .quantity-selector {
-        background: white;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin-top: 1rem;
-    }
-    
-    .quantity-controls {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin: 1rem 0;
-    }
-    
-    .quantity-btn {
-        background: #007bff;
-        color: white;
-        border: none;
-        width: 40px;
-        height: 40px;
-        border-radius: 6px;
-        font-size: 1.2rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background-color 0.2s;
-    }
-    
-    .quantity-btn:hover {
-        background: #0056b3;
-    }
-    
-    .quantity-btn:disabled {
-        background: #6c757d;
-        cursor: not-allowed;
-    }
-    
-    .quantity-input {
-        width: 80px;
-        height: 40px;
-        text-align: center;
-        border: 2px solid #dee2e6;
-        border-radius: 6px;
-        font-size: 1rem;
-        font-weight: 600;
-    }
-    
-    .quantity-input:focus {
-        outline: none;
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    }
-    
-    .actions {
-        display: flex;
-        gap: 1rem;
-        margin-top: 1rem;
-    }
-    
-    .btn {
-        padding: 0.75rem 1.5rem;
-        border: none;
-        border-radius: 6px;
-        font-weight: 600;
-        text-decoration: none;
-        cursor: pointer;
-        transition: all 0.2s;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .btn-success {
-        background: #28a745;
-        color: white;
-    }
-    
-    .btn-success:hover {
-        background: #218838;
-    }
-    
-    .btn-primary {
-        background: #007bff;
-        color: white;
-    }
-    
-    .btn-primary:hover {
-        background: #0056b3;
-        text-decoration: none;
-        color: white;
-    }
-</style>
+        function calculateGST() {
+            const amount = parseFloat(document.getElementById('modalAmount').value) || 0;
+            let q = parseInt(document.getElementById('modalQuantity').value) || 0;
+            if (q > maxStock) { document.getElementById('modalQuantity').value = maxStock; q = maxStock; }
+            const subtotal = amount * q;
+            const gstAmount = subtotal * (currentGSTRate / 100);
+            const cgst = gstAmount / 2, sgst = gstAmount / 2, total = subtotal + gstAmount;
+            document.getElementById('calcSubtotal').textContent = '₹' + subtotal.toFixed(2);
+            document.getElementById('calcGST').textContent = '₹' + gstAmount.toFixed(2);
+            document.getElementById('calcCGST').textContent = '₹' + cgst.toFixed(2);
+            document.getElementById('calcSGST').textContent = '₹' + sgst.toFixed(2);
+            document.getElementById('calcTotal').textContent = '₹' + total.toFixed(2);
+        }
+    </script>
+</body>
+</html>

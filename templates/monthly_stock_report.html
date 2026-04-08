@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monthly Stock Report - {{ report_date }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
          :root {
@@ -203,15 +203,19 @@
                     </div>
                 </div>
                 <div class="col-lg-4">
-                    <div class="d-flex gap-2 justify-content-lg-end">
+                    <div class="d-flex gap-2 justify-content-lg-end flex-wrap">
+                        <a href="/" class="btn btn-light btn-sm">🏠 Home</a>
                         <a href="?month={{ prev_month }}&year={{ prev_year }}" class="btn btn-outline-light btn-sm">
                             <i class="bi bi-arrow-left"></i> Previous
                         </a>
                         <a href="?month={{ next_month }}&year={{ next_year }}" class="btn btn-outline-light btn-sm">
                             Next <i class="bi bi-arrow-right"></i>
                         </a>
-                        <a href="?month={{ month }}&year={{ year }}&format=csv" class="btn btn-success btn-sm">
-                            <i class="bi bi-download"></i> CSV
+                        <a href="?month={{ month }}&year={{ year }}&format=xlsx" class="btn btn-success btn-sm">
+                            <i class="bi bi-download"></i> Excel (bold headers)
+                        </a>
+                        <a href="?month={{ month }}&year={{ year }}&format=csv" class="btn btn-outline-light btn-sm">
+                            CSV
                         </a>
                         <button onclick="window.print()" class="btn btn-secondary btn-sm">
                             <i class="bi bi-printer"></i> Print
@@ -269,13 +273,21 @@
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Product</th>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>GST %</th>
+                            <th>HSN</th>
+                            <th>Batch No</th>
+                            <th>Quantity (stock)</th>
+                            <th>Measurement Type</th>
+                            <th>Initial Stock</th>
                             <th>Current Stock</th>
-                            <th>Sold This Month</th>
-                            <th>Unit Price</th>
-                            <th>Stock Value</th>
-                            <th>Amount</th>
-                            <th>GST Amount</th>
+                            <th>Units Sold</th>
+                            <th>Unit Price (Rs)</th>
+                            <th>Sales Amount (Rs)</th>
+                            <th>GST Amount (Rs)</th>
+                            <th>Total Amount (Rs)</th>
+                            <th>Stock Value (Rs)</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -283,51 +295,33 @@
                         {% for detail in stock_details %}
                         <tr class="product-row" data-category="{{ detail.category }}" data-name="{{ detail.product.name|lower }}">
                             <td>
-                                <div class="d-flex align-items-center">
-                                    {% if detail.product.image %}
-                                    <img src="{{ detail.product.image.url }}" alt="{{ detail.product.name }}" class="product-img me-3"> {% else %}
-                                    <div class="product-placeholder me-3">
-                                        <i class="bi bi-box-seam"></i>
-                                    </div>
-                                    {% endif %}
-                                    <div>
-                                        <div class="fw-semibold">{{ detail.product.name }}</div>
-                                        <small class="text-muted text-uppercase">{{ detail.category }}</small>
-                                    </div>
-                                </div>
+                                <div class="fw-semibold">{{ detail.product.name }}</div>
                             </td>
-                            <td>
-                                <div class="fw-bold">{{ detail.current_stock }}</div>
-                                {% if detail.current_stock > 0 %}
-                                <div class="progress-custom">
-                                    <div class="progress-bar-custom" style="width: {% if detail.current_stock > 100 %}100{% else %}{{ detail.current_stock }}{% endif %}%"></div>
-                                </div>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="fw-bold">{{ detail.sold_quantity }}</span> {% if detail.sold_quantity > 0 %}
-                                <small class="text-success ms-1">units</small> {% endif %}
-                            </td>
-                            <td class="fw-semibold">₹{{ detail.product.price|floatformat:2 }}</td>
-                            <td class="fw-semibold">₹{{ detail.stock_value|floatformat:2 }}</td>
-                            <td class="fw-semibold">
-                                {% if detail.sales_amount > 0 %} ₹{{ detail.sales_amount|floatformat:2 }} {% else %}
-                                <span class="text-muted">--</span> {% endif %}
-                            </td>
-                            <td class="fw-semibold">
-                                {% if detail.gst_amount > 0 %} ₹{{ detail.gst_amount|floatformat:2 }} {% else %}
-                                <span class="text-muted">--</span> {% endif %}
-                            </td>
+                            <td>{{ detail.category }}</td>
+                            <td>{{ detail.product.gst }}%</td>
+                            <td>{{ detail.product.hsn_code }}</td>
+                            <td>{{ detail.batch_number }}</td>
+                            <td>{{ detail.product.quantity }}</td>
+                            <td>{{ detail.product.get_measurement_type_display }}</td>
+                            <td class="fw-semibold">{{ detail.initial_stock }}</td>
+                            <td class="fw-bold">{{ detail.current_stock }}</td>
+                            <td class="fw-bold text-success">{{ detail.sold_quantity }}</td>
+                            <td>₹{% if detail.product.unit_amount and detail.product.unit_amount > 0 %}{{ detail.product.unit_amount|floatformat:2 }}{% else %}{{ detail.product.price|floatformat:2 }}{% endif %}</td>
+                            <td>₹{{ detail.sales_amount|floatformat:2 }}</td>
+                            <td>₹{{ detail.gst_amount|floatformat:2 }}</td>
+                            <td class="fw-bold">₹{{ detail.total_amount_with_gst|floatformat:2 }}</td>
+                            <td>₹{{ detail.stock_value|floatformat:2 }}</td>
                             <td>
                                 {% if detail.status_class == 'success' %}
-                                <span class="stock-badge badge-in-stock">{{ detail.stock_status }}</span> {% elif detail.status_class == 'warning' %}
-                                <span class="stock-badge badge-low-stock">{{ detail.stock_status }}</span> {% else %}
-                                <span class="stock-badge badge-out-of-stock">{{ detail.stock_status }}</span> {% endif %}
+                                <span class="stock-badge badge-in-stock">{{ detail.stock_status }}</span>
+                                {% else %}
+                                <span class="stock-badge badge-out-of-stock">{{ detail.stock_status }}</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="16" class="text-center py-5 text-muted">
                                 <i class="bi bi-box-seam display-1 mb-3"></i>
                                 <h4>No products found</h4>
                                 <p>Add some products to see your stock report.</p>
@@ -395,7 +389,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Set current time
         document.getElementById('current-time').textContent = new Date().toLocaleString();

@@ -1,0 +1,1 @@
+# store templatetags init

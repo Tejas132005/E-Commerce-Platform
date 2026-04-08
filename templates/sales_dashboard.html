@@ -292,6 +292,7 @@
     <div class="header">
         <h1>📊 Sales Dashboard</h1>
         <p>{{ user.company_name|default:user.username }} - Analytics Overview</p>
+        <p style="margin-top:10px;"><a href="/" style="color:#fff;text-decoration:underline;font-weight:600;">🏠 Home</a></p>
     </div>
 
     <div class="container">
@@ -313,8 +314,8 @@
             
             <div class="stat-card">
                 <div class="stat-icon profit">📈</div>
-                <div class="stat-value">₹{{ total_profit|floatformat:2 }}</div>
-                <div class="stat-label">Total Profit</div>
+                <div class="stat-value">₹{{ total_revenue|floatformat:2 }}</div>
+                <div class="stat-label">Total Revenue</div>
             </div>
             
             <div class="stat-card">

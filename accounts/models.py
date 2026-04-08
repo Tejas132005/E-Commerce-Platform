@@ -12,7 +12,7 @@ class CustomUserManager(BaseUserManager):
             raise ValueError("Email is required")
         if not username:
             raise ValueError("Username is required")
-            
+        
         email = self.normalize_email(email)
         user = self.model(phone=phone, email=email, username=username, **extra_fields)
         user.set_password(password)
@@ -20,17 +20,18 @@ class CustomUserManager(BaseUserManager):
         
         return user
 
-    def create_superuser(self, phone, email, username, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('is_active', True)
+    # def create_superuser(self, phone, email, username, password=None, **extra_fields):
+    #     extra_fields.setdefault('is_staff', True)
+    #     extra_fields.setdefault('is_superuser', True)
+    #     extra_fields.setdefault('is_active', True)
 
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True.')
+    #     if extra_fields.get('is_staff') is not True:
+    #         raise ValueError('Superuser must have is_staff=True.')
+    #     if extra_fields.get('is_superuser') is not True:
+    #         raise ValueError('Superuser must have is_superuser=True.')
 
-        return self.create_user(phone, email, username, password, **extra_fields)
+    #     return self.create_user(phone, email, username, password, **extra_fields)
+
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=15, unique=True, primary_key=True)
@@ -55,7 +56,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     
     # Required fields for Django admin
     is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False) 
     date_joined = models.DateTimeField(default=timezone.now)
 
     objects = CustomUserManager()
@@ -71,13 +72,17 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     @property
     def is_subscription_active(self):
-        """Check if user's subscription is still active"""
+        """
+            Check if user's subscription is still active
+        """
         if not self.is_paid or not self.subscription_expiry:
             return False
         return self.subscription_expiry > timezone.now()
 
     def get_company_details(self):
-        """Return company details for invoice generation"""
+        """
+            Return company details for invoice generation
+        """
         return {
             'name': self.company_name or self.username,
             'address': self.company_address or 'Company Address',
@@ -89,6 +94,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
             'gstin': self.company_gstin or 'GSTIN not provided',
             'jurisdiction': 'Local',
         }
+
 
 class Subscription(models.Model):
     TIER_CHOICES = [
