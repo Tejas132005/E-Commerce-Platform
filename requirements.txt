@@ -1,27 +1,28 @@
 # Django E-Commerce Project Requirements
 # Core Django Framework
-Django==4.2.7
-djangorestframework==3.14.0
+Django
+djangorestframework
 
 # Database
-psycopg2-binary==2.9.7
+psycopg2-binary
+dj-database-url
 
 # Environment Variables
-python-decouple==3.8
+python-decouple
 
 # PDF Generation (HTML invoice → PDF via Chromium; works on Windows without GTK)
-playwright==1.49.1
+playwright
 
 # Image Processing (for ImageField)
-Pillow==10.0.1
+Pillow
 
 # Development and Production
-gunicorn==21.2.0
-whitenoise==6.5.0
+gunicorn
+whitenoise
 
 # Security
-django-cors-headers==4.3.1
+django-cors-headers
 
 # Additional Utilities
-python-dateutil==2.8.2
-openpyxl==3.1.2
+python-dateutil
+openpyxl
