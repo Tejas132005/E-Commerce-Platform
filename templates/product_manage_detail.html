@@ -7,14 +7,17 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
-    <div class="container py-4" style="max-width: 720px;">
+    <div class="container py-4" style="max-width: 900px;">
         <div class="mb-3">
             <a href="{% url 'product_list' %}" class="btn btn-outline-secondary btn-sm">← Back to products</a>
             <a href="/" class="btn btn-outline-secondary btn-sm">Home</a>
         </div>
-        <div class="card shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">Product details</span>
+        
+        <!-- PURCHASE SECTION -->
+        <h4 class="mt-4 mb-3">Purchase Section</h4>
+        <div class="card shadow-sm mb-4 border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Product & Purchase Details</span>
                 <a href="{% url 'update_product_id' product.id %}" class="btn btn-warning btn-sm">Edit</a>
             </div>
             <div class="card-body">
@@ -23,25 +26,106 @@
                     <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-height: 220px;">
                 </div>
                 {% endif %}
-                <dl class="row mb-0 small">
-                    <dt class="col-sm-4">Product name</dt>
-                    <dd class="col-sm-8">{{ product.name }}</dd>
-                    <dt class="col-sm-4">Category</dt>
-                    <dd class="col-sm-8">{{ product.category|default:"—" }}</dd>
-                    <dt class="col-sm-4">GST</dt>
-                    <dd class="col-sm-8">{{ product.gst }}%</dd>
-                    <dt class="col-sm-4">HSN</dt>
-                    <dd class="col-sm-8">{{ product.hsn_code|default:"—" }}</dd>
-                    <dt class="col-sm-4">Batch no.</dt>
-                    <dd class="col-sm-8">{{ product.batch_number|default:"—" }}</dd>
-                    <dt class="col-sm-4">Quantity (stock)</dt>
-                    <dd class="col-sm-8">{{ product.quantity }}</dd>
-                    <dt class="col-sm-4">Measurement type</dt>
-                    <dd class="col-sm-8">{{ product.get_measurement_type_display }} ({{ product.get_unit_label }})</dd>
-                </dl>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2 text-primary">Supplier Info</h6>
+                        <dl class="row mb-0 small">
+                            <dt class="col-sm-5">Company Name</dt>
+                            <dd class="col-sm-7">{{ product.purchased_from }}</dd>
+                            <dt class="col-sm-5">GSTIN</dt>
+                            <dd class="col-sm-7">{{ product.company_gstin|default:"—" }}</dd>
+                            <dt class="col-sm-5">Purchase Date</dt>
+                            <dd class="col-sm-7">{{ product.purchase_date }}</dd>
+                            <dt class="col-sm-5">Invoice Number</dt>
+                            <dd class="col-sm-7">{{ product.purchase_invoice_number }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2 text-primary mt-3 mt-md-0">Product Info</h6>
+                        <dl class="row mb-0 small">
+                            <dt class="col-sm-5">Product Name</dt>
+                            <dd class="col-sm-7">{{ product.name }}</dd>
+                            <dt class="col-sm-5">Category</dt>
+                            <dd class="col-sm-7">{{ product.category|default:"—" }}</dd>
+                            <dt class="col-sm-5">Measurement</dt>
+                            <dd class="col-sm-7">{{ product.get_unit_label }}</dd>
+                            <dt class="col-sm-5">Current Stock</dt>
+                            <dd class="col-sm-7 fw-bold">{{ product.quantity }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                
+                <h6 class="border-bottom pb-2 text-primary mt-4">Tax & Pricing Details</h6>
+                <div class="row small">
+                    <div class="col-md-6">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Unit Price</dt>
+                            <dd class="col-sm-7">₹{{ product.unit_amount }}</dd>
+                            <dt class="col-sm-5">GST (%)</dt>
+                            <dd class="col-sm-7">{{ product.gst }}%</dd>
+                            <dt class="col-sm-5">HSN Code</dt>
+                            <dd class="col-sm-7">{{ product.hsn_code|default:"—" }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Total Amount</dt>
+                            <dd class="col-sm-7">₹{{ product.net_amount }}</dd>
+                            <dt class="col-sm-5">Batch No.</dt>
+                            <dd class="col-sm-7">{{ product.batch_number|default:"—" }}</dd>
+                        </dl>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- RETURN SECTION -->
+        <h4 class="mt-4 mb-3">Return Section</h4>
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Return Records</span>
+                <a href="{% url 'return_product' product.id %}" class="btn btn-light btn-sm text-danger fw-bold">Return Product</a>
+            </div>
+            <div class="card-body p-0">
+                {% if product.returns.exists %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0 small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Return Date</th>
+                                    <th>Returned Invoice</th>
+                                    <th>Stock Returned</th>
+                                    <th>Taxable Unit Amt</th>
+                                    <th>GST %</th>
+                                    <th>Total Amt</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in product.returns.all %}
+                                <tr>
+                                    <td>{{ r.return_date|date:"Y-m-d" }}</td>
+                                    <td>{{ r.returned_invoice_number }}</td>
+                                    <td class="fw-bold text-danger">{{ r.stock_returned }}</td>
+                                    <td>₹{{ r.taxable_unit_amount }}</td>
+                                    <td>{{ r.gst }}%</td>
+                                    <td class="fw-bold">₹{{ r.total_amount }}</td>
+                                    <td>{{ r.notes|default:"-"|truncatechars:30 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="p-4 text-center text-muted">
+                        No return records found for this product.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
     </div>
+    <br>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -490,6 +490,9 @@
                             <a href="{% url 'update_product_id' product.id %}" class="btn btn-warning btn-sm">
                                 ✏️ Edit
                             </a>
+                            <a href="{% url 'return_product' product.id %}" class="btn btn-secondary btn-sm" style="background:#5a6268;color:white;">
+                                ↩️ Return Product
+                            </a>
                             {% if product.quantity == 0 %}
                             <form method="post" action="{% url 'archive_product' product.id %}" style="flex:1;">
                                 {% csrf_token %}

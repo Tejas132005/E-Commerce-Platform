@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Return Product - {{ product.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+</head>
+<body class="bg-light">
+    <div class="container py-4" style="max-width: 800px;">
+        
+        <div class="mb-3">
+            <a href="{% url 'product_list' %}" class="btn btn-outline-secondary btn-sm">← Back to products</a>
+            <a href="/" class="btn btn-outline-secondary btn-sm">🏠 Home</a>
+        </div>
+
+        {% if messages %}
+        <div class="mt-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-warning fade show" role="alert">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Return Product</h5>
+            </div>
+            <div class="card-body">
+                <form id="returnForm" method="post" action="{% url 'return_product' product.id %}">
+                    {% csrf_token %}
+
+                    <input id="original_stock" type="hidden" value="{{ product.quantity }}">
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Purchase Invoice Number</label>
+                            <input type="text" id="id_purchase_invoice" class="form-control" name="purchase_invoice_number" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Product Name</label>
+                            <input type="text" id="id_product_name" class="form-control" value="{{ product.name }}" readonly>
+                            <input type="hidden" id="id_product" name="product" value="{{ product.id }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Returned Invoice Number</label>
+                            <input type="text" class="form-control" name="returned_invoice_number" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Stock Returned</label>
+                            <input type="number" id="stock_returned" class="form-control" name="stock_returned" min="1" required>
+                            <div id="stock-error" class="mt-2"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Current Stock</label>
+                            <input type="number" id="current_stock" class="form-control" name="current_stock" readonly>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Return Date</label>
+                            <input type="date" id="id_return_date" class="form-control" name="return_date" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Taxable Unit Amount</label>
+                            <input type="number" step="0.01" id="taxable_unit_amount" class="form-control" name="taxable_unit_amount">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">GST (%)</label>
+                            <input type="number" step="0.01" id="gst" class="form-control" name="gst">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Taxable Total Amount</label>
+                            <input type="number" step="0.01" id="taxable_total_amount" class="form-control" name="taxable_total_amount">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Total Amount</label>
+                            <input type="number" step="0.01" id="total_amount" class="form-control" name="total_amount">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Anything to Note</label>
+                        <textarea class="form-control" name="notes" rows="3"></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-danger">Process Return</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{ products_data|json_script:"products-data" }}
+
+    <script>
+let manualTotalEdited = false;
+
+// Detect manual edit ONLY when user actually changes value
+document.getElementById("taxable_total_amount").addEventListener("input", function(e) {
+    if (e.isTrusted) {
+        manualTotalEdited = true;
+    }
+});
+
+function updateCurrentStock() {
+    const original = parseFloat(document.getElementById("original_stock").value) || 0;
+    const returned = parseFloat(document.getElementById("stock_returned").value) || 0;
+
+    let current = original - returned;
+    const currentField = document.getElementById("current_stock");
+
+    if (current < 0) {
+        currentField.value = 0;
+        document.getElementById("stock-error").innerHTML =
+            '<div class="alert alert-danger p-2 small">Entered returned_stock is more than the current_stock !!</div>';
+    } else {
+        currentField.value = current.toFixed(2);
+        document.getElementById("stock-error").innerHTML = '';
+    }
+}
+
+function calculateAmounts() {
+    const unit = parseFloat(document.getElementById("taxable_unit_amount").value) || 0;
+    const qty = parseFloat(document.getElementById("stock_returned").value) || 0;
+    const gst = parseFloat(document.getElementById("gst").value) || 0;
+
+    let taxableTotal = parseFloat(document.getElementById("taxable_total_amount").value) || 0;
+
+    // Auto calculate ONLY if not manually edited
+    if (!manualTotalEdited) {
+        taxableTotal = unit * qty;
+        document.getElementById("taxable_total_amount").value = taxableTotal.toFixed(2);
+    }
+
+    // GST amount ONLY (as per your requirement)
+    let total = taxableTotal + (taxableTotal * (gst / 100));
+    document.getElementById("total_amount").value = total.toFixed(2);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const stockReturnedInput = document.getElementById('stock_returned');
+    const taxableUnitInput = document.getElementById('taxable_unit_amount');
+    const gstInput = document.getElementById('gst');
+
+    // Attach events
+    stockReturnedInput.addEventListener("input", function() {
+        updateCurrentStock();
+        calculateAmounts();
+    });
+
+    taxableUnitInput.addEventListener("input", function() {
+        manualTotalEdited = false; // allow recalculation again
+        calculateAmounts();
+    });
+
+    gstInput.addEventListener("input", calculateAmounts);
+
+    // Default date
+    document.getElementById('id_return_date').valueAsDate = new Date();
+
+    // Initial trigger
+    setTimeout(() => {
+        updateCurrentStock();
+        calculateAmounts();
+    }, 100);
+});
+</script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

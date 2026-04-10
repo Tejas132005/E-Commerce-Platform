@@ -33,6 +33,7 @@ urlpatterns = [
     path('manage/delete-product/', manage_products.delete_product, name='delete_product'),
     path('manage/products/', manage_products.product_list_view, name='product_list'),
     path('manage/product/<int:product_id>/details/', manage_products.product_manage_detail, name='product_manage_detail'),
+    path('manage/return-product/<int:product_id>/', manage_products.return_product_view, name='return_product'),
     path('manage/customers/', views.customer_details_list_view, name='customer_details_list'),
 
     # Archive system

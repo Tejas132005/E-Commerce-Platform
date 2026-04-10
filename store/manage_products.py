@@ -170,3 +170,64 @@ def archived_products_view(request):
     """View all archived products."""
     products = Product.objects.filter(store_owner=request.user, is_archived=True).order_by('category', 'name')
     return render(request, 'archived_products.html', {'products': products})
+
+@login_required
+def return_product_view(request, product_id):
+    from decimal import Decimal
+    from .models import ProductReturn
+    import json
+    
+    product = get_object_or_404(Product, id=product_id, store_owner=request.user)
+    
+    if request.method == 'POST':
+        returned_invoice_number = request.POST.get('returned_invoice_number')
+        stock_returned = int(request.POST.get('stock_returned', 0))
+        return_date = request.POST.get('return_date')
+        taxable_unit_amount = Decimal(request.POST.get('taxable_unit_amount', '0.00'))
+        gst = Decimal(request.POST.get('gst', '0.00'))
+        taxable_total_amount = Decimal(request.POST.get('taxable_total_amount', '0.00'))
+        total_amount = Decimal(request.POST.get('total_amount', '0.00'))
+        notes = request.POST.get('notes', '')
+
+        if stock_returned > product.quantity:
+            messages.error(request, 'Entered returned_stock is more than the current_stock !!')
+            return redirect('return_product', product_id=product.id)
+
+        # 1. Reduce stock
+        product.quantity -= stock_returned
+        product.save()
+
+        # 2. Save return record
+        ProductReturn.objects.create(
+            purchase_invoice_number=product.purchase_invoice_number,
+            product=product,
+            returned_invoice_number=returned_invoice_number,
+            stock_returned=stock_returned,
+            current_stock=product.quantity,
+            return_date=return_date,
+            taxable_unit_amount=taxable_unit_amount,
+            gst=gst,
+            taxable_total_amount=taxable_total_amount,
+            total_amount=total_amount,
+            notes=notes
+        )
+        messages.success(request, f'Return for "{product.name}" processed successfully!')
+        return redirect('product_list')
+
+    all_products = Product.objects.filter(store_owner=request.user, is_archived=False)
+    products_data = []
+    for p in all_products:
+        products_data.append({
+            'id': p.id,
+            'name': p.name,
+            'purchase_invoice_number': p.purchase_invoice_number,
+            'quantity': p.quantity,
+            'unit_amount': str(p.unit_amount),
+            'gst': str(p.gst),
+        })
+
+    return render(request, 'return_product.html', {
+        'product': product,
+        'products_data': json.dumps(products_data),
+    })
+

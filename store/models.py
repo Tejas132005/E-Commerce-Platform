@@ -198,3 +198,22 @@ class SalesReport(models.Model):
 
     def __str__(self):
         return f"Sale: {self.product.name} - {self.store_owner.username}"
+
+class ProductReturn(models.Model):
+    purchase_invoice_number = models.CharField(max_length=100)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='returns')
+    returned_invoice_number = models.CharField(max_length=100)
+    stock_returned = models.PositiveIntegerField()
+    current_stock = models.PositiveIntegerField()
+    return_date = models.DateField()
+    
+    taxable_unit_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    gst = models.DecimalField(max_digits=5, decimal_places=2)
+    taxable_total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Return {self.returned_invoice_number} - {self.product.name}"
