@@ -274,6 +274,11 @@
             color: white;
         }
         
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
         .btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
@@ -346,6 +351,7 @@
                     <a href="/" class="nav-btn secondary">🏠 Home</a>
                     <a href="{% url 'store_products' username=store_owner.username %}" class="nav-btn primary">🏪 Continue Shopping</a>
                     <a href="{% url 'cart_view' username=store_owner.username %}" class="nav-btn secondary">🛒 View Cart</a>
+                    <a href="{% url 'deleted_invoices' username=store_owner.username %}" class="nav-btn secondary">🗑️ Deleted Invoices</a>
                     <a href="{% url 'customer_logout' username=store_owner.username %}" class="nav-btn danger">🚪 Logout</a>
                 </div>
             </div>
@@ -363,14 +369,23 @@
                 <div class="order-header">
                     <div class="order-number">Order #{{ order.order_number }}</div>
                     <div class="order-meta">
-                        <div><strong>Date:</strong> {{ order.order_date|date:"d/m/Y" }}</div>
+                        <div><strong>Date:</strong> {{ order.order_date|date:"M d, Y" }}</div>
                         <div><strong>Time:</strong> {{ order.order_date|time:"H:i" }}</div>
                         <div><strong>Items:</strong> {{ order.items.count }} item{{ order.items.count|pluralize }}</div>
                         <div><strong>Invoice:</strong> {{ order.invoice_number|default:order.order_number }}</div>
                     </div>
                     <div class="order-status status-{{ order.status }}">⏳ {{ order.get_status_display }}</div>
-                    <div class="order-actions">
+                    <div class="order-actions" style="display: flex; gap: 10px; align-items: center;">
                         <a href="{% url 'order_detail_view' username=store_owner.username order_id=order.id %}" class="btn btn-primary">👁️ View Details</a>
+                        
+                        {% if not order.is_deleted %}
+                        <form method="POST" action="{% url 'delete_invoice' username=store_owner.username order_id=order.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this invoice? This will restore the stock.');">
+                                🗑️ Delete
+                            </button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -418,6 +433,18 @@
                         <a href="{% url 'order_detail_view' username=store_owner.username order_id=order.id %}" class="btn btn-primary">👁️ View Details</a>
                         <a href="{% url 'generate_invoice_view' username=store_owner.username order_id=order.id %}" class="btn btn-info">📄 View Invoice</a>
                         <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=order.id %}" class="btn btn-success">📥 Download PDF</a>
+                        {% if not order.is_deleted %}
+                        <form method="POST" action="{% url 'delete_invoice' username=store_owner.username order_id=order.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this invoice? This will restore the stock.');">
+                                🗑️ Delete Invoice
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="btn" style="background: #6c757d; color: white; cursor: not-allowed;" title="This invoice has been deleted">
+                            🗑️ Deleted
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -436,6 +463,7 @@
             <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                 <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-primary">🏪 Back to Store</a>
                 <a href="{% url 'cart_view' username=store_owner.username %}" class="btn btn-secondary">🛒 Shopping Cart</a>
+                <a href="{% url 'deleted_invoices' username=store_owner.username %}" class="btn btn-secondary">🗑️ Deleted Invoices</a>
                 <a href="{% url 'customer_logout' username=store_owner.username %}" class="btn btn-danger">🚪 Logout</a>
             </div>
         </div>

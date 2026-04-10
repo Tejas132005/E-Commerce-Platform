@@ -82,13 +82,6 @@ class Product(models.Model):
         suffix = self.UNIT_LABEL_SUFFIX.get(self.measurement_type, self.measurement_type or '')
         return f'{num} {suffix}'.strip()
 
-    def get_gst_amount_purchase(self):
-        """Calculate GST amount from net_amount (Purchase)."""
-        if self.net_amount and self.gst:
-            rate = Decimal(str(self.gst)) / Decimal('100')
-            return self.net_amount * rate
-        return Decimal('0.00')
-
     def save(self, *args, **kwargs):
         # Set initial_stock on first creation
         if not self.pk:
@@ -139,7 +132,7 @@ class Order(models.Model):
     store_owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='orders')
     customer = models.ForeignKey(ShopCustomer, on_delete=models.CASCADE)
     order_number = models.PositiveIntegerField()  # Per-user order numbering
-    order_date = models.DateTimeField(null=True, blank=True)
+    order_date = models.DateTimeField(auto_now_add=True)
     invoice_date = models.DateField(
         null=True,
         blank=True,
@@ -154,6 +147,7 @@ class Order(models.Model):
     total_sgst = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     total_gst = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     invoice_number = models.CharField(max_length=50, blank=True, null=True)
+    is_deleted = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('store_owner', 'order_number')
@@ -200,7 +194,7 @@ class SalesReport(models.Model):
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
     profit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     category = models.CharField(max_length=100, blank=True, null=True)
-    sale_date = models.DateTimeField(null=True, blank=True)
+    sale_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Sale: {self.product.name} - {self.store_owner.username}"

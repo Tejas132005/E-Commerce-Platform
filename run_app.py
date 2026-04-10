@@ -24,8 +24,6 @@ if is_server_running(PORT):
 # 👉 Start server
 process = subprocess.Popen(
     [sys.executable, manage_py, "runserver", f"127.0.0.1:{PORT}"],
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.DEVNULL
 )
 
 # Wait for server to start

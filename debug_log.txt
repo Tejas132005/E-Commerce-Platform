@@ -1,0 +1,4 @@
+Python Path: C:\Users\Laptop\AppData\Local\Programs\Python\Python310\python.exe
+Manage.py Path: C:\Users\Laptop\OneDrive\Desktop\E-Commerce\manage.py
+Python Exists: False
+Manage Exists: True

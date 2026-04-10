@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deleted Invoices - {{ user.company_name|default:user.username }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; color: #333; }
+        .header { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 2rem 1rem; text-align: center; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+        .report-section { background: white; border-radius: 10px; padding: 2rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+        .report-section h2 { margin-bottom: 1.5rem; color: #333; border-bottom: 2px solid #e74c3c; padding-bottom: 0.5rem; }
+        .sales-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        .sales-table th, .sales-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .sales-table th { background: #f8f9fa; font-weight: 600; position: sticky; top: 0; }
+        .sales-table tr:hover { background: #f8f9fa; }
+        .currency { color: #28a745; font-weight: 600; }
+        .no-sales { text-align: center; padding: 3rem; color: #666; }
+        .actions { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; cursor: pointer; transition: all 0.3s ease; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-sm { padding: 5px 10px; font-size: 0.85rem; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); text-decoration: none; color: white; }
+        .date-badge { background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🗑️ Deleted Invoices</h1>
+        <p>{{ store_owner.company_name|default:store_owner.username }}</p>
+        <p style="margin-top:10px;">
+            <a href="{% url 'my_orders' username=store_owner.username %}" style="color:#fff;text-decoration:underline;">📦 My Orders</a> | 
+            <a href="{% url 'store_products' username=store_owner.username %}" style="color:#fff;text-decoration:underline;">🏪 Store</a>
+        </p>
+    </div>
+
+    <div class="container">
+        <!-- Actions -->
+        <div class="actions">
+            <a href="{% url 'my_orders' username=store_owner.username %}" class="btn btn-primary">📦 My Orders</a>
+            <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-success">🏪 Store</a>
+        </div>
+
+        <!-- Sales Report Table -->
+        <div class="report-section">
+            <h2>🗑️ Deleted Invoices Log</h2>
+            <!-- Messages -->
+            {% if messages %}
+            <div style="margin-bottom: 1rem;">
+                {% for message in messages %}
+                <div style="padding: 10px; background: #d4edda; color: #155724; border-radius: 5px; margin-bottom: 5px;">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if orders %}
+            <div style="overflow-x: auto;">
+                <table class="sales-table">
+                    <thead>
+                        <tr>
+                            <th>Invoice Number</th>
+                            <th>Customer Name</th>
+                            <th>Date</th>
+                            <th>Total Amount</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <strong>{{ order.invoice_number|default:order.order_number }}</strong>
+                            </td>
+                            <td>
+                                <strong>{{ order.customer.name }}</strong>
+                                <br>
+                                <small>{{ order.customer.phone }}</small>
+                            </td>
+                            <td>
+                                <span class="date-badge">
+                                    {{ order.invoice_date|date:"d/m/Y" }}
+                                </span>
+                            </td>
+                            <td class="currency">
+                                ₹{{ order.total_price|floatformat:2 }}
+                            </td>
+                            <td>
+                                <form method="POST" action="{% url 'restore_invoice' username=store_owner.username order_id=order.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Are you sure you want to restore this invoice?');">
+                                        ♻️ Restore
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="no-sales">
+                <h3>✨ No deleted invoices</h3>
+                <p>You have not deleted any invoices yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

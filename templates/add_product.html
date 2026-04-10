@@ -108,24 +108,24 @@
                         </div>
 
                         <!-- AD Section Only Fields -->
-                        <div id="ad-section-fields" class="col-12">
+                        <div id="ad-section-fields" style="display: none;" class="col-12">
                             <div class="row g-3">
-                                <div class="col-12 mt-2"><h2 class="h6 text-primary border-bottom pb-2">Pricing and Stock Valuation</h2></div>
+                                <div class="col-12 mt-2"><h2 class="h6 text-primary border-bottom pb-2">AD Section - Advanced Pricing</h2></div>
                                 <div class="col-md-6">
-                                    <label class="form-label" for="{{ form.unit_amount.id_for_label }}">Taxable Unit Amount <span class="req">*</span></label>
+                                    <label class="form-label" for="{{ form.unit_amount.id_for_label }}">Unit Price (Purchase) <span class="req">*</span></label>
                                     {{ form.unit_amount }}
                                     {% if form.unit_amount.errors %}<div class="invalid-feedback d-block">{{ form.unit_amount.errors.0 }}</div>{% endif %}
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label" for="{{ form.net_amount.id_for_label }}">Taxable Total Amount <span class="req">*</span></label>
+                                    <label class="form-label" for="{{ form.net_amount.id_for_label }}">Net Amount (Auto) <span class="req">*</span></label>
                                     {{ form.net_amount }}
                                     {% if form.net_amount.errors %}<div class="invalid-feedback d-block">{{ form.net_amount.errors.0 }}</div>{% endif %}
                                     <div class="form-text">Defaults to Unit Price × Quantity. Check override to edit freely.</div>
                                 </div>
                                 <div class="col-12">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="1" id="net-manual-override" name="net_manual_override" {% if form.data.net_manual_override %}checked{% endif %}>
-                                        <label class="form-check-label" for="net-manual-override">Manual override taxable total amount</label>
+                                        <input class="form-check-input" type="checkbox" value="1" id="net-manual-override" name="net_manual_override">
+                                        <label class="form-check-label" for="net-manual-override">Manual override net amount</label>
                                     </div>
                                 </div>
                             </div>
@@ -154,13 +154,14 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const isAD = urlParams.get('ad') === 'true' || "{{ ad_section }}" === "True";
+            const isAD = urlParams.get('ad') === 'true' || {{ ad_section|yesno:"true,false" }};
             
-            // Always show the pricing fields
-            const adWrap = document.getElementById('ad-section-fields');
-            
-            // Auto-calculation logic always reachable
-            const qtyInput = document.getElementById('{{ form.quantity.id_for_label }}');
+            if (isAD) {
+                const adWrap = document.getElementById('ad-section-fields');
+                if (adWrap) adWrap.style.display = 'block';
+                
+                // Auto-calculation logic
+                const qtyInput = document.getElementById('{{ form.quantity.id_for_label }}');
                 const unitAmtInput = document.getElementById('{{ form.unit_amount.id_for_label }}');
                 const netAmtInput = document.getElementById('{{ form.net_amount.id_for_label }}');
                 const override = document.getElementById('net-manual-override');
@@ -175,13 +176,8 @@
                 qtyInput.addEventListener('input', calculateNet);
                 unitAmtInput.addEventListener('input', calculateNet);
                 if (override) override.addEventListener('change', calculateNet);
-
-                // Auto-check override if user types in net total
-                netAmtInput.addEventListener('input', function() {
-                    if (override) override.checked = true;
-                });
-
                 calculateNet();
+            }
         });
     </script>
 </body>

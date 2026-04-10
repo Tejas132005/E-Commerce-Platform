@@ -25,41 +25,19 @@
                 {% endif %}
                 <dl class="row mb-0 small">
                     <dt class="col-sm-4">Product name</dt>
-                    <dd class="col-sm-8 text-primary fw-bold">{{ product.name }}</dd>
+                    <dd class="col-sm-8">{{ product.name }}</dd>
                     <dt class="col-sm-4">Category</dt>
                     <dd class="col-sm-8">{{ product.category|default:"—" }}</dd>
+                    <dt class="col-sm-4">GST</dt>
+                    <dd class="col-sm-8">{{ product.gst }}%</dd>
                     <dt class="col-sm-4">HSN</dt>
                     <dd class="col-sm-8">{{ product.hsn_code|default:"—" }}</dd>
                     <dt class="col-sm-4">Batch no.</dt>
                     <dd class="col-sm-8">{{ product.batch_number|default:"—" }}</dd>
                     <dt class="col-sm-4">Quantity (stock)</dt>
-                    <dd class="col-sm-8 fw-bold">{{ product.quantity }}</dd>
+                    <dd class="col-sm-8">{{ product.quantity }}</dd>
                     <dt class="col-sm-4">Measurement type</dt>
                     <dd class="col-sm-8">{{ product.get_measurement_type_display }} ({{ product.get_unit_label }})</dd>
-                    
-                    <div class="col-12 my-2 border-bottom"></div>
-                    
-                    <h6 class="col-12 text-secondary mb-3">Purchase Details</h6>
-                    <dt class="col-sm-4">Supplier / Company</dt>
-                    <dd class="col-sm-8">{{ product.purchased_from|default:"—" }}</dd>
-                    <dt class="col-sm-4">Company GSTIN</dt>
-                    <dd class="col-sm-8">{{ product.company_gstin|default:"—" }}</dd>
-                    <dt class="col-sm-4">Purchase Date</dt>
-                    <dd class="col-sm-8">{{ product.purchase_date|date:"d/m/Y"|default:"—" }}</dd>
-                    <dt class="col-sm-4">Invoice Number</dt>
-                    <dd class="col-sm-8">{{ product.purchase_invoice_number|default:"—" }}</dd>
-                    
-                    <div class="col-12 my-2 border-bottom"></div>
-                    
-                    <h6 class="col-12 text-secondary mb-3">Pricing & Tax</h6>
-                    <dt class="col-sm-4">Taxable Unit Amount</dt>
-                    <dd class="col-sm-8">₹{{ product.unit_amount|default:"0.00" }}</dd>
-                    <dt class="col-sm-4">Taxable Total Amount</dt>
-                    <dd class="col-sm-8">₹{{ product.net_amount|default:"0.00" }}</dd>
-                    <dt class="col-sm-4">GST Rate</dt>
-                    <dd class="col-sm-8">{{ product.gst }}%</dd>
-                    <dt class="col-sm-4">GST Amount</dt>
-                    <dd class="col-sm-8 fw-bold">₹{{ product.get_gst_amount_purchase|floatformat:2 }}</dd>
                 </dl>
             </div>
         </div>

@@ -1,15 +1,13 @@
-from .models import Product, SalesReport, OrderItem
-from accounts.models import CustomUser
-from django.utils import timezone
-from django.http import JsonResponse, HttpResponse
-from django.shortcuts import get_object_or_404, render
+# store/analytics.py - Final Complete File
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from django.db.models import Sum, Count
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-import csv
-import calendar
 import traceback
 from decimal import Decimal
+from .models import Product, SalesReport, OrderItem
+from accounts.models import CustomUser
 
 
 def _gst_amount_from_invoiced_total(total_with_gst, gst_percent) -> Decimal:
@@ -734,119 +732,3 @@ def ad_section_api(request):
     except Exception as e:
         print(f"AD Section Error: {traceback.format_exc()}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
-
-@login_required
-def ad_section_page(request):
-    """
-    Renders the Advanced Data (AD) Section UI page.
-    """
-    user = request.user
-    current_date = timezone.now()
-    year = int(request.GET.get('year', current_date.year))
-    month = int(request.GET.get('month', current_date.month))
-    
-    products = Product.objects.filter(store_owner=user)
-    
-    data_list = []
-    for p in products:
-        sold_qty, sales_amt = _month_sales_totals(user, p, year, month)
-        initial_stock = p.quantity + sold_qty
-        
-        # Calculations based on unit taxable amount (Purchase)
-        unit_amt = p.unit_amount or Decimal('0.00')
-        gst_rate = p.gst or Decimal('0.00')
-        
-        # Sold units value and GST (based on purchase cost/taxable value)
-        sold_value = (unit_amt * Decimal(str(sold_qty))).quantize(Decimal('0.01'))
-        sold_gst_value = (sold_value * (gst_rate / Decimal('100'))).quantize(Decimal('0.01'))
-        
-        # Remaining stock value and GST
-        remaining_qty = p.quantity
-        remaining_stock_value = (Decimal(str(remaining_qty)) * unit_amt).quantize(Decimal('0.01'))
-        remaining_stock_gst = (remaining_stock_value * (gst_rate / Decimal('100'))).quantize(Decimal('0.01'))
-        
-        data_list.append({
-            'product': p,
-            'initial_stock': initial_stock,
-            'current_stock': p.quantity,
-            'units_sold': sold_qty,
-            'sold_value': sold_value,
-            'sold_gst_value': sold_gst_value,
-            'remaining_stock_value': remaining_stock_value,
-            'remaining_stock_gst': remaining_stock_gst,
-        })
-        
-    context = {
-        'data_list': data_list,
-        'year': year,
-        'month': month,
-        'month_name': calendar.month_name[month],
-        'months': [(i, calendar.month_name[i]) for i in range(1, 13)],
-        'years': list(range(2020, current_date.year + 2)),
-    }
-    return render(request, 'ad_section.html', context)
-
-
-@login_required
-def export_ad_section_csv(request):
-    """
-    Exports the AD section data to CSV.
-    """
-    user = request.user
-    current_date = timezone.now()
-    year = int(request.GET.get('year', current_date.year))
-    month = int(request.GET.get('month', current_date.month))
-    month_name = calendar.month_name[month]
-    
-    response = HttpResponse(content_type='text/csv; charset=utf-8')
-    filename = f'ad_section_report_{month_name}_{year}.csv'
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
-    writer = csv.writer(response)
-    writer.writerow([
-        'Company Name', 'Company GSTIN', 'Purchase Date', 'Invoice Number',
-        'Product Name', 'Category', 'GST %', 'HSN', 'Batch No', 
-        'Quantity (Stock)', 'Measurement Type', 'Unit Amount (Purchase)', 'Net Amount (Purchase)',
-        'Initial Stock', 'Current Stock', 'Units Sold', 
-        'Sold Value', 'Sold GST Value', 'Remaining Stock Value', 'Remaining Stock GST'
-    ])
-    
-    products = Product.objects.filter(store_owner=user)
-    for p in products:
-        sold_qty, _ = _month_sales_totals(user, p, year, month)
-        
-        unit_amt = p.unit_amount or Decimal('0.00')
-        gst_rate = p.gst or Decimal('0.00')
-        
-        sold_value = (unit_amt * Decimal(str(sold_qty))).quantize(Decimal('0.01'))
-        sold_gst_value = (sold_value * (gst_rate / Decimal('100'))).quantize(Decimal('0.01'))
-        
-        remaining_qty = p.quantity
-        remaining_stock_value = (Decimal(str(remaining_qty)) * unit_amt).quantize(Decimal('0.01'))
-        remaining_stock_gst = (remaining_stock_value * (gst_rate / Decimal('100'))).quantize(Decimal('0.01'))
-        
-        writer.writerow([
-            p.purchased_from or '',
-            p.company_gstin or '',
-            p.purchase_date.strftime('%d/%m/%Y') if p.purchase_date else '',
-            p.purchase_invoice_number or '',
-            p.name,
-            p.category or '',
-            p.gst,
-            p.hsn_code or '',
-            p.batch_number or '',
-            p.quantity,
-            p.get_measurement_type_display(),
-            f"{p.unit_amount or 0:.2f}",
-            f"{p.net_amount or 0:.2f}",
-            p.quantity + sold_qty,
-            p.quantity,
-            sold_qty,
-            f"{sold_value:.2f}",
-            f"{sold_gst_value:.2f}",
-            f"{remaining_stock_value:.2f}",
-            f"{remaining_stock_gst:.2f}"
-        ])
-    
-    return response

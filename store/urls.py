@@ -15,9 +15,7 @@ urlpatterns = [
     # Global Analytics (uses request.user)
     path('analytics-dashboard/', views.analytics_dashboard_view, name='analytics_dashboard'),
     path('analytics/items/', analytics.item_analytics_api, name='item_analytics_api'),
-    path('analytics/ad-section/', analytics.ad_section_page, name='ad_section_page'),
-    path('analytics/api/ad-section/', analytics.ad_section_api, name='ad_section_api'),
-    path('analytics/ad-section/export/', analytics.export_ad_section_csv, name='export_ad_section_csv'),
+    path('analytics/ad-section/', analytics.ad_section_api, name='ad_section_api'),
     path('analytics/item/<int:product_id>/', analytics.single_item_analytics_api, name='single_item_analytics_api'),
     path('analytics/categories/', analytics.category_analytics_api, name='category_analytics_api'),
          
@@ -57,6 +55,11 @@ urlpatterns = [
     path('<str:username>/invoice/<int:order_id>/', views.generate_invoice_view, name='generate_invoice_view'),
     path('<str:username>/invoice/<int:order_id>/pdf/', views.generate_invoice_pdf, name='generate_invoice_pdf'),
     path('<str:username>/invoice/<int:order_id>/download/', views.generate_invoice, name='generate_invoice'),
+    
+    # Invoice deletion and restoration URLs
+    path('<str:username>/invoice/delete/<int:order_id>/', views.delete_invoice, name='delete_invoice'),
+    path('<str:username>/invoice/restore/<int:order_id>/', views.restore_invoice, name='restore_invoice'),
+    path('<str:username>/deleted-invoices/', views.deleted_invoices_view, name='deleted_invoices'),
 
     # Customer authentication for specific stores
     path('<str:username>/login/', views.customer_login, name='customer_login'),

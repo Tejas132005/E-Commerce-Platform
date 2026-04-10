@@ -90,13 +90,13 @@ class AddProductForm(forms.ModelForm):
                 'class': 'form-control',
                 'step': '0.01',
                 'min': '0',
-                'placeholder': 'Taxable price per unit',
+                'placeholder': 'Price per unit',
             }),
             'net_amount': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
                 'min': '0',
-                'placeholder': 'Taxable total amount',
+                'placeholder': 'Total amount',
             }),
         }
         labels = {
@@ -113,8 +113,8 @@ class AddProductForm(forms.ModelForm):
             'quantity': 'Quantity (total number)',
             'measurement_type': 'Measurement type',
             'unit_value': 'Unit value (pack size)',
-            'unit_amount': 'Taxable Unit Amount',
-            'net_amount': 'Taxable Total Amount',
+            'unit_amount': 'Unit Price (Purchase)',
+            'net_amount': 'Net Amount (Purchase)',
         }
 
     def __init__(self, *args, store_owner=None, ad_section=False, **kwargs):
@@ -130,32 +130,30 @@ class AddProductForm(forms.ModelForm):
             self.fields[fname].required = True
         self.fields['company_gstin'].required = False
         self.fields['image'].required = False
-        
-        # Always visible, required only if in AD mode
+        # AD-only purchase pricing: not shown / not required outside Advanced Data mode
         if self.ad_section:
             self.fields['unit_amount'].required = True
             self.fields['net_amount'].required = True
+            self.fields['unit_amount'].widget = forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': 'Price per unit',
+            })
+            self.fields['net_amount'].widget = forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': 'Total amount (auto or manual)',
+            })
         else:
             self.fields['unit_amount'].required = False
             self.fields['net_amount'].required = False
-            
-        # Ensure they use form-control and are not hidden
-        self.fields['unit_amount'].widget = forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.01',
-            'min': '0',
-            'placeholder': 'Taxable price per unit',
-        })
-        self.fields['net_amount'].widget = forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.01',
-            'min': '0',
-            'placeholder': 'Taxable total amount',
-        })
-
-        if not self.data and not self.ad_section:
-            self.initial.setdefault('unit_amount', Decimal('0.00'))
-            self.initial.setdefault('net_amount', Decimal('0.00'))
+            self.fields['unit_amount'].widget = forms.HiddenInput()
+            self.fields['net_amount'].widget = forms.HiddenInput()
+            if not self.data:
+                self.initial.setdefault('unit_amount', Decimal('0.00'))
+                self.initial.setdefault('net_amount', Decimal('0.00'))
         if not self.initial.get('purchase_date') and not self.data:
             self.initial['purchase_date'] = date.today()
 
@@ -353,13 +351,13 @@ class UpdateProductForm(forms.ModelForm):
                 'class': 'form-control',
                 'step': '0.01',
                 'min': '0',
-                'placeholder': 'Taxable price per unit',
+                'placeholder': 'Price per unit',
             }),
             'net_amount': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
                 'min': '0',
-                'placeholder': 'Taxable total amount',
+                'placeholder': 'Total amount',
             }),
         }
         labels = {
@@ -376,8 +374,8 @@ class UpdateProductForm(forms.ModelForm):
             'quantity': 'Quantity (total number)',
             'measurement_type': 'Measurement type',
             'unit_value': 'Unit value (pack size)',
-            'unit_amount': 'Taxable Unit Amount',
-            'net_amount': 'Taxable Total Amount',
+            'unit_amount': 'Unit Price (Purchase)',
+            'net_amount': 'Net Amount (Purchase)',
         }
 
     def __init__(self, *args, store_owner=None, ad_section=False, **kwargs):
@@ -393,28 +391,14 @@ class UpdateProductForm(forms.ModelForm):
             self.fields[fname].required = True
         self.fields['company_gstin'].required = False
         self.fields['image'].required = False
-
-        # Always visible, required only if in AD mode
         if self.ad_section:
             self.fields['unit_amount'].required = True
             self.fields['net_amount'].required = True
         else:
             self.fields['unit_amount'].required = False
             self.fields['net_amount'].required = False
-
-        # Ensure they use form-control and are not hidden
-        self.fields['unit_amount'].widget = forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.01',
-            'min': '0',
-            'placeholder': 'Taxable price per unit',
-        })
-        self.fields['net_amount'].widget = forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.01',
-            'min': '0',
-            'placeholder': 'Taxable total amount',
-        })
+            self.fields['unit_amount'].widget = forms.HiddenInput()
+            self.fields['net_amount'].widget = forms.HiddenInput()
 
     def clean_purchased_from(self):
         v = (self.cleaned_data.get('purchased_from') or '').strip()

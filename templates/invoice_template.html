@@ -419,15 +419,14 @@
                 <thead>
                     <tr>
                         <th style="width:4%;">Sr.</th>
-                        <th style="width:23%;">Description</th>
+                        <th style="width:24%;">Description</th>
                         <th style="width:9%;">HSN/SAC</th>
-                        <th style="width:10%;">Batch-Number</th>
-                        <th style="width:5%;">Qty</th>
-                        <th style="width:9%;">Unit</th>
-                        <th style="width:10%;" class="text-end text-right">Rate (₹)</th>
-                        <th style="width:11%;" class="text-end text-right">Amount (₹)</th>
-                        <th style="width:8%;" class="text-center">GST Rate</th>
-                        <th style="width:11%;" class="text-end text-right">GST (₹)</th>
+                        <th style="width:6%;">Qty</th>
+                        <th style="width:10%;">Unit</th>
+                        <th style="width:11%;">Rate (₹)</th>
+                        <th style="width:11%;">Amount (₹)</th>
+                        <th style="width:9%;">GST Rate</th>
+                        <th style="width:10%;">GST (₹)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -436,15 +435,17 @@
                         <td class="text-center">{{ forloop.counter }}</td>
                         <td>
                             <strong>{{ item.product.name }}</strong>
+                            {% if item.product.description %}
+                            <br><small>{{ item.product.description|truncatewords:10 }}</small>
+                            {% endif %}
                         </td>
                         <td class="text-center">{{ item.product.hsn_code|default:"-" }}</td>
-                        <td class="text-center">{{ item.product.batch_number|default:"-" }}</td>
                         <td class="text-center">{{ item.quantity }}</td>
                         <td class="text-center">{{ item.product.get_unit_label }}</td>
-                        <td class="text-end text-right">{{ item.item_price|floatformat:2 }}</td>
-                        <td class="text-end text-right">{{ item.subtotal|floatformat:2 }}</td>
+                        <td class="text-right">{{ item.item_price|floatformat:2 }}</td>
+                        <td class="text-right">{{ item.subtotal|floatformat:2 }}</td>
                         <td class="text-center">{{ item.product.gst }}%</td>
-                        <td class="text-end text-right">{{ item.gst_amount|floatformat:2 }}</td>
+                        <td class="text-right">{{ item.gst_amount|floatformat:2 }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

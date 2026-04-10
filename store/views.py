@@ -3,10 +3,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages 
+from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField
-from django.http import HttpResponse, Http404 
+from django.http import HttpResponse, Http404
 from django.template.loader import render_to_string
 from .models import Product, Cart, Order, OrderItem, SalesReport, ShopCustomer
 from .forms import AddProductForm, UpdateProductForm, CustomerLoginForm, CustomerRegisterForm
@@ -434,9 +434,6 @@ def checkout_view(request, username):
     line_dates = [c.transaction_date for c in cart_items if getattr(c, 'transaction_date', None)]
     invoice_date = max(line_dates) if line_dates else timezone.now().date()
 
-    # Convert invoice_date to aware datetime for order_date
-    final_order_dt = timezone.make_aware(datetime.combine(invoice_date, time(12, 0, 0)))
-
     # Create order - The order_number will be auto-assigned by the model's save method
     order = Order.objects.create(
         store_owner=store_owner,
@@ -447,7 +444,6 @@ def checkout_view(request, username):
         total_sgst=total_sgst,
         total_gst=total_gst,
         status='pending',
-        order_date=final_order_dt,
         invoice_date=invoice_date,
     )
 
@@ -513,7 +509,13 @@ def my_orders_view(request, username):
     if not customer:
         return redirect('customer_login', username=username)
 
-    orders = Order.objects.filter(store_owner=store_owner, customer=customer).order_by('-order_date')
+    # Filter out deleted orders by default
+    orders = Order.objects.filter(
+        store_owner=store_owner, 
+        customer=customer,
+        is_deleted=False
+    ).order_by('-order_date')
+    
     return render(request, 'my_orders.html', {
         'orders': orders,
         'store_owner': store_owner,
@@ -578,7 +580,7 @@ def order_detail_view(request, username, order_id):
 def sales_report_view(request):
     """Sales report for the logged-in store owner"""
     user = request.user
-    sales = SalesReport.objects.filter(store_owner=user).order_by('-sale_date')
+    sales = SalesReport.objects.filter(store_owner=user, order__is_deleted=False).order_by('-sale_date')
     total_sales = sales.aggregate(total=Sum('total_price'))['total'] or Decimal('0.00')
     total_revenue = total_sales
 
@@ -600,11 +602,11 @@ def customer_details_list_view(request):
 def sales_dashboard_view(request):
     """Sales dashboard for the logged-in store owner"""
     user = request.user
-    sales = SalesReport.objects.filter(store_owner=user)
+    sales = SalesReport.objects.filter(store_owner=user, order__is_deleted=False)
     
     total_sales = sales.aggregate(total=Sum('total_price'))['total'] or Decimal('0.00')
     total_revenue = total_sales
-    total_orders = Order.objects.filter(store_owner=user).count()
+    total_orders = Order.objects.filter(store_owner=user, is_deleted=False).count()
     
     # Category-wise sales
     category_sales = sales.values('category').annotate(
@@ -766,6 +768,93 @@ def generate_invoice(request, username, order_id):
     return generate_invoice_pdf(request, username, order_id)
 
 
+@require_POST
+def delete_invoice(request, username, order_id):
+    """Delete an invoice (soft delete) and restore stock"""
+    store_owner = get_store_owner(username)
+    customer = get_logged_in_customer(request, store_owner)
+    
+    if not customer:
+        return redirect('customer_login', username=username)
+    
+    order = get_object_or_404(Order, id=order_id, store_owner=store_owner, customer=customer)
+    
+    # Prevent double deletion
+    if not order.is_deleted:
+        # Restore stock for each order item
+        for item in order.items.all():
+            product = item.product
+            product.quantity += item.quantity
+            product.save()
+        
+        # Mark order as deleted
+        order.is_deleted = True
+        order.save()
+        
+        messages.success(request, f'Invoice {order.invoice_number or order.order_number} has been deleted and stock has been restored.')
+    else:
+        messages.warning(request, 'This invoice has already been deleted.')
+    
+    return redirect('my_orders', username=username)
+
+
+@require_POST
+def restore_invoice(request, username, order_id):
+    """Restore a deleted invoice and deduct stock"""
+    store_owner = get_store_owner(username)
+    customer = get_logged_in_customer(request, store_owner)
+    
+    if not customer:
+        return redirect('customer_login', username=username)
+    
+    order = get_object_or_404(Order, id=order_id, store_owner=store_owner, customer=customer)
+    
+    # Only restore if it's deleted
+    if order.is_deleted:
+        # Deduct stock for each order item
+        for item in order.items.all():
+            product = item.product
+            if product.quantity >= item.quantity:
+                product.quantity -= item.quantity
+                product.save()
+            else:
+                messages.error(request, f'Cannot restore: Insufficient stock for {product.name}.')
+                return redirect('deleted_invoices', username=username)
+        
+        # Unmark order as deleted
+        order.is_deleted = False
+        order.save()
+        
+        messages.success(request, f'Invoice {order.invoice_number or order.order_number} has been restored.')
+    else:
+        messages.warning(request, 'This invoice is not deleted.')
+    
+    return redirect('deleted_invoices', username=username)
+
+
+def deleted_invoices_view(request, username):
+    """View deleted invoices for a customer"""
+    store_owner = get_store_owner(username)
+    customer = get_logged_in_customer(request, store_owner)
+    
+    if not customer:
+        return redirect('customer_login', username=username)
+    
+    # Show only deleted orders for this customer
+    orders = Order.objects.filter(
+        store_owner=store_owner, 
+        customer=customer,
+        is_deleted=True
+    ).order_by('-order_date')
+    
+    return render(request, 'deleted_invoices.html', {
+        'orders': orders,
+        'store_owner': store_owner,
+        'customer': customer,
+        'user': store_owner,
+    })
+
+
 @login_required
 def analytics_dashboard_view(request):
     """
@@ -912,7 +1001,7 @@ def monthly_stock_report(request):
         writer = csv.writer(response)
         writer.writerow(['Monthly Stock Report', f'{month_name} {year}'])
         writer.writerow(['Store Owner:', user.company_name or user.username])
-        writer.writerow(['Report Generated:', timezone.now().strftime('%d/%m/%Y %H:%M:%S')])
+        writer.writerow(['Report Generated:', timezone.now().strftime('%Y-%m-%d %H:%M:%S')])
         writer.writerow([])
         writer.writerow(['SUMMARY'])
         writer.writerow(['Total Stock Value:', f'Rs{total_stock_value:.2f}'])
