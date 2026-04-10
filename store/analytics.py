@@ -1,10 +1,13 @@
 # store/analytics.py - Final Complete File
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404, render
 from django.db.models import Sum, Count
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 import traceback
+import datetime
+import calendar
+import csv
 from decimal import Decimal
 from .models import Product, SalesReport, OrderItem
 from accounts.models import CustomUser
@@ -674,6 +677,7 @@ def category_analytics_api(request):
             'status': 'error',
             'message': str(e)
         }, status=500)
+
 @login_required
 @require_http_methods(["GET"])
 def ad_section_api(request):
@@ -732,3 +736,112 @@ def ad_section_api(request):
     except Exception as e:
         print(f"AD Section Error: {traceback.format_exc()}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
+def ad_section_view(request):
+    """
+    Advanced Data (AD) Section UI View
+    URL: /store/analytics/ad-section/
+    """
+    user = request.user
+    now = datetime.datetime.now()
+    year = int(request.GET.get('year', now.year))
+    month = int(request.GET.get('month', now.month))
+
+    products = Product.objects.filter(store_owner=user)
+    data_list = []
+
+    for product in products:
+        sold_qty, sales_amt = _month_sales_totals(user, product, year, month)
+        gst_amt = _gst_amount_from_invoiced_total(sales_amt, product.gst)
+
+        current_stock = int(product.quantity)
+        initial_stock = current_stock + sold_qty
+        
+        unit_price = product.unit_amount or Decimal('0.00')
+        sold_value = unit_price * Decimal(str(sold_qty))
+        sold_gst_value = gst_amt
+        
+        remaining_stock_value = unit_price * Decimal(str(current_stock))
+        gst_rate = Decimal(str(product.gst)) / Decimal('100')
+        remaining_stock_gst = remaining_stock_value * gst_rate
+        
+        data_list.append({
+            'product': product,
+            'initial_stock': initial_stock,
+            'current_stock': current_stock,
+            'units_sold': sold_qty,
+            'sold_value': sold_value,
+            'sold_gst_value': sold_gst_value,
+            'remaining_stock_value': remaining_stock_value,
+            'remaining_stock_gst': remaining_stock_gst,
+        })
+
+    context = {
+        'data_list': data_list,
+        'year': year,
+        'month': month,
+        'months': [(i, calendar.month_name[i]) for i in range(1, 13)],
+        'years': range(now.year - 5, now.year + 2),
+    }
+    return render(request, 'ad_section.html', context)
+
+@login_required
+def export_ad_section_csv(request):
+    """
+    Export Advanced Data (AD) Section to CSV
+    """
+    user = request.user
+    now = datetime.datetime.now()
+    year = int(request.GET.get('year', now.year))
+    month = int(request.GET.get('month', now.month))
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="ad_section_{year}_{month}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Company/Supplier', 'GSTIN', 'Purchase Date', 'Invoice #', 'Product', 'Category',
+        'GST%', 'HSN', 'Batch #', 'Qty (Stock)', 'Unit', 'Unit Amt', 'Net Amt',
+        'Initial Stock', 'Current Stock', 'Units Sold', 'Sold Value', 'Sold GST',
+        'Rem. Stock Value', 'Rem. Stock GST'
+    ])
+    
+    products = Product.objects.filter(store_owner=user)
+    for product in products:
+        sold_qty, sales_amt = _month_sales_totals(user, product, year, month)
+        gst_amt = _gst_amount_from_invoiced_total(sales_amt, product.gst)
+        current_stock = int(product.quantity)
+        initial_stock = current_stock + sold_qty
+        
+        unit_price = product.unit_amount or Decimal('0.00')
+        sold_value = unit_price * Decimal(str(sold_qty))
+        
+        gst_rate = Decimal(str(product.gst)) / Decimal('100')
+        remaining_stock_value = unit_price * Decimal(str(current_stock))
+        remaining_stock_gst = remaining_stock_value * gst_rate
+        
+        writer.writerow([
+            product.purchased_from or '—',
+            product.company_gstin or '—',
+            product.purchase_date.strftime('%d/%m/%Y') if product.purchase_date else '—',
+            product.purchase_invoice_number or '—',
+            product.name,
+            product.category or 'General',
+            product.gst,
+            product.hsn_code or '—',
+            product.batch_number or '—',
+            product.quantity,
+            product.get_measurement_type_display(),
+            f"{product.unit_amount:.2f}",
+            f"{product.net_amount:.2f}",
+            initial_stock,
+            current_stock,
+            sold_qty,
+            f"{sold_value:.2f}",
+            f"{gst_amt:.2f}",
+            f"{remaining_stock_value:.2f}",
+            f"{remaining_stock_gst:.2f}"
+        ])
+    
+    return response

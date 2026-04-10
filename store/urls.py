@@ -15,7 +15,9 @@ urlpatterns = [
     # Global Analytics (uses request.user)
     path('analytics-dashboard/', views.analytics_dashboard_view, name='analytics_dashboard'),
     path('analytics/items/', analytics.item_analytics_api, name='item_analytics_api'),
-    path('analytics/ad-section/', analytics.ad_section_api, name='ad_section_api'),
+    path('analytics/ad-section/', analytics.ad_section_view, name='ad_section'),
+    path('analytics/ad-section/api/', analytics.ad_section_api, name='ad_section_api'),
+    path('analytics/ad-section/export-csv/', analytics.export_ad_section_csv, name='export_ad_section_csv'),
     path('analytics/item/<int:product_id>/', analytics.single_item_analytics_api, name='single_item_analytics_api'),
     path('analytics/categories/', analytics.category_analytics_api, name='category_analytics_api'),
          

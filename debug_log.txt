@@ -1,4 +1,8 @@
-Python Path: C:\Users\Laptop\AppData\Local\Programs\Python\Python310\python.exe
+Watching for file changes with StatReloader
+[10/Apr/2026 20:54:52] "GET / HTTP/1.1" 200 18280
+Python Path: C:\Users\Laptop\AppData\Local\Programs\Python\Python313\python.exe
 Manage.py Path: C:\Users\Laptop\OneDrive\Desktop\E-Commerce\manage.py
-Python Exists: False
+Python Exists: True
 Manage Exists: True
+[10/Apr/2026 20:55:07] "GET / HTTP/1.1" 200 18280
+[10/Apr/2026 20:55:44] "GET / HTTP/1.1" 200 18280
