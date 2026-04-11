@@ -449,7 +449,7 @@ def checkout_view(request, username):
 
     # Generate invoice number based on the per-user order number and invoice (sale) date
     order.invoice_number = (
-        f"INV-{store_owner.username.upper()}-{order.order_number:04d}-{invoice_date.strftime('%Y%m')}"
+        f"{order.order_number:04d}"
     )
     order.save()
 
@@ -700,8 +700,20 @@ def _resolve_invoice_order(request, username, order_id):
     return order, store_owner, None
 
 
-def _invoice_html_to_pdf_bytes(html_string: str, base_url: str) -> bytes:
-    """Render invoice HTML to PDF with headless Chromium (no WeasyPrint/GTK on Windows)."""
+def _invoice_html_to_pdf_xhtml2pdf(html_string: str) -> bytes:
+    """Render invoice HTML to PDF using xhtml2pdf (pure Python, no browser needed)."""
+    from io import BytesIO
+    from xhtml2pdf import pisa
+
+    result_buffer = BytesIO()
+    pisa_status = pisa.CreatePDF(html_string, dest=result_buffer)
+    if pisa_status.err:
+        raise RuntimeError(f'xhtml2pdf conversion error (code {pisa_status.err})')
+    return result_buffer.getvalue()
+
+
+def _invoice_html_to_pdf_playwright(html_string: str, base_url: str) -> bytes:
+    """Render invoice HTML to PDF with headless Chromium (Playwright). Fallback option."""
     if re.search(r'<base\s', html_string, re.IGNORECASE) is None:
         safe_href = html_stdlib.escape(base_url, quote=True)
         html_string = re.sub(
@@ -737,24 +749,31 @@ def generate_invoice_view(request, username, order_id):
 
 
 def generate_invoice_pdf(request, username, order_id):
-    """Same HTML/CSS as web invoice, printed to PDF via Playwright (Chromium)."""
+    """Generate PDF invoice. Uses xhtml2pdf (primary) with Playwright as fallback."""
     order, store_owner, err = _resolve_invoice_order(request, username, order_id)
     if err:
         return err
     context = build_invoice_context(store_owner, order, as_pdf=True)
     html_string = render_to_string('invoice_template.html', context, request=request)
+
+    # Try Playwright first for pixel-perfect rendering
     base = request.build_absolute_uri('/')
     try:
-        pdf_bytes = _invoice_html_to_pdf_bytes(html_string, base)
-    except ImportError:
-        messages.error(request, 'PDF requires Playwright. Run: pip install playwright')
-        return redirect('generate_invoice_view', username=username, order_id=order_id)
-    except Exception:
-        messages.error(
-            request,
-            'Could not create PDF. If Playwright is new, run once: playwright install chromium',
-        )
-        return redirect('generate_invoice_view', username=username, order_id=order_id)
+        pdf_bytes = _invoice_html_to_pdf_playwright(html_string, base)
+    except Exception as playwright_err:
+        # Fallback to xhtml2pdf if Playwright fails
+        try:
+            pdf_bytes = _invoice_html_to_pdf_xhtml2pdf(html_string)
+        except Exception as xhtml_err:
+            return HttpResponse(
+                f'Could not generate PDF.<br>'
+                f'Playwright error: {str(playwright_err)}<br>'
+                f'xhtml2pdf error: {str(xhtml_err)}<br><br>'
+                f'<strong>Tip:</strong> Open the invoice in your browser, '
+                f'click Print, and select "Save as PDF".',
+                status=503,
+            )
+
     inv = getattr(order, 'invoice_number', None) or f'INV-{order.id}'
     safe_inv = ''.join(c if c.isalnum() or c in '-_' else '_' for c in str(inv))
     response = HttpResponse(pdf_bytes, content_type='application/pdf')

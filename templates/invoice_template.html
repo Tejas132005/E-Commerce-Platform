@@ -9,7 +9,7 @@
     <style>
         @page {
             size: A4;
-            margin: 8mm 10mm;
+            margin: 7mm 9mm;
         }
 
         * {
@@ -30,23 +30,157 @@
             print-color-adjust: exact;
         }
 
+        .fw-bold {
+            font-weight: bold;
+        }
+
+        .mb-1 {
+            margin-bottom: 4px;
+        }
+
+        .mb-2 {
+            margin-bottom: 8px;
+        }
+
+        .small {
+            font-size: 0.85rem;
+        }
+
+        .bill-type-btn {
+            background-color: white;
+            color: black;
+            border: 1px solid black;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        .text-center.invoice-header {
+            display: block;
+            text-align: center;
+            border-bottom: none;
+            margin-bottom: 15px;
+        }
+
+        .text-center.invoice-header h2,
+        .text-center.invoice-header h4 {
+            margin: 0;
+            padding: 2px 0;
+            line-height: 1.2;
+            font-weight: bold;
+        }
+
+        .d-flex {
+            display: flex !important;
+        }
+
+        .justify-content-between {
+            justify-content: space-between !important;
+        }
+
+        .align-items-start {
+            align-items: flex-start !important;
+        }
+
+        .flex-grow-1 {
+            flex-grow: 1 !important;
+        }
+
+        .text-end {
+            text-align: right !important;
+        }
+
+        .mt-5 {
+            margin-top: 3rem !important;
+        }
+
+        .mb-4 {
+            margin-bottom: 1.5rem !important;
+        }
+
+        .company-right {
+            min-width: 200px;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .invoice-top {
+            margin-bottom: 10px;
+        }
+
+        .signature-box p {
+            margin: 0;
+        }
+
         .invoice-container {
             max-width: 100%;
             width: 100%;
             margin: 0 auto;
-            padding: {% if as_pdf %}0{% else %}12px{% endif %};
+            padding: 12px;
             background: white;
             font-size: 1rem;
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 100px);
+        }
+
+        @media print {
+            .invoice-container {
+                min-height: 220mm;
+            }
+        }
+
+        .invoice-footer-wrapper {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-top: 20px;
+            page-break-inside: avoid;
+        }
+
+        .kannada-notes {
+            font-family: 'Nirmala UI', 'Arial', sans-serif;
+            font-size: 9px;
+            font-weight: bold;
+            line-height: 1.4;
+            text-align: left;
+            max-width: 65%;
+            color: #000;
+        }
+
+        .signature-box {
+            text-align: center;
+            min-width: 220px;
         }
 
         .invoice-header {
+                {
+                % if as_pdf %
+            }
+
+            display: table;
+
+                {
+                % else %
+            }
+
             display: flex;
+
+                {
+                % endif %
+            }
+
+            width: 100%;
             justify-content: space-between;
             align-items: flex-start;
             gap: 1rem;
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #333;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1.5px solid #333;
             page-break-inside: avoid;
         }
 
@@ -333,12 +467,18 @@
             }
 
             .invoice-container {
-                padding: 0;
-                max-width: none;
+                padding: 12px !important;
+                max-width: none !important;
+                width: 100% !important;
             }
 
-            @page {
-                margin: 7mm 9mm;
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            .invoice-top table {
+                width: 100% !important;
             }
         }
 
@@ -373,19 +513,56 @@
         <a href="/" style="font-weight:600;color:#2c3e50;">🏠 Home</a>
     </p>
     {% endif %}
+
+    <div class="invoice-top" style="width: 100%; margin-bottom: 10px;">
+        <table style="width: 100%; border-collapse: collapse; border: none;">
+            <tr>
+                <!-- Left column (empty for centering balance) -->
+                <td style="width: 20%; vertical-align: top;"></td>
+
+                <!-- Center column (Main Header) -->
+                <td style="width: 60%; text-align: center; vertical-align: top;">
+                    <div class="invoice-header-center">
+                        <h2 class="fw-bold" style="margin: 0; font-size: 22px; color: #000;">
+                            {{ company.name }}
+                        </h2>
+                        <h4 style="margin: 4px 0; font-size: 14px; font-weight: normal; color: #333;">
+                            Sowing Seeds, Chemical Fertilizers, Pesticides
+                        </h4>
+                        <h4 style="margin: 4px 0; font-size: 14px; font-weight: normal; color: #333;">
+                            {{ company.address }}, {{ company.city }} - {{ company.pincode }}, {{ company.state }}
+                        </h4>
+                        <div style="margin-top: 8px;">
+                            <span class="bill-type-btn" style="margin: 0; display: inline-block;">
+                                CASH / CREDIT BILL
+                            </span>
+                        </div>
+                    </div>
+                </td>
+
+                <!-- Right column (Contact Info) -->
+                <td style="width: 20%; text-align: right; vertical-align: top; font-size: 11px; line-height: 1.4;">
+                    <div class="company-right">
+                        <p style="margin: 0;"><strong>Phone:</strong> {{ company.phone }}</p>
+                        <p style="margin: 0;"><strong>Email:</strong> {{ company.email }}</p>
+                        <p style="margin: 0;"><strong>GSTIN:</strong> {{ company.gstin }}</p>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
     <div class="invoice-container">
         <div class="invoice-header">
-            <div class="company-info">
-                <h1>{{ company.name }}</h1>
-                <p>{{ company.address }}</p>
-                <p>{{ company.city }}, {{ company.state }} - {{ company.pincode }}</p>
+            <div class="company-info" style="display: none;">
                 <p>Phone: {{ company.phone }}</p>
                 <p>Email: {{ company.email }}</p>
                 <div class="company-gstin">GSTIN: {{ company.gstin }}</div>
             </div>
             <div class="invoice-details">
                 <p class="invoice-no">Invoice No: {{ invoice.invoice_number|default:invoice.id }}</p>
-                <p><strong>Date:</strong> {% if invoice.invoice_date %}{{ invoice.invoice_date|date:"d/m/Y" }}{% else %}{{ invoice.order_date|date:"d/m/Y" }}{% endif %}</p>
+                <p><strong>Date:</strong> {% if invoice.invoice_date %}{{ invoice.invoice_date|date:"d/m/Y" }}{% else
+                    %}{{ invoice.order_date|date:"d/m/Y" }}{% endif %}</p>
             </div>
         </div>
 
@@ -401,7 +578,8 @@
                     <p>{{ customer.address2 }}</p>
                     {% endif %}
                     {% if customer.city %}
-                    <p>{{ customer.city }}, {{ customer.state|default:"State" }} - {{ customer.pincode|default:"000000" }}</p>
+                    <p>{{ customer.city }}, {{ customer.state|default:"State" }} - {{ customer.pincode|default:"000000"
+                        }}</p>
                     {% endif %}
                     <p><strong>Phone:</strong> {{ customer.phone }}</p>
                     {% if customer.email %}
@@ -532,11 +710,28 @@
             </div>
         </div>
 
+        <div class="invoice-footer-wrapper">
+            <div class="kannada-notes">
+                1. ಬೀಜದ ಪರಿಶುದ್ಧತೆ ಮತ್ತು ಮೊಳಕೆ ಒಡೆಯುವ ಪ್ರಮಾಣ ಆಯಾ ಬೀಜದ ಕಂಪನಿಗಳೇ ಜವಾಬ್ದಾರರಾಗಿರುತ್ತಾರೆ.<br>
+                2. ನಮೂದಿಸಿರುವ ಮಾಲನ್ನು ವ್ಯವಸಾಯಕ್ಕಾಗಿಯೇ ಕೊಡಲಾಗಿದೆ.<br>
+                3. ಒಮ್ಮೆ ಒಯ್ದ ಮಾಲನ್ನು ವಾಪಾಸ ತೆಗೆದುಕೊಳ್ಳುವುದಿಲ್ಲ.
+            </div>
+            <div class="signature-box">
+                <p class="fw-bold" style="margin-bottom: 15px;">For, Kisan Fertilizers</p>
+                <p class="fw-bold">Proprietor</p>
+            </div>
+        </div>
+
         {% if not as_pdf %}
         <div class="print-section">
             <button type="button" onclick="window.print()" class="print-btn">🖨️ Print Invoice</button>
-            <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=invoice.id %}" class="download-btn">📄 Download PDF</a>
-            <a href="{% url 'my_orders' username=store_owner.username %}" class="print-btn back-btn">← Back to Orders</a>
+            <!-- <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=invoice.id %}" class="download-btn">📄 Download PDF</a> -->
+            <a href="{% url 'my_orders' username=store_owner.username %}" class="print-btn back-btn">← Back to
+                Orders</a>
+            <p style="font-size: 11px; color: #666; margin-top: 10px;">
+                💡 <strong>Tip:</strong> If Download fails, click "Print Invoice" and select "Save as PDF" in your
+                browser.
+            </p>
         </div>
         {% endif %}
     </div>
@@ -545,7 +740,7 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('print') === 'true') {
-            window.onload = function() {
+            window.onload = function () {
                 window.print();
             };
         }
