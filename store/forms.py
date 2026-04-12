@@ -70,10 +70,14 @@ class AddProductForm(forms.ModelForm):
             if fname in self.fields:
                 self.fields[fname].required = True
         
-        self.fields['company_gstin'].required = False
-        self.fields['image'].required = False
-        self.fields['taxable_total_amount'].required = False
-        self.fields['total_amount'].required = False
+        if 'company_gstin' in self.fields:
+            self.fields['company_gstin'].required = False
+        if 'image' in self.fields:
+            self.fields['image'].required = False
+        if 'taxable_total_amount' in self.fields:
+            self.fields['taxable_total_amount'].required = False
+        if 'total_amount' in self.fields:
+            self.fields['total_amount'].required = False
         self.initial.setdefault('total_amount', Decimal('0.00'))
         if not self.initial.get('purchase_date') and not self.data:
             self.initial['purchase_date'] = date.today()
@@ -141,24 +145,24 @@ class AddProductForm(forms.ModelForm):
             raise forms.ValidationError('Quantity cannot be negative.')
         return qty
 
-    def clean_unit_value(self):
-        uv = self.cleaned_data.get('unit_value')
+    def clean_taxable_unit_amount(self):
+        uv = self.cleaned_data.get('taxable_unit_amount')
         if uv is None:
-            raise forms.ValidationError('Unit value is required.')
+            raise forms.ValidationError('Taxable unit amount is required.')
         u = Decimal(str(uv))
         if u <= 0:
-            raise forms.ValidationError('Unit value must be greater than zero.')
+            raise forms.ValidationError('Taxable unit amount must be greater than zero.')
         return uv
 
-    def clean_net_amount(self):
-        v = self.cleaned_data.get('net_amount')
+    def clean_taxable_total_amount(self):
+        v = self.cleaned_data.get('taxable_total_amount')
         if v in (None, ''):
             if self.ad_section:
-                raise forms.ValidationError('Net amount is required in AD mode.')
+                raise forms.ValidationError('Taxable total amount is required in AD mode.')
             return Decimal('0.00')
         d = Decimal(str(v))
         if d < 0:
-            raise forms.ValidationError('Net amount cannot be negative.')
+            raise forms.ValidationError('Taxable total amount cannot be negative.')
         return d
 
     def clean(self):
@@ -167,13 +171,13 @@ class AddProductForm(forms.ModelForm):
             q = getattr(self, 'data', None) or {}
             manual = (q.get('net_manual_override') or '').strip() == '1'
             qty = cleaned.get('quantity')
-            unit_amt = cleaned.get('unit_value')
-            net_amt = cleaned.get('net_amount')
+            unit_amt = cleaned.get('taxable_unit_amount')
+            net_amt = cleaned.get('taxable_total_amount')
             if not manual and qty is not None and unit_amt is not None and net_amt is not None:
                 expected = (Decimal(str(unit_amt)) * int(qty)).quantize(Decimal('0.01'))
                 if Decimal(str(net_amt)).quantize(Decimal('0.01')) != expected:
                     self.add_error(
-                        'net_amount',
+                        'taxable_total_amount',
                         'Net amount must equal Unit amount x Quantity, or check "Manual override".',
                     )
         return cleaned
@@ -231,18 +235,27 @@ class UpdateProductForm(forms.ModelForm):
         required_fields = (
             'purchased_from', 'purchase_date', 'purchase_invoice_number',
             'name', 'category', 'gst', 'hsn_code', 'batch_number', 'quantity', 'measurement_type',
-            'unit_value',
+            'unit_capacity', 'taxable_unit_amount',
         )
         for fname in required_fields:
-            self.fields[fname].required = True
-        self.fields['company_gstin'].required = False
-        self.fields['image'].required = False
+            if fname in self.fields:
+                self.fields[fname].required = True
+
+        if 'company_gstin' in self.fields:
+            self.fields['company_gstin'].required = False
+        if 'image' in self.fields:
+            self.fields['image'].required = False
+
         if self.ad_section:
-            self.fields['net_amount'].required = True
-            self.fields['total_amount'].required = True
+            if 'taxable_total_amount' in self.fields:
+                self.fields['taxable_total_amount'].required = True
+            if 'total_amount' in self.fields:
+                self.fields['total_amount'].required = True
         else:
-            self.fields['net_amount'].required = False
-            self.fields['total_amount'].required = False
+            if 'taxable_total_amount' in self.fields:
+                self.fields['taxable_total_amount'].required = False
+            if 'total_amount' in self.fields:
+                self.fields['total_amount'].required = False
             pass # was HiddenInput
             pass # was HiddenInput
 
@@ -309,24 +322,24 @@ class UpdateProductForm(forms.ModelForm):
             raise forms.ValidationError('Quantity cannot be negative.')
         return qty
 
-    def clean_unit_value(self):
-        uv = self.cleaned_data.get('unit_value')
+    def clean_taxable_unit_amount(self):
+        uv = self.cleaned_data.get('taxable_unit_amount')
         if uv is None:
-            raise forms.ValidationError('Unit value is required.')
+            raise forms.ValidationError('Taxable unit amount is required.')
         u = Decimal(str(uv))
         if u <= 0:
-            raise forms.ValidationError('Unit value must be greater than zero.')
+            raise forms.ValidationError('Taxable unit amount must be greater than zero.')
         return uv
 
-    def clean_net_amount(self):
-        v = self.cleaned_data.get('net_amount')
+    def clean_taxable_total_amount(self):
+        v = self.cleaned_data.get('taxable_total_amount')
         if v in (None, ''):
             if self.ad_section:
-                raise forms.ValidationError('Net amount is required in AD mode.')
+                raise forms.ValidationError('Taxable total amount is required in AD mode.')
             return Decimal('0.00')
         d = Decimal(str(v))
         if d < 0:
-            raise forms.ValidationError('Net amount cannot be negative.')
+            raise forms.ValidationError('Taxable total amount cannot be negative.')
         return d
 
     def clean(self):
@@ -335,13 +348,13 @@ class UpdateProductForm(forms.ModelForm):
             q = getattr(self, 'data', None) or {}
             manual = (q.get('net_manual_override') or '').strip() == '1'
             qty = cleaned.get('quantity')
-            unit_amt = cleaned.get('unit_value')
-            net_amt = cleaned.get('net_amount')
+            unit_amt = cleaned.get('taxable_unit_amount')
+            net_amt = cleaned.get('taxable_total_amount')
             if not manual and qty is not None and unit_amt is not None and net_amt is not None:
                 expected = (Decimal(str(unit_amt)) * int(qty)).quantize(Decimal('0.01'))
                 if Decimal(str(net_amt)).quantize(Decimal('0.01')) != expected:
                     self.add_error(
-                        'net_amount',
+                        'taxable_total_amount',
                         'Net amount must equal Unit amount x Quantity, or check "Manual override".',
                     )
         return cleaned
