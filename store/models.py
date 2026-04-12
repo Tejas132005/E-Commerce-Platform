@@ -58,13 +58,19 @@ class Product(models.Model):
         help_text='Pack / unit size (e.g. 1 with kg → "1 kg", 500 with grams → "500 grams")',
     )
     image = models.ImageField(upload_to='products/', blank=True, null=True)
+    unit_capacity = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('1.00'), help_text="Quantity per unit (e.g. 50 for 50kg bag)")
+    taxable_unit_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text="Price per unit (excl. GST)")
+    taxable_total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text="Total taxable amount (taxable_unit_amount * quantity)")
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text="GST-inclusive total")
+    
+    # Old fields kept for compatibility for now
     unit_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text="Price per unit (AD Section)")
     net_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text="Total amount (unit_amount * quantity)")
     is_archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('store_owner', 'name')
+        pass
 
     UNIT_LABEL_SUFFIX = {
         'kg': 'kg',
@@ -77,8 +83,13 @@ class Product(models.Model):
         return f"{self.store_owner.username} - {self.name}"
 
     def get_unit_label(self):
-        """Display string: '<unit_value> <unit>' e.g. 1 kg, 500 grams, 2 ltr."""
-        num = format_unit_value_display(self.unit_value)
+        """Display string: '<unit_capacity> <unit>' e.g. 50 kg, 2 ltr."""
+        # Use unit_capacity for new fields, fallback logic or just use capacity if provided
+        val = self.unit_capacity
+        if val == Decimal('1.00') and self.unit_value != Decimal('1.0000'):
+            val = self.unit_value
+            
+        num = format_unit_value_display(val)
         suffix = self.UNIT_LABEL_SUFFIX.get(self.measurement_type, self.measurement_type or '')
         return f'{num} {suffix}'.strip()
 

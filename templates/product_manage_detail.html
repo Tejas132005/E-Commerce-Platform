@@ -43,6 +43,8 @@
                     <div class="col-md-6">
                         <h6 class="border-bottom pb-2 text-primary mt-3 mt-md-0">Product Info</h6>
                         <dl class="row mb-0 small">
+                            <dt class="col-sm-5">Product ID</dt>
+                            <dd class="col-sm-7"><span class="badge bg-secondary">#{{ product.id }}</span></dd>
                             <dt class="col-sm-5">Product Name</dt>
                             <dd class="col-sm-7">{{ product.name }}</dd>
                             <dt class="col-sm-5">Category</dt>
@@ -59,18 +61,22 @@
                 <div class="row small">
                     <div class="col-md-6">
                         <dl class="row mb-0">
-                            <dt class="col-sm-5">Unit Price</dt>
-                            <dd class="col-sm-7">₹{{ product.unit_amount }}</dd>
-                            <dt class="col-sm-5">GST (%)</dt>
-                            <dd class="col-sm-7">{{ product.gst }}%</dd>
-                            <dt class="col-sm-5">HSN Code</dt>
-                            <dd class="col-sm-7">{{ product.hsn_code|default:"—" }}</dd>
+                            <dt class="col-sm-5">Taxable Unit Amount</dt>
+                            <dd class="col-sm-7">₹{{ product.taxable_unit_amount }}</dd>
+                            <dt class="col-sm-5">Taxable Total Amount</dt>
+                            <dd class="col-sm-7">₹{{ product.taxable_total_amount }}</dd>
+                            <dt class="col-sm-5">Total Amount (Incl. GST)</dt>
+                            <dd class="col-sm-7 fw-bold text-success">₹{{ product.total_amount }}</dd>
                         </dl>
                     </div>
                     <div class="col-md-6">
                         <dl class="row mb-0">
-                            <dt class="col-sm-5">Total Amount</dt>
-                            <dd class="col-sm-7">₹{{ product.net_amount }}</dd>
+                            <dt class="col-sm-5">Unit Capacity</dt>
+                            <dd class="col-sm-7">{{ product.unit_capacity }} {{ product.measurement_type }}</dd>
+                            <dt class="col-sm-5">GST (%)</dt>
+                            <dd class="col-sm-7">{{ product.gst }}%</dd>
+                            <dt class="col-sm-5">HSN Code</dt>
+                            <dd class="col-sm-7">{{ product.hsn_code|default:"—" }}</dd>
                             <dt class="col-sm-5">Batch No.</dt>
                             <dd class="col-sm-7">{{ product.batch_number|default:"—" }}</dd>
                         </dl>

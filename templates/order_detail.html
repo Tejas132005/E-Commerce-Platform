@@ -415,6 +415,14 @@
                             <div class="detail-value">{{ item_data.gst_rate }}%</div>
                         </div>
                         <div class="detail-item">
+                            <div class="detail-label">HSN Code</div>
+                            <div class="detail-value">{{ item_data.product.hsn_code|default:"-" }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Batch</div>
+                            <div class="detail-value">{{ item_data.product.batch_number|default:"-" }}</div>
+                        </div>
+                        <div class="detail-item">
                             <div class="detail-label">CGST</div>
                             <div class="detail-value">₹{{ item_data.cgst_amount|floatformat:2 }}</div>
                         </div>

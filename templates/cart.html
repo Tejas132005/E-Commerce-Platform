@@ -270,6 +270,12 @@
                     {% if item_data.product.hsn_code %}
                     <div class="gst-info">HSN: {{ item_data.product.hsn_code }}</div>
                     {% endif %}
+                    {% if item_data.product.batch_number %}
+                    <div class="gst-info text-primary">Batch: {{ item_data.product.batch_number }}</div>
+                    {% endif %}
+                    {% if item_data.product.purchased_from %}
+                    <div class="gst-info text-secondary">Supplier: {{ item_data.product.purchased_from }}</div>
+                    {% endif %}
                 </div>
 
                 <div class="quantity-display">

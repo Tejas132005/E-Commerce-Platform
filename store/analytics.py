@@ -37,7 +37,6 @@ def _month_sales_totals(store_owner, product, year, month):
     sales_total = qs.aggregate(total=Sum('total_price'))['total'] or Decimal('0.00')
     return int(sold_qty), sales_total
 
-
 def _product_purchase_export_fields(product):
     return {
         'purchased_from': getattr(product, 'purchased_from', '') or '',
@@ -45,6 +44,10 @@ def _product_purchase_export_fields(product):
         'purchase_date': product.purchase_date.isoformat() if getattr(product, 'purchase_date', None) else '',
         'purchase_invoice_number': getattr(product, 'purchase_invoice_number', '') or '',
         'measurement_type_label': product.get_measurement_type_display(),
+        'unit_capacity': float(getattr(product, 'unit_capacity', 0) or 0),
+        'taxable_unit_amount': float(getattr(product, 'taxable_unit_amount', 0) or 0),
+        'taxable_total_amount': float(getattr(product, 'taxable_total_amount', 0) or 0),
+        'total_amount': float(getattr(product, 'total_amount', 0) or 0),
     }
 
 
@@ -720,6 +723,10 @@ def ad_section_api(request):
                 'measurement_type': product.get_measurement_type_display(),
                 'unit_amount': float(product.unit_amount or 0),
                 'net_amount': float(product.net_amount or 0),
+                'taxable_unit_amount': float(product.taxable_unit_amount or 0),
+                'taxable_total_amount': float(product.taxable_total_amount or 0),
+                'total_amount': float(product.total_amount or 0),
+                'unit_capacity': float(product.unit_capacity or 0),
                 'initial_stock': initial_stock_month_start,
                 'current_stock': product.quantity,
                 'units_sold': units_sold,

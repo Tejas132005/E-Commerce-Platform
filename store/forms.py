@@ -18,86 +18,25 @@ class AddProductForm(forms.ModelForm):
         fields = [
             'purchased_from', 'company_gstin', 'purchase_date', 'purchase_invoice_number',
             'name', 'category', 'gst', 'hsn_code', 'batch_number', 'image', 'quantity',
-            'measurement_type', 'unit_value', 'unit_amount', 'net_amount'
+            'measurement_type', 'unit_capacity', 'taxable_unit_amount', 'taxable_total_amount', 'total_amount'
         ]
         widgets = {
-            'purchased_from': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Supplier / company name',
-                'autocomplete': 'off',
-            }),
-            'company_gstin': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '15-character GSTIN (optional)',
-                'maxlength': '15',
-                'autocomplete': 'off',
-            }),
-            'purchase_date': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date',
-            }),
-            'purchase_invoice_number': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Supplier invoice number',
-                'autocomplete': 'off',
-            }),
-            'name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Product name',
-                'minlength': '2',
-                'autocomplete': 'off',
-            }),
-            'category': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'e.g., Electronics, Food',
-                'autocomplete': 'off',
-            }),
-            'gst': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': '0.01',
-                'min': '0',
-                'max': '100',
-            }),
-            'hsn_code': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'HSN/SAC code',
-                'autocomplete': 'off',
-            }),
-            'batch_number': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Batch number',
-                'autocomplete': 'off',
-            }),
-            'image': forms.FileInput(attrs={
-                'class': 'form-control',
-                'accept': 'image/*',
-            }),
-            'quantity': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '0',
-                'placeholder': 'Total stock',
-            }),
-            'measurement_type': forms.Select(attrs={
-                'class': 'form-select',
-            }),
-            'unit_value': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': 'any',
-                'min': '0.0001',
-                'placeholder': 'e.g. 1, 500, 2',
-            }),
-            'unit_amount': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': '0.01',
-                'min': '0',
-                'placeholder': 'Price per unit',
-            }),
-            'net_amount': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': '0.01',
-                'min': '0',
-                'placeholder': 'Total amount',
-            }),
+            'purchased_from': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Supplier name'}),
+            'company_gstin': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '15-char GSTIN', 'maxlength': '15'}),
+            'purchase_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'purchase_invoice_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Invoice number'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Product name'}),
+            'category': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Category'}),
+            'gst': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'hsn_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'HSN code'}),
+            'batch_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Batch number'}),
+            'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'measurement_type': forms.Select(attrs={'class': 'form-select'}),
+            'unit_capacity': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': 'e.g. 50, 2'}),
+            'taxable_unit_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': 'Price per unit'}),
+            'taxable_total_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': 'Auto or manual'}),
+            'total_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': 'Auto or manual'}),
         }
         labels = {
             'purchased_from': 'Company name (purchased from)',
@@ -112,9 +51,10 @@ class AddProductForm(forms.ModelForm):
             'image': 'Image',
             'quantity': 'Quantity (total number)',
             'measurement_type': 'Measurement type',
-            'unit_value': 'Unit value (pack size)',
-            'unit_amount': 'Unit Price (Purchase)',
-            'net_amount': 'Net Amount (Purchase)',
+            'unit_capacity': 'Unit Capacity (weight/volume)',
+            'taxable_unit_amount': 'Taxable Unit Amount',
+            'taxable_total_amount': 'Taxable Total Amount',
+            'total_amount': 'Total Amount',
         }
 
     def __init__(self, *args, store_owner=None, ad_section=False, **kwargs):
@@ -124,36 +64,17 @@ class AddProductForm(forms.ModelForm):
         required_fields = (
             'purchased_from', 'purchase_date', 'purchase_invoice_number',
             'name', 'category', 'gst', 'hsn_code', 'batch_number', 'quantity', 'measurement_type',
-            'unit_value',
+            'unit_capacity', 'taxable_unit_amount'
         )
         for fname in required_fields:
-            self.fields[fname].required = True
+            if fname in self.fields:
+                self.fields[fname].required = True
+        
         self.fields['company_gstin'].required = False
         self.fields['image'].required = False
-        # AD-only purchase pricing: not shown / not required outside Advanced Data mode
-        if self.ad_section:
-            self.fields['unit_amount'].required = True
-            self.fields['net_amount'].required = True
-            self.fields['unit_amount'].widget = forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': '0.01',
-                'min': '0',
-                'placeholder': 'Price per unit',
-            })
-            self.fields['net_amount'].widget = forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': '0.01',
-                'min': '0',
-                'placeholder': 'Total amount (auto or manual)',
-            })
-        else:
-            self.fields['unit_amount'].required = False
-            self.fields['net_amount'].required = False
-            self.fields['unit_amount'].widget = forms.HiddenInput()
-            self.fields['net_amount'].widget = forms.HiddenInput()
-            if not self.data:
-                self.initial.setdefault('unit_amount', Decimal('0.00'))
-                self.initial.setdefault('net_amount', Decimal('0.00'))
+        self.fields['taxable_total_amount'].required = False
+        self.fields['total_amount'].required = False
+        self.initial.setdefault('total_amount', Decimal('0.00'))
         if not self.initial.get('purchase_date') and not self.data:
             self.initial['purchase_date'] = date.today()
 
@@ -229,17 +150,6 @@ class AddProductForm(forms.ModelForm):
             raise forms.ValidationError('Unit value must be greater than zero.')
         return uv
 
-    def clean_unit_amount(self):
-        v = self.cleaned_data.get('unit_amount')
-        if v in (None, ''):
-            if self.ad_section:
-                raise forms.ValidationError('Unit amount is required in AD mode.')
-            return Decimal('0.00')
-        d = Decimal(str(v))
-        if d < 0:
-            raise forms.ValidationError('Unit amount cannot be negative.')
-        return d
-
     def clean_net_amount(self):
         v = self.cleaned_data.get('net_amount')
         if v in (None, ''):
@@ -253,15 +163,11 @@ class AddProductForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        name = (cleaned.get('name') or '').strip()
-        if self.store_owner and name:
-            if Product.objects.filter(store_owner=self.store_owner, name__iexact=name).exists():
-                raise forms.ValidationError('A product with this name already exists in your store.')
         if self.ad_section:
             q = getattr(self, 'data', None) or {}
             manual = (q.get('net_manual_override') or '').strip() == '1'
             qty = cleaned.get('quantity')
-            unit_amt = cleaned.get('unit_amount')
+            unit_amt = cleaned.get('unit_value')
             net_amt = cleaned.get('net_amount')
             if not manual and qty is not None and unit_amt is not None and net_amt is not None:
                 expected = (Decimal(str(unit_amt)) * int(qty)).quantize(Decimal('0.01'))
@@ -279,86 +185,25 @@ class UpdateProductForm(forms.ModelForm):
         fields = [
             'purchased_from', 'company_gstin', 'purchase_date', 'purchase_invoice_number',
             'name', 'category', 'gst', 'hsn_code', 'batch_number', 'image', 'quantity',
-            'measurement_type', 'unit_value', 'unit_amount', 'net_amount'
+            'measurement_type', 'unit_capacity', 'taxable_unit_amount', 'taxable_total_amount', 'total_amount'
         ]
         widgets = {
-            'purchased_from': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Supplier / company name',
-                'autocomplete': 'off',
-            }),
-            'company_gstin': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '15-character GSTIN (optional)',
-                'maxlength': '15',
-                'autocomplete': 'off',
-            }),
-            'purchase_date': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date',
-            }),
-            'purchase_invoice_number': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Supplier invoice number',
-                'autocomplete': 'off',
-            }),
-            'name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Product name',
-                'minlength': '2',
-                'autocomplete': 'off',
-            }),
-            'category': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'e.g., Electronics, Food',
-                'autocomplete': 'off',
-            }),
-            'gst': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': '0.01',
-                'min': '0',
-                'max': '100',
-            }),
-            'hsn_code': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'HSN/SAC code',
-                'autocomplete': 'off',
-            }),
-            'batch_number': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Batch number',
-                'autocomplete': 'off',
-            }),
-            'image': forms.FileInput(attrs={
-                'class': 'form-control',
-                'accept': 'image/*',
-            }),
-            'quantity': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '0',
-                'placeholder': 'Total stock',
-            }),
-            'measurement_type': forms.Select(attrs={
-                'class': 'form-select',
-            }),
-            'unit_value': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': 'any',
-                'min': '0.0001',
-                'placeholder': 'e.g. 1, 500, 2',
-            }),
-            'unit_amount': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': '0.01',
-                'min': '0',
-                'placeholder': 'Price per unit',
-            }),
-            'net_amount': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': '0.01',
-                'min': '0',
-                'placeholder': 'Total amount',
-            }),
+            'purchased_from': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Supplier name'}),
+            'company_gstin': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '15-char GSTIN', 'maxlength': '15'}),
+            'purchase_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'purchase_invoice_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Invoice number'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Product name'}),
+            'category': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Category'}),
+            'gst': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'hsn_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'HSN code'}),
+            'batch_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Batch number'}),
+            'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'measurement_type': forms.Select(attrs={'class': 'form-select'}),
+            'unit_capacity': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': 'e.g. 50, 2'}),
+            'taxable_unit_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': 'Price per unit'}),
+            'taxable_total_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': 'Auto or manual'}),
+            'total_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': 'Auto or manual'}),
         }
         labels = {
             'purchased_from': 'Company name (purchased from)',
@@ -373,9 +218,10 @@ class UpdateProductForm(forms.ModelForm):
             'image': 'Image',
             'quantity': 'Quantity (total number)',
             'measurement_type': 'Measurement type',
-            'unit_value': 'Unit value (pack size)',
-            'unit_amount': 'Unit Price (Purchase)',
-            'net_amount': 'Net Amount (Purchase)',
+            'unit_capacity': 'Unit Capacity (weight/volume)',
+            'taxable_unit_amount': 'Taxable Unit Amount',
+            'taxable_total_amount': 'Taxable Total Amount',
+            'total_amount': 'Total Amount',
         }
 
     def __init__(self, *args, store_owner=None, ad_section=False, **kwargs):
@@ -392,13 +238,13 @@ class UpdateProductForm(forms.ModelForm):
         self.fields['company_gstin'].required = False
         self.fields['image'].required = False
         if self.ad_section:
-            self.fields['unit_amount'].required = True
             self.fields['net_amount'].required = True
+            self.fields['total_amount'].required = True
         else:
-            self.fields['unit_amount'].required = False
             self.fields['net_amount'].required = False
-            self.fields['unit_amount'].widget = forms.HiddenInput()
-            self.fields['net_amount'].widget = forms.HiddenInput()
+            self.fields['total_amount'].required = False
+            pass # was HiddenInput
+            pass # was HiddenInput
 
     def clean_purchased_from(self):
         v = (self.cleaned_data.get('purchased_from') or '').strip()
@@ -472,17 +318,6 @@ class UpdateProductForm(forms.ModelForm):
             raise forms.ValidationError('Unit value must be greater than zero.')
         return uv
 
-    def clean_unit_amount(self):
-        v = self.cleaned_data.get('unit_amount')
-        if v in (None, ''):
-            if self.ad_section:
-                raise forms.ValidationError('Unit amount is required in AD mode.')
-            return Decimal('0.00')
-        d = Decimal(str(v))
-        if d < 0:
-            raise forms.ValidationError('Unit amount cannot be negative.')
-        return d
-
     def clean_net_amount(self):
         v = self.cleaned_data.get('net_amount')
         if v in (None, ''):
@@ -496,20 +331,11 @@ class UpdateProductForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        if not self.instance or not self.instance.pk:
-            return cleaned
-        name = (cleaned.get('name') or '').strip()
-        owner = getattr(self.instance, 'store_owner', None) or self.store_owner
-        if name and owner and Product.objects.filter(
-            store_owner=owner,
-            name__iexact=name,
-        ).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError('A product with this name already exists in your store.')
         if self.ad_section:
             q = getattr(self, 'data', None) or {}
             manual = (q.get('net_manual_override') or '').strip() == '1'
             qty = cleaned.get('quantity')
-            unit_amt = cleaned.get('unit_amount')
+            unit_amt = cleaned.get('unit_value')
             net_amt = cleaned.get('net_amount')
             if not manual and qty is not None and unit_amt is not None and net_amt is not None:
                 expected = (Decimal(str(unit_amt)) * int(qty)).quantize(Decimal('0.01'))
