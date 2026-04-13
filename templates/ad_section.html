@@ -71,6 +71,7 @@
                     <th>Product</th>
                     <th>Category</th>
                     <th>GST%</th>
+                    <th>IGST%</th>
                     <th>HSN</th>
                     <th>Batch #</th>
                     <th>Qty (Stock)</th>
@@ -82,8 +83,11 @@
                     <th>Units Sold</th>
                     <th>Sold Value</th>
                     <th>Sold GST</th>
-                    <th>Rem. Stock Value</th>
-                    <th>Rem. Stock GST</th>
+                    <th>Sold IGST</th>
+                    <th>Rem. Taxable Value</th>
+                    <th>Rem. GST</th>
+                    <th>Rem. IGST</th>
+                    <th>Rem. Total Value</th>
                 </tr>
             </thead>
             <tbody>
@@ -96,6 +100,7 @@
                     <td class="text-primary fw-bold">{{ item.product.name }}</td>
                     <td><span class="badge badge-category">{{ item.product.category|default:"General" }}</span></td>
                     <td>{{ item.product.gst }}%</td>
+                    <td>{{ item.product.igst }}%</td>
                     <td><small>{{ item.product.hsn_code|default:"—" }}</small></td>
                     <td><small>{{ item.product.batch_number|default:"—" }}</small></td>
                     <td class="fw-bold">{{ item.product.quantity }}</td>
@@ -107,12 +112,15 @@
                     <td class="text-danger fw-bold">{{ item.units_sold }}</td>
                     <td class="fw-bold">₹{{ item.sold_value|floatformat:2 }}</td>
                     <td class="fw-bold">₹{{ item.sold_gst_value|floatformat:2 }}</td>
-                    <td class="fw-bold text-primary">₹{{ item.remaining_stock_value|floatformat:2 }}</td>
+                    <td class="fw-bold">₹{{ item.sold_igst_value|floatformat:2 }}</td>
+                    <td class="fw-bold text-primary">₹{{ item.remaining_stock_taxable_value|floatformat:2 }}</td>
                     <td class="fw-bold text-dark">₹{{ item.remaining_stock_gst|floatformat:2 }}</td>
+                    <td class="fw-bold text-dark">₹{{ item.remaining_stock_igst|floatformat:2 }}</td>
+                    <td class="fw-bold text-success">₹{{ item.remaining_stock_total_value|floatformat:2 }}</td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="17" class="text-center py-5 text-muted">
+                    <td colspan="25" class="text-center py-5 text-muted">
                         <i class="bi bi-info-circle fs-4 d-block mb-2"></i>
                         No products found for this period.
                     </td>

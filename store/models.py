@@ -48,6 +48,7 @@ class Product(models.Model):
     initial_stock = models.PositiveIntegerField(default=0, help_text="Stock quantity at time of creation")
     category = models.CharField(max_length=100, blank=True, null=True)
     gst = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    igst = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), help_text='IGST percentage')
     hsn_code = models.CharField(max_length=20, blank=True, null=True)
     batch_number = models.CharField(max_length=50, blank=True, null=True)
     measurement_type = models.CharField(max_length=10, choices=MEASUREMENT_CHOICES, default='kg')
@@ -92,6 +93,24 @@ class Product(models.Model):
         num = format_unit_value_display(val)
         suffix = self.UNIT_LABEL_SUFFIX.get(self.measurement_type, self.measurement_type or '')
         return f'{num} {suffix}'.strip()
+
+    @property
+    def uses_igst(self):
+        """Return True if IGST is the applicable tax for this product."""
+        return self.igst is not None and self.igst > 0
+
+    @property
+    def effective_tax_rate(self):
+        """Return the effective tax rate (IGST if set, else GST)."""
+        if self.uses_igst:
+            return self.igst
+        return self.gst
+
+    @property
+    def total_unit_amount(self):
+        """Unit price inclusive of tax (GST or IGST)."""
+        rate = Decimal(str(self.effective_tax_rate)) / Decimal('100')
+        return (self.taxable_unit_amount * (Decimal('1') + rate)).quantize(Decimal('0.01'))
 
     def save(self, *args, **kwargs):
         # Set initial_stock on first creation
@@ -157,6 +176,7 @@ class Order(models.Model):
     total_cgst = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     total_sgst = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     total_gst = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    total_igst = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=Decimal('0.00'))
     invoice_number = models.CharField(max_length=50, blank=True, null=True)
     is_deleted = models.BooleanField(default=False)
 
@@ -192,6 +212,7 @@ class OrderItem(models.Model):
     cgst_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     sgst_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     gst_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    igst_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=Decimal('0.00'))
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity}"
@@ -220,6 +241,7 @@ class ProductReturn(models.Model):
     
     taxable_unit_amount = models.DecimalField(max_digits=10, decimal_places=2)
     gst = models.DecimalField(max_digits=5, decimal_places=2)
+    igst = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
     taxable_total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     

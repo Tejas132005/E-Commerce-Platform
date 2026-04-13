@@ -13,17 +13,14 @@ from .models import Product, SalesReport, OrderItem
 from accounts.models import CustomUser
 
 
-def _gst_amount_from_invoiced_total(total_with_gst, gst_percent) -> Decimal:
-    """
-    SalesReport.total_price is stored VAT/GST-inclusive in this project.
-    Extract GST component: total - total/(1+rate).
-    """
-    total_with_gst = total_with_gst or Decimal('0.00')
-    rate = Decimal(str(gst_percent or 0)) / Decimal('100')
+def _tax_amount_from_total(total_with_tax, rate_percent) -> Decimal:
+    """Extract tax component from a tax-inclusive total: total - total/(1+rate)."""
+    total_with_tax = total_with_tax or Decimal('0.00')
+    rate = Decimal(str(rate_percent or 0)) / Decimal('100')
     divisor = Decimal('1') + rate
-    if divisor == 0:
+    if divisor <= 1:
         return Decimal('0.00')
-    return total_with_gst - (total_with_gst / divisor)
+    return total_with_tax - (total_with_tax / divisor)
 
 
 def _month_sales_totals(store_owner, product, year, month):
@@ -116,26 +113,37 @@ def user_item_analytics_api(request, username):
                 product=product
             )
             
-            # Calculate GST breakdown
-            total_revenue_with_gst = Decimal('0.00')
-            total_revenue_without_gst = Decimal('0.00')
+            # Calculate tax breakdown
+            total_revenue_with_tax = Decimal('0.00')
+            total_revenue_without_tax = Decimal('0.00')
             total_gst_amount = Decimal('0.00')
             total_cgst_amount = Decimal('0.00')
             total_sgst_amount = Decimal('0.00')
+            total_igst_amount = Decimal('0.00')
             
+            uses_igst = product.igst is not None and product.igst > 0
+
             for item in order_items:
-                item_subtotal = item.item_price * item.quantity
-                gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
-                item_gst_amount = item_subtotal * gst_rate_decimal
-                item_cgst = item_gst_amount / Decimal('2')
-                item_sgst = item_gst_amount / Decimal('2')
-                item_total_with_gst = item_subtotal + item_gst_amount
+                item_total_with_tax = item.total_price
+                if uses_igst:
+                    item_igst = _tax_amount_from_total(item_total_with_tax, product.igst)
+                    item_subtotal = item_total_with_tax - item_igst
+                    item_cgst = Decimal('0.00')
+                    item_sgst = Decimal('0.00')
+                    item_gst_amount = Decimal('0.00')
+                    total_igst_amount += item_igst
+                else:
+                    item_gst_amount = _tax_amount_from_total(item_total_with_tax, product.gst)
+                    item_subtotal = item_total_with_tax - item_gst_amount
+                    item_cgst = item_gst_amount / Decimal('2')
+                    item_sgst = item_gst_amount / Decimal('2')
+                    item_igst = Decimal('0.00')
+                    total_gst_amount += item_gst_amount
+                    total_cgst_amount += item_cgst
+                    total_sgst_amount += item_sgst
                 
-                total_revenue_without_gst += item_subtotal
-                total_gst_amount += item_gst_amount
-                total_cgst_amount += item_cgst
-                total_sgst_amount += item_sgst
-                total_revenue_with_gst += item_total_with_gst
+                total_revenue_without_tax += item_subtotal
+                total_revenue_with_tax += item_total_with_tax
             
             # Calculate stock information
             sold_quantity = total_sold
@@ -162,15 +170,17 @@ def user_item_analytics_api(request, username):
                 'initial_stock': int(product.initial_stock),
                 'current_price': float(product.price),
                 'gst_rate': float(product.gst),
+                'igst_rate': float(product.igst or 0),
                 'current_stock': current_stock,
                 'sold_quantity': sold_quantity,
                 'total_initial_stock': total_stock,
                 'stock_percentage_remaining': round(float((current_stock / total_stock) * 100), 2) if total_stock > 0 else 0,
-                'total_revenue_without_gst': float(total_revenue_without_gst),
+                'total_revenue_without_gst': float(total_revenue_without_tax),
                 'total_cgst_collected': float(total_cgst_amount),
                 'total_sgst_collected': float(total_sgst_amount),
                 'total_gst_collected': float(total_gst_amount),
-                'total_revenue_with_gst': float(total_revenue_with_gst),
+                'total_igst_collected': float(total_igst_amount),
+                'total_revenue_with_gst': float(total_revenue_with_tax),
                 'total_orders': total_orders,
                 'revenue_per_unit': float(total_revenue_with_gst / sold_quantity) if sold_quantity > 0 else 0,
                 'is_fast_moving': sold_quantity > (total_stock * 0.7) if total_stock > 0 else False,
@@ -256,25 +266,36 @@ def user_single_item_analytics_api(request, username, product_id):
             product=product
         )
         
-        total_revenue_with_gst = Decimal('0.00')
-        total_revenue_without_gst = Decimal('0.00')
+        total_revenue_with_tax = Decimal('0.00')
+        total_revenue_without_tax = Decimal('0.00')
         total_gst_amount = Decimal('0.00')
         total_cgst_amount = Decimal('0.00')
         total_sgst_amount = Decimal('0.00')
+        total_igst_amount = Decimal('0.00')
+
+        uses_igst = product.igst is not None and product.igst > 0
         
         for item in order_items:
-            item_subtotal = item.item_price * item.quantity
-            gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
-            item_gst_amount = item_subtotal * gst_rate_decimal
-            item_cgst = item_gst_amount / Decimal('2')
-            item_sgst = item_gst_amount / Decimal('2')
-            item_total_with_gst = item_subtotal + item_gst_amount
+            item_total_with_tax = item.total_price
+            if uses_igst:
+                item_igst = _tax_amount_from_total(item_total_with_tax, product.igst)
+                item_subtotal = item_total_with_tax - item_igst
+                item_cgst = Decimal('0.00')
+                item_sgst = Decimal('0.00')
+                item_gst = Decimal('0.00')
+                total_igst_amount += item_igst
+            else:
+                item_gst = _tax_amount_from_total(item_total_with_tax, product.gst)
+                item_subtotal = item_total_with_tax - item_gst
+                item_cgst = item_gst / Decimal('2')
+                item_sgst = item_gst / Decimal('2')
+                item_igst = Decimal('0.00')
+                total_gst_amount += item_gst
+                total_cgst_amount += item_cgst
+                total_sgst_amount += item_sgst
             
-            total_revenue_without_gst += item_subtotal
-            total_gst_amount += item_gst_amount
-            total_cgst_amount += item_cgst
-            total_sgst_amount += item_sgst
-            total_revenue_with_gst += item_total_with_gst
+            total_revenue_without_tax += item_subtotal
+            total_revenue_with_tax += item_total_with_tax
         
         # Get recent sales
         recent_sales = SalesReport.objects.filter(
@@ -307,6 +328,7 @@ def user_single_item_analytics_api(request, username, product_id):
                 'initial_stock': int(product.initial_stock),
                 'current_price': float(product.price),
                 'gst_rate': float(product.gst),
+                'igst_rate': float(product.igst or 0),
                 'created_at': product.created_at.isoformat(),
             },
             'stock_analytics': {
@@ -319,12 +341,13 @@ def user_single_item_analytics_api(request, username, product_id):
                 ),
             },
             'revenue_analytics': {
-                'total_revenue_without_gst': float(total_revenue_without_gst),
+                'total_revenue_without_tax': float(total_revenue_without_tax),
                 'total_cgst_collected': float(total_cgst_amount),
                 'total_sgst_collected': float(total_sgst_amount),
                 'total_gst_collected': float(total_gst_amount),
-                'total_revenue_with_gst': float(total_revenue_with_gst),
-                'revenue_per_unit_in_stock': float(total_revenue_with_gst / current_stock) if current_stock > 0 else 0
+                'total_igst_collected': float(total_igst_amount),
+                'total_revenue_with_tax': float(total_revenue_with_tax),
+                'revenue_per_unit_in_stock': float(total_revenue_with_tax / current_stock) if current_stock > 0 else 0
             },
             'sales_analytics': {
                 'total_orders': total_orders,
@@ -403,22 +426,27 @@ def user_category_analytics_api(request, username):
                 product=product
             )
             
-            product_revenue_with_gst = Decimal('0.00')
+            product_revenue_with_tax = Decimal('0.00')
             product_gst_amount = Decimal('0.00')
+            product_igst_amount = Decimal('0.00')
             
+            uses_igst = product.igst is not None and product.igst > 0
+
             for item in order_items:
-                item_subtotal = item.item_price * item.quantity
-                gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
-                item_gst_amount = item_subtotal * gst_rate_decimal
-                item_total_with_gst = item_subtotal + item_gst_amount
-                
-                product_revenue_with_gst += item_total_with_gst
-                product_gst_amount += item_gst_amount
+                item_total_with_tax = item.total_price
+                if uses_igst:
+                    item_igst = _tax_amount_from_total(item_total_with_tax, product.igst)
+                    product_igst_amount += item_igst
+                else:
+                    item_gst = _tax_amount_from_total(item_total_with_tax, product.gst)
+                    product_gst_amount += item_gst
+                product_revenue_with_tax += item_total_with_tax
             
             # Add to category totals
             category_data[category]['total_products'] += 1
-            category_data[category]['total_revenue_with_gst'] += product_revenue_with_gst
+            category_data[category]['total_revenue_with_gst'] += product_revenue_with_tax
             category_data[category]['total_gst_collected'] += product_gst_amount
+            category_data[category]['total_igst_collected'] = category_data[category].get('total_igst_collected', Decimal('0.00')) + product_igst_amount
             category_data[category]['total_sold_quantity'] += total_sold
             category_data[category]['total_current_stock'] += product.quantity
         
@@ -435,6 +463,7 @@ def user_category_analytics_api(request, username):
                 'total_products': category_info['total_products'],
                 'total_revenue_with_gst': category_revenue,
                 'total_gst_collected': float(category_info['total_gst_collected']),
+                'total_igst_collected': float(category_info.get('total_igst_collected', 0)),
                 'total_sold_quantity': category_info['total_sold_quantity'],
                 'total_current_stock': category_info['total_current_stock'],
                 'revenue_percentage': revenue_percentage,
@@ -509,21 +538,23 @@ def item_analytics_api(request):
                 product=product
             )
             
-            total_revenue_with_gst = Decimal('0.00')
+            total_revenue_with_tax = Decimal('0.00')
             total_gst_amount = Decimal('0.00')
+            total_igst_amount = Decimal('0.00')
             
+            uses_igst = product.igst is not None and product.igst > 0
+
             for item in order_items:
-                item_subtotal = item.item_price * item.quantity
-                gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
-                item_gst_amount = item_subtotal * gst_rate_decimal
-                item_total_with_gst = item_subtotal + item_gst_amount
-                
-                total_gst_amount += item_gst_amount
-                total_revenue_with_gst += item_total_with_gst
+                item_total_with_tax = item.total_price
+                if uses_igst:
+                    total_igst_amount += _tax_amount_from_total(item_total_with_tax, product.igst)
+                else:
+                    total_gst_amount += _tax_amount_from_total(item_total_with_tax, product.gst)
+                total_revenue_with_tax += item_total_with_tax
             
             current_stock = product.quantity
             total_stock = total_sold + current_stock
-
+            
             item_data = {
                 'product_id': product.id,
                 'product_name': product.name,
@@ -533,11 +564,13 @@ def item_analytics_api(request):
                 'initial_stock': int(product.initial_stock),
                 'current_price': float(product.price),
                 'gst_rate': float(product.gst),
+                'igst_rate': float(product.igst or 0),
                 'current_stock': current_stock,
                 'sold_quantity': total_sold,
                 'total_initial_stock': total_stock,
                 'total_gst_collected': float(total_gst_amount),
-                'total_revenue_with_gst': float(total_revenue_with_gst),
+                'total_igst_collected': float(total_igst_amount),
+                'total_revenue_with_gst': float(total_revenue_with_tax),
                 'total_orders': total_orders,
                 'stock_status': 'Out of Stock' if current_stock == 0 else (
                     'Low Stock' if current_stock < 10 else 'In Stock'
@@ -702,7 +735,14 @@ def ad_section_api(request):
 
         for product in products:
             sold_qty, sales_amt = _month_sales_totals(user, product, year, month)
-            gst_amt = _gst_amount_from_invoiced_total(sales_amt, product.gst)
+            uses_igst = product.igst is not None and product.igst > 0
+            
+            if uses_igst:
+                igst_amt = _tax_amount_from_total(sales_amt, product.igst)
+                gst_amt = Decimal('0.00')
+            else:
+                gst_amt = _tax_amount_from_total(sales_amt, product.gst)
+                igst_amt = Decimal('0.00')
 
             current_stock = int(product.quantity)
             initial_stock_month_start = current_stock + sold_qty
@@ -731,6 +771,7 @@ def ad_section_api(request):
                 'current_stock': product.quantity,
                 'units_sold': units_sold,
                 'gst_amount': float(gst_amt),
+                'igst_amount': float(igst_amt),
                 'is_archived': product.is_archived,
             })
 
@@ -760,18 +801,32 @@ def ad_section_view(request):
 
     for product in products:
         sold_qty, sales_amt = _month_sales_totals(user, product, year, month)
-        gst_amt = _gst_amount_from_invoiced_total(sales_amt, product.gst)
+        
+        uses_igst = product.igst is not None and product.igst > 0
+        if uses_igst:
+            igst_amt = _tax_amount_from_total(sales_amt, product.igst)
+            gst_amt = Decimal('0.00')
+        else:
+            gst_amt = _tax_amount_from_total(sales_amt, product.gst)
+            igst_amt = Decimal('0.00')
 
         current_stock = int(product.quantity)
         initial_stock = current_stock + sold_qty
         
-        unit_price = product.unit_amount or Decimal('0.00')
-        sold_value = unit_price * Decimal(str(sold_qty))
+        sold_value = sales_amt # total_price from reports
         sold_gst_value = gst_amt
+        sold_igst_value = igst_amt
         
-        remaining_stock_value = unit_price * Decimal(str(current_stock))
-        gst_rate = Decimal(str(product.gst)) / Decimal('100')
-        remaining_stock_gst = remaining_stock_value * gst_rate
+        # Values from Add Product data
+        remaining_stock_taxable_value = product.taxable_unit_amount * Decimal(str(current_stock))
+        remaining_stock_total_value = product.total_unit_amount * Decimal(str(current_stock))
+        
+        if uses_igst:
+            remaining_stock_igst = remaining_stock_total_value - remaining_stock_taxable_value
+            remaining_stock_gst = Decimal('0.00')
+        else:
+            remaining_stock_gst = remaining_stock_total_value - remaining_stock_taxable_value
+            remaining_stock_igst = Decimal('0.00')
         
         data_list.append({
             'product': product,
@@ -780,8 +835,11 @@ def ad_section_view(request):
             'units_sold': sold_qty,
             'sold_value': sold_value,
             'sold_gst_value': sold_gst_value,
-            'remaining_stock_value': remaining_stock_value,
+            'sold_igst_value': sold_igst_value,
+            'remaining_stock_taxable_value': remaining_stock_taxable_value,
+            'remaining_stock_total_value': remaining_stock_total_value,
             'remaining_stock_gst': remaining_stock_gst,
+            'remaining_stock_igst': remaining_stock_igst,
         })
 
     context = {
@@ -809,24 +867,36 @@ def export_ad_section_csv(request):
     writer = csv.writer(response)
     writer.writerow([
         'Company/Supplier', 'GSTIN', 'Purchase Date', 'Invoice #', 'Product', 'Category',
-        'GST%', 'HSN', 'Batch #', 'Qty (Stock)', 'Unit', 'Unit Amt', 'Net Amt',
-        'Initial Stock', 'Current Stock', 'Units Sold', 'Sold Value', 'Sold GST',
-        'Rem. Stock Value', 'Rem. Stock GST'
+        'GST%', 'IGST%', 'HSN', 'Batch #', 'Qty (Stock)', 'Unit', 'Unit Amt', 'Net Amt',
+        'Initial Stock', 'Current Stock', 'Units Sold', 'Sold Value', 'Sold GST', 'Sold IGST',
+        'Rem. Taxable Value', 'Rem. GST', 'Rem. IGST', 'Rem. Total Value'
     ])
     
     products = Product.objects.filter(store_owner=user)
     for product in products:
         sold_qty, sales_amt = _month_sales_totals(user, product, year, month)
-        gst_amt = _gst_amount_from_invoiced_total(sales_amt, product.gst)
+        
+        uses_igst = product.igst is not None and product.igst > 0
+        if uses_igst:
+            igst_amt = _tax_amount_from_total(sales_amt, product.igst)
+            gst_amt = Decimal('0.00')
+        else:
+            gst_amt = _tax_amount_from_total(sales_amt, product.gst)
+            igst_amt = Decimal('0.00')
+
         current_stock = int(product.quantity)
         initial_stock = current_stock + sold_qty
         
-        unit_price = product.unit_amount or Decimal('0.00')
-        sold_value = unit_price * Decimal(str(sold_qty))
+        # Values from Add Product data
+        remaining_stock_taxable_value = product.taxable_unit_amount * Decimal(str(current_stock))
+        remaining_stock_total_value = product.total_unit_amount * Decimal(str(current_stock))
         
-        gst_rate = Decimal(str(product.gst)) / Decimal('100')
-        remaining_stock_value = unit_price * Decimal(str(current_stock))
-        remaining_stock_gst = remaining_stock_value * gst_rate
+        if uses_igst:
+            rem_igst = remaining_stock_total_value - remaining_stock_taxable_value
+            rem_gst = Decimal('0.00')
+        else:
+            rem_gst = remaining_stock_total_value - remaining_stock_taxable_value
+            rem_igst = Decimal('0.00')
         
         writer.writerow([
             product.purchased_from or '—',
@@ -836,6 +906,7 @@ def export_ad_section_csv(request):
             product.name,
             product.category or 'General',
             product.gst,
+            product.igst,
             product.hsn_code or '—',
             product.batch_number or '—',
             product.quantity,
@@ -845,10 +916,13 @@ def export_ad_section_csv(request):
             initial_stock,
             current_stock,
             sold_qty,
-            f"{sold_value:.2f}",
+            f"{sales_amt:.2f}",
             f"{gst_amt:.2f}",
-            f"{remaining_stock_value:.2f}",
-            f"{remaining_stock_gst:.2f}"
+            f"{igst_amt:.2f}",
+            f"{remaining_stock_taxable_value:.2f}",
+            f"{rem_gst:.2f}",
+            f"{rem_igst:.2f}",
+            f"{remaining_stock_total_value:.2f}"
         ])
     
     return response

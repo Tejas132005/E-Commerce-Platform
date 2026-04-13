@@ -48,11 +48,12 @@ def _redirect_after_cart_error(request, username):
 
 def _stock_detail_for_product(user, product, year, month):
     """
-    Aggregate sold qty, sales amount, and GST for one product.
+    Aggregate sold qty, sales amount, and tax breakdown for one product.
     month=None means entire year.
+    Uses actual sales data from SalesReport (completed orders).
     """
     sold_quantity = 0
-    total_amount_with_gst = Decimal('0.00')
+    total_amount_with_tax = Decimal('0.00')
 
     sales_qs = SalesReport.objects.filter(
         store_owner=user,
@@ -63,25 +64,40 @@ def _stock_detail_for_product(user, product, year, month):
         sales_qs = sales_qs.filter(sale_date__month=month)
 
     sold_quantity = sales_qs.aggregate(total=Sum('quantity'))['total'] or 0
-    total_amount_with_gst = sales_qs.aggregate(total=Sum('total_price'))['total'] or Decimal('0.00')
+    total_amount_with_tax = sales_qs.aggregate(total=Sum('total_price'))['total'] or Decimal('0.00')
 
-    gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
-    divisor = Decimal('1') + gst_rate_decimal
-    if divisor == 0:
-        sales_amount_ex_gst = Decimal('0.00')
-        gst_amount = Decimal('0.00')
+    # Determine tax type: IGST takes priority
+    uses_igst = product.igst is not None and product.igst > 0
+
+    igst_amount = Decimal('0.00')
+    cgst_amount = Decimal('0.00')
+    sgst_amount = Decimal('0.00')
+    gst_amount = Decimal('0.00')
+    sales_amount_ex_tax = Decimal('0.00')
+
+    if uses_igst:
+        igst_rate = Decimal(str(product.igst)) / Decimal('100')
+        divisor = Decimal('1') + igst_rate
+        if divisor > 0:
+            sales_amount_ex_tax = total_amount_with_tax / divisor
+            igst_amount = total_amount_with_tax - sales_amount_ex_tax
+        # CGST/SGST/GST all zero for IGST products
     else:
-        sales_amount_ex_gst = total_amount_with_gst / divisor
-        gst_amount = total_amount_with_gst - sales_amount_ex_gst
+        gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
+        divisor = Decimal('1') + gst_rate_decimal
+        if divisor > 0:
+            sales_amount_ex_tax = total_amount_with_tax / divisor
+            gst_amount = total_amount_with_tax - sales_amount_ex_tax
+            cgst_amount = gst_amount / Decimal('2')
+            sgst_amount = gst_amount / Decimal('2')
 
     current_stock = product.quantity
-    # Stock on 1st of month (or 1st of year) ~= current stock + sold so far in that period
     initial_stock_for_period = int(current_stock) + int(sold_quantity)
-    # Units sold for the report period
     units_sold_period = int(initial_stock_for_period) - int(current_stock)
 
-    unit_price = product.unit_amount if product.unit_amount and product.unit_amount > 0 else product.price
-    stock_value = unit_price * current_stock
+    # Stock values from Add Product data
+    taxable_stock_value = product.taxable_unit_amount * current_stock
+    total_stock_value = product.total_unit_amount * current_stock
 
     if current_stock == 0:
         stock_status = 'Out of Stock'
@@ -95,10 +111,14 @@ def _stock_detail_for_product(user, product, year, month):
         'current_stock': current_stock,
         'initial_stock': initial_stock_for_period,
         'sold_quantity': units_sold_period,
-        'total_amount_with_gst': total_amount_with_gst,
-        'sales_amount': sales_amount_ex_gst,
+        'total_amount_with_gst': total_amount_with_tax,
+        'sales_amount': sales_amount_ex_tax,
         'gst_amount': gst_amount,
-        'stock_value': stock_value,
+        'igst_amount': igst_amount,
+        'cgst_amount': cgst_amount,
+        'sgst_amount': sgst_amount,
+        'taxable_stock_value': taxable_stock_value,
+        'total_stock_value': total_stock_value,
         'stock_status': stock_status,
         'status_class': status_class,
         'category': product.category or 'Uncategorized',
@@ -310,57 +330,65 @@ def cart_view(request, username):
 
     cart_items = Cart.objects.filter(store_owner=store_owner, customer=customer)
     
-    # Calculate totals with GST - FIXED: Proper Decimal handling
+    # Calculate totals with GST/IGST - FIXED: Proper Decimal handling
     subtotal = Decimal('0.00')
     total_gst = Decimal('0.00')
+    total_igst = Decimal('0.00')
     
     cart_items_with_gst = []
     
     for item in cart_items:
-        # Use the stored unit_price from the cart (set via modal)
         effective_price = item.unit_price if item.unit_price > 0 else item.product.price
-        
-        # Calculate item subtotal (without GST)
         item_subtotal = effective_price * item.quantity
         
-        # Calculate GST for this item
-        gst_rate_decimal = Decimal(str(item.product.gst)) / Decimal('100')
-        item_gst_amount = item_subtotal * gst_rate_decimal
+        # Determine tax type: IGST takes priority
+        product = item.product
+        uses_igst = product.igst is not None and product.igst > 0
         
-        # CGST and SGST
-        item_cgst = item_gst_amount / Decimal('2')
-        item_sgst = item_gst_amount / Decimal('2')
+        if uses_igst:
+            igst_rate = Decimal(str(product.igst)) / Decimal('100')
+            item_igst = item_subtotal * igst_rate
+            item_cgst = Decimal('0.00')
+            item_sgst = Decimal('0.00')
+            item_gst_amount = Decimal('0.00')
+            item_total_with_tax = item_subtotal + item_igst
+            total_igst += item_igst
+        else:
+            gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
+            item_gst_amount = item_subtotal * gst_rate_decimal
+            item_cgst = item_gst_amount / Decimal('2')
+            item_sgst = item_gst_amount / Decimal('2')
+            item_igst = Decimal('0.00')
+            item_total_with_tax = item_subtotal + item_gst_amount
+            total_gst += item_gst_amount
         
-        # Calculate item total (with GST)
-        item_total_with_gst = item_subtotal + item_gst_amount
-        
-        # Add to overall totals
         subtotal += item_subtotal
-        total_gst += item_gst_amount
         
-        # Create enhanced item object
         item_data = {
             'cart_item': item,
-            'product': item.product,
+            'product': product,
             'quantity': item.quantity,
             'unit_price': effective_price,
             'subtotal': item_subtotal,
-            'gst_rate': item.product.gst,
+            'gst_rate': product.gst,
+            'igst_rate': product.igst,
+            'uses_igst': uses_igst,
             'cgst_amount': item_cgst,
             'sgst_amount': item_sgst,
             'gst_amount': item_gst_amount,
-            'total_with_gst': item_total_with_gst,
+            'igst_amount': item_igst,
+            'total_with_gst': item_total_with_tax,
             'transaction_date': item.transaction_date,
         }
         cart_items_with_gst.append(item_data)
     
-    # Calculate final total
-    total_amount = subtotal + total_gst
+    total_amount = subtotal + total_gst + total_igst
 
     return render(request, 'cart.html', {
         'cart_items_with_gst': cart_items_with_gst,
         'subtotal': subtotal,
         'total_gst': total_gst,
+        'total_igst': total_igst,
         'total_amount': total_amount,
         'store_owner': store_owner,
         'customer': customer,
@@ -405,36 +433,36 @@ def checkout_view(request, username):
     if not cart_items.exists():
         return redirect('cart_view', username=username)
 
-    # Calculate totals with GST breakdown - FIXED: Proper Decimal handling
+    # Calculate totals with GST/IGST breakdown
     subtotal = Decimal('0.00')
     total_cgst = Decimal('0.00')
     total_sgst = Decimal('0.00')
+    total_igst = Decimal('0.00')
     
     for item in cart_items:
-        # Use the stored unit_price from the cart (set via modal)
         effective_price = item.unit_price if item.unit_price > 0 else item.product.price
-        
-        # Calculate item subtotal (without GST)
         item_subtotal = effective_price * item.quantity
+        product = item.product
+        uses_igst = product.igst is not None and product.igst > 0
         
-        # Calculate CGST and SGST for this item
-        gst_rate_decimal = Decimal(str(item.product.gst)) / Decimal('100')
-        item_total_gst = item_subtotal * gst_rate_decimal
-        item_cgst = item_total_gst / Decimal('2')  # CGST = GST/2
-        item_sgst = item_total_gst / Decimal('2')  # SGST = GST/2
+        if uses_igst:
+            igst_rate = Decimal(str(product.igst)) / Decimal('100')
+            item_igst = item_subtotal * igst_rate
+            total_igst += item_igst
+        else:
+            gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
+            item_total_gst = item_subtotal * gst_rate_decimal
+            total_cgst += item_total_gst / Decimal('2')
+            total_sgst += item_total_gst / Decimal('2')
         
-        # Add to totals
         subtotal += item_subtotal
-        total_cgst += item_cgst
-        total_sgst += item_sgst
 
     total_gst = total_cgst + total_sgst
-    grand_total = subtotal + total_gst
+    grand_total = subtotal + total_gst + total_igst
 
     line_dates = [c.transaction_date for c in cart_items if getattr(c, 'transaction_date', None)]
     invoice_date = max(line_dates) if line_dates else timezone.now().date()
 
-    # Create order - The order_number will be auto-assigned by the model's save method
     order = Order.objects.create(
         store_owner=store_owner,
         customer=customer,
@@ -443,61 +471,66 @@ def checkout_view(request, username):
         total_cgst=total_cgst,
         total_sgst=total_sgst,
         total_gst=total_gst,
+        total_igst=total_igst,
         status='pending',
         invoice_date=invoice_date,
     )
 
-    # Generate invoice number based on the per-user order number and invoice (sale) date
-    order.invoice_number = (
-        f"{order.order_number:04d}"
-    )
+    order.invoice_number = f"{order.order_number:04d}"
     order.save()
 
-    # Create order items with GST breakdown
+    # Create order items with GST/IGST breakdown
     for item in cart_items:
-        # Use the stored unit_price from the cart (set via modal)
         effective_price = item.unit_price if item.unit_price > 0 else item.product.price
-        
-        # Calculate GST for this item
         item_subtotal = effective_price * item.quantity
-        gst_rate_decimal = Decimal(str(item.product.gst)) / Decimal('100')
-        item_total_gst = item_subtotal * gst_rate_decimal
-        item_cgst = item_total_gst / Decimal('2')
-        item_sgst = item_total_gst / Decimal('2')
-        item_total = item_subtotal + item_total_gst
+        product = item.product
+        uses_igst = product.igst is not None and product.igst > 0
         
-        order_item = OrderItem.objects.create(
+        if uses_igst:
+            igst_rate = Decimal(str(product.igst)) / Decimal('100')
+            item_igst = item_subtotal * igst_rate
+            item_cgst = Decimal('0.00')
+            item_sgst = Decimal('0.00')
+            item_gst = Decimal('0.00')
+            item_total = item_subtotal + item_igst
+        else:
+            gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
+            item_gst = item_subtotal * gst_rate_decimal
+            item_cgst = item_gst / Decimal('2')
+            item_sgst = item_gst / Decimal('2')
+            item_igst = Decimal('0.00')
+            item_total = item_subtotal + item_gst
+        
+        OrderItem.objects.create(
             order=order,
-            product=item.product,
+            product=product,
             quantity=item.quantity,
             item_price=effective_price,
             total_price=item_total,
             subtotal=item_subtotal,
             cgst_amount=item_cgst,
             sgst_amount=item_sgst,
-            gst_amount=item_total_gst
+            gst_amount=item_gst,
+            igst_amount=item_igst,
         )
 
-        # Decrease stock
-        item.product.quantity -= item.quantity
-        item.product.save()
+        product.quantity -= item.quantity
+        product.save()
 
-        # Create sales report (revenue tracked via total_price; profit field unused in UI)
         sale_day = item.transaction_date or invoice_date
         sale_dt = timezone.make_aware(datetime.combine(sale_day, time(12, 0, 0)))
         SalesReport.objects.create(
             store_owner=store_owner,
             customer=customer,
-            product=item.product,
+            product=product,
             order=order,
             quantity=item.quantity,
             total_price=item_total,
             profit=Decimal('0.00'),
-            category=item.product.category or 'Uncategorized',
+            category=product.category or 'Uncategorized',
             sale_date=sale_dt,
         )
 
-    # Clear cart
     cart_items.delete()
     return redirect('my_orders', username=username)
 
@@ -536,32 +569,43 @@ def order_detail_view(request, username, order_id):
     # Get all order items
     order_items = order.items.all()
     
-    # Calculate GST breakdown for display
+    # Calculate GST/IGST breakdown for display
     updated_items = []
     for item in order_items:
-        # Calculate item subtotal
         item_subtotal = item.item_price * item.quantity
+        product = item.product
+        uses_igst = product.igst is not None and product.igst > 0
         
-        # Calculate GST amounts
-        gst_rate = Decimal(str(item.product.gst))
-        gst_decimal = gst_rate / Decimal('100')
-        item_total_gst = item_subtotal * gst_decimal
-        item_cgst = item_total_gst / Decimal('2')
-        item_sgst = item_total_gst / Decimal('2')
-        item_total_with_gst = item_subtotal + item_total_gst
+        if uses_igst:
+            igst_rate = Decimal(str(product.igst)) / Decimal('100')
+            item_igst = item_subtotal * igst_rate
+            item_cgst = Decimal('0.00')
+            item_sgst = Decimal('0.00')
+            item_gst = Decimal('0.00')
+            item_total_with_tax = item_subtotal + item_igst
+        else:
+            gst_rate = Decimal(str(product.gst))
+            gst_decimal = gst_rate / Decimal('100')
+            item_gst = item_subtotal * gst_decimal
+            item_cgst = item_gst / Decimal('2')
+            item_sgst = item_gst / Decimal('2')
+            item_igst = Decimal('0.00')
+            item_total_with_tax = item_subtotal + item_gst
         
-        # Create enhanced item object
         item_data = {
             'item': item,
-            'product': item.product,
+            'product': product,
             'quantity': item.quantity,
             'unit_price': item.item_price,
             'subtotal': item_subtotal,
-            'gst_rate': item.product.gst,
+            'gst_rate': product.gst,
+            'igst_rate': product.igst,
+            'uses_igst': uses_igst,
             'cgst_amount': item_cgst,
             'sgst_amount': item_sgst,
-            'gst_amount': item_total_gst,
-            'total_with_gst': item_total_with_gst,
+            'gst_amount': item_gst,
+            'igst_amount': item_igst,
+            'total_with_gst': item_total_with_tax,
         }
         updated_items.append(item_data)
 
@@ -624,45 +668,81 @@ def sales_dashboard_view(request):
 # -------------------- INVOICE GENERATION WITH GST --------------------
 
 def _compute_invoice_line_items(order):
-    """Attach per-line subtotals/GST to items; set order subtotal/total_* fields."""
+    """Attach per-line subtotals/GST/IGST to items; set order subtotal/total_* fields."""
     invoice_items = order.items.all()
     updated_items = []
     gst_summary = {}
     order_subtotal = Decimal('0.00')
     order_total_cgst = Decimal('0.00')
     order_total_sgst = Decimal('0.00')
+    order_total_igst = Decimal('0.00')
     for item in invoice_items:
         item_subtotal = item.item_price * item.quantity
-        gst_rate = Decimal(str(item.product.gst))
-        gst_decimal = gst_rate / Decimal('100')
-        item_total_gst = item_subtotal * gst_decimal
-        item_cgst = item_total_gst / Decimal('2')
-        item_sgst = item_total_gst / Decimal('2')
-        item.subtotal = item_subtotal
-        item.cgst_amount = item_cgst
-        item.sgst_amount = item_sgst
-        item.gst_amount = item_total_gst
+        product = item.product
+        uses_igst = product.igst is not None and product.igst > 0
+        
+        if uses_igst:
+            igst_rate = Decimal(str(product.igst))
+            igst_decimal = igst_rate / Decimal('100')
+            item_igst = item_subtotal * igst_decimal
+            item.subtotal = item_subtotal
+            item.cgst_amount = Decimal('0.00')
+            item.sgst_amount = Decimal('0.00')
+            item.gst_amount = Decimal('0.00')
+            item.igst_amount = item_igst
+            order_total_igst += item_igst
+            # Add to summary under IGST key
+            key = f'IGST_{float(igst_rate)}'
+            if key not in gst_summary:
+                gst_summary[key] = {
+                    'rate': float(igst_rate),
+                    'tax_type': 'IGST',
+                    'taxable_amount': Decimal('0.00'),
+                    'cgst': Decimal('0.00'),
+                    'sgst': Decimal('0.00'),
+                    'igst': Decimal('0.00'),
+                    'total_gst': Decimal('0.00'),
+                }
+            gst_summary[key]['taxable_amount'] += item_subtotal
+            gst_summary[key]['igst'] += item_igst
+            gst_summary[key]['total_gst'] += item_igst
+        else:
+            gst_rate = Decimal(str(product.gst))
+            gst_decimal = gst_rate / Decimal('100')
+            item_total_gst = item_subtotal * gst_decimal
+            item_cgst = item_total_gst / Decimal('2')
+            item_sgst = item_total_gst / Decimal('2')
+            item.subtotal = item_subtotal
+            item.cgst_amount = item_cgst
+            item.sgst_amount = item_sgst
+            item.gst_amount = item_total_gst
+            item.igst_amount = Decimal('0.00')
+            order_total_cgst += item_cgst
+            order_total_sgst += item_sgst
+            gst_rate_float = float(gst_rate)
+            key = f'GST_{gst_rate_float}'
+            if key not in gst_summary:
+                gst_summary[key] = {
+                    'rate': gst_rate_float,
+                    'tax_type': 'GST',
+                    'taxable_amount': Decimal('0.00'),
+                    'cgst': Decimal('0.00'),
+                    'sgst': Decimal('0.00'),
+                    'igst': Decimal('0.00'),
+                    'total_gst': Decimal('0.00'),
+                }
+            gst_summary[key]['taxable_amount'] += item_subtotal
+            gst_summary[key]['cgst'] += item_cgst
+            gst_summary[key]['sgst'] += item_sgst
+            gst_summary[key]['total_gst'] += item_total_gst
+        
         updated_items.append(item)
         order_subtotal += item_subtotal
-        order_total_cgst += item_cgst
-        order_total_sgst += item_sgst
-        gst_rate_float = float(gst_rate)
-        if gst_rate_float not in gst_summary:
-            gst_summary[gst_rate_float] = {
-                'rate': gst_rate_float,
-                'taxable_amount': Decimal('0.00'),
-                'cgst': Decimal('0.00'),
-                'sgst': Decimal('0.00'),
-                'total_gst': Decimal('0.00'),
-            }
-        gst_summary[gst_rate_float]['taxable_amount'] += item_subtotal
-        gst_summary[gst_rate_float]['cgst'] += item_cgst
-        gst_summary[gst_rate_float]['sgst'] += item_sgst
-        gst_summary[gst_rate_float]['total_gst'] += item_total_gst
     order.subtotal = order_subtotal
     order.total_cgst = order_total_cgst
     order.total_sgst = order_total_sgst
     order.total_gst = order_total_cgst + order_total_sgst
+    order.total_igst = order_total_igst
     return updated_items, gst_summary
 
 
@@ -935,16 +1015,20 @@ def monthly_stock_report(request):
     products = Product.objects.filter(store_owner=user)
 
     stock_details = []
+    total_taxable_stock_value = Decimal('0.00')
     total_stock_value = Decimal('0.00')
     total_sales_value = Decimal('0.00')
     total_gst_collected = Decimal('0.00')
+    total_igst_collected = Decimal('0.00')
 
     for product in products:
         detail = _stock_detail_for_product(user, product, year, month)
         stock_details.append(detail)
-        total_stock_value += detail['stock_value']
+        total_taxable_stock_value += detail['taxable_stock_value']
+        total_stock_value += detail['total_stock_value']
         total_sales_value += detail['sales_amount']
         total_gst_collected += detail['gst_amount']
+        total_igst_collected += detail['igst_amount']
 
     category_summary = {}
     for detail in stock_details:
@@ -953,7 +1037,7 @@ def monthly_stock_report(request):
             category_summary[category] = {
                 'total_products': 0, 'total_stock': 0, 'total_sold': 0,
                 'total_sales_value': Decimal('0.00'), 'total_stock_value': Decimal('0.00'),
-                'total_gst_collected': Decimal('0.00'),
+                'total_gst_collected': Decimal('0.00'), 'total_igst_collected': Decimal('0.00'),
                 'out_of_stock_count': 0, 'low_stock_count': 0,
             }
 
@@ -961,8 +1045,9 @@ def monthly_stock_report(request):
         category_summary[category]['total_stock'] += detail['current_stock']
         category_summary[category]['total_sold'] += detail['sold_quantity']
         category_summary[category]['total_sales_value'] += detail['sales_amount']
-        category_summary[category]['total_stock_value'] += detail['stock_value']
+        category_summary[category]['total_stock_value'] += detail['total_stock_value']
         category_summary[category]['total_gst_collected'] += detail['gst_amount']
+        category_summary[category]['total_igst_collected'] += detail['igst_amount']
 
         if detail['stock_status'] == 'Out of Stock':
             category_summary[category]['out_of_stock_count'] += 1
@@ -1047,9 +1132,11 @@ def monthly_stock_report(request):
         'year': year,
         'month': month,
         'month_name': month_name,
+        'total_taxable_stock_value': total_taxable_stock_value,
         'total_stock_value': total_stock_value,
         'total_sales_value': total_sales_value,
         'total_gst_collected': total_gst_collected,
+        'total_igst_collected': total_igst_collected,
         'report_date': f'{month_name} {year}',
         'user': user,
         'prev_month': month - 1 if month > 1 else 12,
@@ -1123,16 +1210,20 @@ def yearly_stock_summary(request):
 
     products = Product.objects.filter(store_owner=user)
     stock_details = []
+    total_taxable_stock_value = Decimal('0.00')
     total_stock_value = Decimal('0.00')
     total_sales_value = Decimal('0.00')
     total_gst_collected = Decimal('0.00')
+    total_igst_collected = Decimal('0.00')
 
     for product in products:
         detail = _stock_detail_for_product(user, product, year, None)
         stock_details.append(detail)
-        total_stock_value += detail['stock_value']
+        total_taxable_stock_value += detail['taxable_stock_value']
+        total_stock_value += detail['total_stock_value']
         total_sales_value += detail['sales_amount']
         total_gst_collected += detail['gst_amount']
+        total_igst_collected += detail['igst_amount']
 
     category_summary = {}
     for detail in stock_details:
@@ -1141,7 +1232,7 @@ def yearly_stock_summary(request):
             category_summary[category] = {
                 'total_products': 0, 'total_stock': 0, 'total_sold': 0,
                 'total_sales_value': Decimal('0.00'), 'total_stock_value': Decimal('0.00'),
-                'total_gst_collected': Decimal('0.00'),
+                'total_gst_collected': Decimal('0.00'), 'total_igst_collected': Decimal('0.00'),
                 'out_of_stock_count': 0, 'low_stock_count': 0,
             }
 
@@ -1149,8 +1240,9 @@ def yearly_stock_summary(request):
         category_summary[category]['total_stock'] += detail['current_stock']
         category_summary[category]['total_sold'] += detail['sold_quantity']
         category_summary[category]['total_sales_value'] += detail['sales_amount']
-        category_summary[category]['total_stock_value'] += detail['stock_value']
+        category_summary[category]['total_stock_value'] += detail['total_stock_value']
         category_summary[category]['total_gst_collected'] += detail['gst_amount']
+        category_summary[category]['total_igst_collected'] += detail['igst_amount']
 
         if detail['stock_status'] == 'Out of Stock':
             category_summary[category]['out_of_stock_count'] += 1
@@ -1158,22 +1250,23 @@ def yearly_stock_summary(request):
             category_summary[category]['low_stock_count'] += 1
 
     export_headers = [
-        'Product Name', 'Category', 'GST %', 'HSN', 'Batch No', 'Quantity (stock)', 'Measurement Type',
+        'Product Name', 'Category', 'GST %', 'IGST %', 'HSN', 'Batch No', 'Quantity (stock)', 'Measurement Type',
         'Initial Stock', 'Current Stock', 'Units Sold',
-        'Unit Price (Rs)', 'Sales Amount (Rs)', 'GST Amount (Rs)', 'Total Amount (Rs)', 'Stock Value (Rs)', 'Status',
+        'Sales Amount (Rs)', 'IGST (Rs)', 'CGST (Rs)', 'SGST (Rs)',
+        'Taxable Stock Value (Rs)', 'Total Stock Value (Rs)', 'Status',
     ]
 
     if request.GET.get('format') == 'xlsx':
         rows = []
         for detail in stock_details:
             p = detail['product']
-            up = p.unit_amount if p.unit_amount and p.unit_amount > 0 else p.price
             rows.append([
-                p.name, p.category or '', str(p.gst), p.hsn_code or '', p.batch_number or '',
+                p.name, p.category or '', str(p.gst), str(p.igst), p.hsn_code or '', p.batch_number or '',
                 p.quantity, p.get_measurement_type_display(),
                 detail['initial_stock'], detail['current_stock'], detail['sold_quantity'],
-                f"{up:.2f}", f"{detail['sales_amount']:.2f}", f"{detail['gst_amount']:.2f}",
-                f"{detail['total_amount_with_gst']:.2f}", f"{detail['stock_value']:.2f}", detail['stock_status'],
+                f"{detail['sales_amount']:.2f}",
+                f"{detail['igst_amount']:.2f}", f"{detail['cgst_amount']:.2f}", f"{detail['sgst_amount']:.2f}",
+                f"{detail['taxable_stock_value']:.2f}", f"{detail['total_stock_value']:.2f}", detail['stock_status'],
             ])
         buf, fname = build_workbook_response(
             f'yearly_stock_{year}.xlsx',
@@ -1193,7 +1286,7 @@ def yearly_stock_summary(request):
         filename = f'yearly_summary_{year}.csv'
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         writer = csv.writer(response)
-        writer.writerow(['Yearly Stock Summary', str(year)])
+        writer.writerow(['Yearly Stock/Sales Summary', str(year)])
         writer.writerow(['Store Owner:', user.company_name or user.username])
         writer.writerow([])
         writer.writerow(['YEARLY TOTALS'])
@@ -1213,13 +1306,13 @@ def yearly_stock_summary(request):
         writer.writerow(export_headers)
         for detail in stock_details:
             p = detail['product']
-            up = p.unit_amount if p.unit_amount and p.unit_amount > 0 else p.price
             writer.writerow([
-                p.name, p.category or '', str(p.gst), p.hsn_code or '', p.batch_number or '',
+                p.name, p.category or '', str(p.gst), str(p.igst), p.hsn_code or '', p.batch_number or '',
                 p.quantity, p.get_measurement_type_display(),
                 detail['initial_stock'], detail['current_stock'], detail['sold_quantity'],
-                f"{up:.2f}", f"{detail['sales_amount']:.2f}", f"{detail['gst_amount']:.2f}",
-                f"{detail['total_amount_with_gst']:.2f}", f"{detail['stock_value']:.2f}", detail['stock_status'],
+                f"{detail['sales_amount']:.2f}",
+                f"{detail['igst_amount']:.2f}", f"{detail['cgst_amount']:.2f}", f"{detail['sgst_amount']:.2f}",
+                f"{detail['taxable_stock_value']:.2f}", f"{detail['total_stock_value']:.2f}", detail['stock_status'],
             ])
         return response
 
@@ -1231,9 +1324,11 @@ def yearly_stock_summary(request):
         'yearly_sales': yearly_sales,
         'yearly_gst': yearly_gst,
         'yearly_quantity': yearly_quantity,
+        'total_taxable_stock_value': total_taxable_stock_value,
         'total_stock_value': total_stock_value,
         'total_sales_value': total_sales_value,
         'total_gst_collected': total_gst_collected,
+        'total_igst_collected': total_igst_collected,
         'user': user,
         'years': list(range(2020, current_date.year + 2)),
     }

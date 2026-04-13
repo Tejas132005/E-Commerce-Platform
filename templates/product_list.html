@@ -464,8 +464,10 @@
                                 <span class="detail-value">{{ product.initial_stock }}</span>
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">GST:</span>
-                                <span class="detail-value">{{ product.gst }}%</span>
+                                <span class="detail-label">GST/IGST:</span>
+                                <span class="detail-value">
+                                    {% if product.igst > 0 %}{{ product.igst }}% (IGST){% else %}{{ product.gst }}% (GST){% endif %}
+                                </span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">HSN:</span>

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yearly Stock Summary - {{ year }}</title>
+    <title>Yearly Stock/Sales Details - {{ year }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -195,7 +195,7 @@
         <div class="summary-header">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <h1><i class="bi bi-bar-chart me-3"></i>Yearly Stock Summary</h1>
+                    <h1><i class="bi bi-bar-chart me-3"></i>Yearly Stock/Sales Details</h1>
                     <p class="mb-0 fs-5 opacity-90">Comprehensive performance overview for {{ year }}</p>
                 </div>
             </div>
@@ -230,34 +230,41 @@
             </div>
         </div>
 
-        <!-- Yearly Overview Cards -->
         <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-2 col-md-4 mb-3">
                 <div class="overview-card">
-                    <div class="icon text-success"><i class="bi bi-currency-rupee"></i></div>
-                    <h5 class="mb-2">Total Sales</h5>
-                    <div class="value">₹{{ yearly_sales|floatformat:2 }}</div>
+                    <h6 class="mb-2">Total Taxable Value</h6>
+                    <div class="value" style="font-size: 1.5rem;">₹{{ total_taxable_stock_value|floatformat:2 }}</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-2 col-md-4 mb-3">
                 <div class="overview-card">
-                    <div class="icon text-primary"><i class="bi bi-bullseye"></i></div>
-                    <h5 class="mb-2">Total GST Collected</h5>
-                    <div class="value">₹{{ yearly_gst|floatformat:2 }}</div>
+                    <h6 class="mb-2">Total Stock (Tax Incl)</h6>
+                    <div class="value" style="font-size: 1.5rem;">₹{{ total_stock_value|floatformat:2 }}</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="overview-card">
-                    <div class="icon text-warning"><i class="bi bi-box-seam"></i></div>
-                    <h5 class="mb-2">Units Sold</h5>
-                    <div class="value">{{ yearly_quantity }}</div>
+            <div class="col-lg-2 col-md-4 mb-3">
+                <div class="overview-card" style="border-left: 4px solid var(--success-color);">
+                    <h6 class="mb-2">Yearly Sales</h6>
+                    <div class="value" style="font-size: 1.5rem;">₹{{ yearly_sales|floatformat:2 }}</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="overview-card">
-                    <div class="icon text-info"><i class="bi bi-graph-up"></i></div>
-                    <h5 class="mb-2">Avg Monthly Sales</h5>
-                    <div class="value">₹{% widthratio yearly_sales 12 1 %}</div>
+            <div class="col-lg-2 col-md-4 mb-3">
+                <div class="overview-card" style="border-left: 4px solid var(--primary-color);">
+                    <h6 class="mb-2">GST Collected</h6>
+                    <div class="value" style="font-size: 1.5rem;">₹{{ total_gst_collected|floatformat:2 }}</div>
+                </div>
+            </div>
+             <div class="col-lg-2 col-md-4 mb-3">
+                <div class="overview-card" style="border-left: 4px solid var(--danger-color);">
+                    <h6 class="mb-2">IGST Collected</h6>
+                    <div class="value" style="font-size: 1.5rem;">₹{{ total_igst_collected|floatformat:2 }}</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-3">
+                <div class="overview-card" style="border-left: 4px solid var(--info-color);">
+                    <h6 class="mb-2">Units Sold</h6>
+                    <div class="value" style="font-size: 1.5rem;">{{ yearly_quantity }}</div>
                 </div>
             </div>
         </div>
@@ -373,7 +380,7 @@
         <!-- Yearly product detail (same structure as monthly stock report) -->
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-                <h4 class="mb-0"><i class="bi bi-box-seam me-2"></i>Product Stock &amp; Sales (Year {{ year }})</h4>
+                <h4 class="mb-0"><i class="bi bi-box-seam me-2"></i>Product Stock/Sales Details (Year {{ year }})</h4>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -382,13 +389,16 @@
                             <tr>
                                 <th>Product</th>
                                 <th>Batch</th>
+                                <th>GST%</th>
+                                <th>IGST%</th>
                                 <th>Initial Stock</th>
                                 <th>Current Stock</th>
-                                <th>Units Sold (Yr)</th>
-                                <th>Unit Price</th>
-                                <th>Stock Value</th>
-                                <th>Sales Amount</th>
-                                <th>GST Amount</th>
+                                <th>Units Sold</th>
+                                <th>IGST</th>
+                                <th>CGST</th>
+                                <th>SGST</th>
+                                <th>Taxable Value</th>
+                                <th>Total Stock Value</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -400,18 +410,19 @@
                                     <small class="text-muted">{{ detail.category }}</small>
                                 </td>
                                 <td class="small">{{ detail.batch_number }}</td>
+                                <td>{{ detail.product.gst }}%</td>
+                                <td>{{ detail.product.igst }}%</td>
                                 <td>{{ detail.initial_stock }}</td>
                                 <td class="fw-bold">{{ detail.current_stock }}</td>
                                 <td>{{ detail.sold_quantity }}</td>
-                                <td>₹{{ detail.product.price|floatformat:2 }}</td>
-                                <td>₹{{ detail.stock_value|floatformat:2 }}</td>
-                                <td>{% if detail.sales_amount > 0 %}₹{{ detail.sales_amount|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                                <td>{% if detail.gst_amount > 0 %}₹{{ detail.gst_amount|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                                <td>₹{{ detail.igst_amount|floatformat:2 }}</td>
+                                <td>₹{{ detail.cgst_amount|floatformat:2 }}</td>
+                                <td>₹{{ detail.sgst_amount|floatformat:2 }}</td>
+                                <td>₹{{ detail.taxable_stock_value|floatformat:2 }}</td>
+                                <td class="fw-bold">₹{{ detail.total_stock_value|floatformat:2 }}</td>
                                 <td>
                                     {% if detail.status_class == 'success' %}
                                     <span class="badge bg-success">{{ detail.stock_status }}</span>
-                                    {% elif detail.status_class == 'warning' %}
-                                    <span class="badge bg-warning text-dark">{{ detail.stock_status }}</span>
                                     {% else %}
                                     <span class="badge bg-danger">{{ detail.stock_status }}</span>
                                     {% endif %}

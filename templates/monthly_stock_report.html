@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monthly Stock Report - {{ report_date }}</title>
+    <title>Monthly Stock/Sales Details - {{ report_date }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -175,7 +175,7 @@
         <div class="report-header">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <h1><i class="bi bi-graph-up me-3"></i>Monthly Stock Report</h1>
+                    <h1><i class="bi bi-graph-up me-3"></i>Monthly Stock/Sales Details</h1>
                     <p class="mb-0 fs-5 opacity-90">{{ report_date }} • {{ user.company_name|default:user.username }}</p>
                 </div>
             </div>
@@ -225,34 +225,41 @@
             </div>
         </div>
 
-        <!-- Summary Cards -->
         <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-2 col-md-4 mb-3">
                 <div class="summary-card">
-                    <div class="icon"><i class="bi bi-currency-rupee"></i></div>
-                    <h5 class="mb-2">Total Stock Value</h5>
-                    <div class="value">₹{{ total_stock_value|floatformat:2 }}</div>
+                    <h6 class="mb-2">Total Taxable Stock</h6>
+                    <div class="value" style="font-size: 1.5rem;">₹{{ total_taxable_stock_value|floatformat:2 }}</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-2 col-md-4 mb-3">
                 <div class="summary-card">
-                    <div class="icon"><i class="bi bi-graph-up"></i></div>
-                    <h5 class="mb-2">Monthly Sales</h5>
-                    <div class="value">₹{{ total_sales_value|floatformat:2 }}</div>
+                    <h6 class="mb-2">Total Stock (Tax Incl)</h6>
+                    <div class="value" style="font-size: 1.5rem;">₹{{ total_stock_value|floatformat:2 }}</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="summary-card">
-                    <div class="icon"><i class="bi bi-bullseye"></i></div>
-                    <h5 class="mb-2">Total GST Collected</h5>
-                    <div class="value">₹{{ total_gst_collected|floatformat:2 }}</div>
+            <div class="col-lg-2 col-md-4 mb-3">
+                <div class="summary-card" style="border-left-color: var(--success-color);">
+                    <h6 class="mb-2">Monthly Sales</h6>
+                    <div class="value" style="font-size: 1.5rem;">₹{{ total_sales_value|floatformat:2 }}</div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="summary-card">
-                    <div class="icon"><i class="bi bi-box-seam"></i></div>
-                    <h5 class="mb-2">Total Products</h5>
-                    <div class="value">{{ stock_details|length }}</div>
+            <div class="col-lg-2 col-md-4 mb-3">
+                <div class="summary-card" style="border-left-color: var(--warning-color);">
+                    <h6 class="mb-2">GST Collected</h6>
+                    <div class="value" style="font-size: 1.5rem;">₹{{ total_gst_collected|floatformat:2 }}</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-3">
+                <div class="summary-card" style="border-left-color: var(--danger-color);">
+                    <h6 class="mb-2">IGST Collected</h6>
+                    <div class="value" style="font-size: 1.5rem;">₹{{ total_igst_collected|floatformat:2 }}</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-3">
+                <div class="summary-card" style="border-left-color: var(--info-color);">
+                    <h6 class="mb-2">Stock Items</h6>
+                    <div class="value" style="font-size: 1.5rem;">{{ stock_details|length }}</div>
                 </div>
             </div>
         </div>
@@ -261,7 +268,7 @@
         <div class="table-container mb-4">
             <div class="table-header no-print">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0"><i class="bi bi-list-ul me-2"></i>Stock Details</h4>
+                    <h4 class="mb-0"><i class="bi bi-list-ul me-2"></i>Stock/Sales Details</h4>
                     <div class="position-relative" style="max-width: 300px;">
                         <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search products...">
                         <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2"></i>
@@ -275,19 +282,19 @@
                         <tr>
                             <th>Product Name</th>
                             <th>Category</th>
-                            <th>GST %</th>
+                            <th>GST%</th>
+                            <th>IGST%</th>
                             <th>HSN</th>
                             <th>Batch No</th>
-                            <th>Quantity (stock)</th>
-                            <th>Measurement Type</th>
                             <th>Initial Stock</th>
                             <th>Current Stock</th>
                             <th>Units Sold</th>
-                            <th>Unit Price (Rs)</th>
-                            <th>Sales Amount (Rs)</th>
-                            <th>GST Amount (Rs)</th>
-                            <th>Total Amount (Rs)</th>
-                            <th>Stock Value (Rs)</th>
+                            <th>Sales Amt</th>
+                            <th>IGST</th>
+                            <th>CGST</th>
+                            <th>SGST</th>
+                            <th>Taxable Stock Val</th>
+                            <th>Total Stock Val</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -299,18 +306,18 @@
                             </td>
                             <td>{{ detail.category }}</td>
                             <td>{{ detail.product.gst }}%</td>
+                            <td>{{ detail.product.igst }}%</td>
                             <td>{{ detail.product.hsn_code }}</td>
                             <td>{{ detail.batch_number }}</td>
-                            <td>{{ detail.product.quantity }}</td>
-                            <td>{{ detail.product.get_measurement_type_display }}</td>
                             <td class="fw-semibold">{{ detail.initial_stock }}</td>
                             <td class="fw-bold">{{ detail.current_stock }}</td>
                             <td class="fw-bold text-success">{{ detail.sold_quantity }}</td>
-                            <td>₹{% if detail.product.unit_amount and detail.product.unit_amount > 0 %}{{ detail.product.unit_amount|floatformat:2 }}{% else %}{{ detail.product.price|floatformat:2 }}{% endif %}</td>
                             <td>₹{{ detail.sales_amount|floatformat:2 }}</td>
-                            <td>₹{{ detail.gst_amount|floatformat:2 }}</td>
-                            <td class="fw-bold">₹{{ detail.total_amount_with_gst|floatformat:2 }}</td>
-                            <td>₹{{ detail.stock_value|floatformat:2 }}</td>
+                            <td>₹{{ detail.igst_amount|floatformat:2 }}</td>
+                            <td>₹{{ detail.cgst_amount|floatformat:2 }}</td>
+                            <td>₹{{ detail.sgst_amount|floatformat:2 }}</td>
+                            <td>₹{{ detail.taxable_stock_value|floatformat:2 }}</td>
+                            <td class="fw-bold">₹{{ detail.total_stock_value|floatformat:2 }}</td>
                             <td>
                                 {% if detail.status_class == 'success' %}
                                 <span class="stock-badge badge-in-stock">{{ detail.stock_status }}</span>
@@ -353,13 +360,16 @@
                                     <strong>Total Stock:</strong> {{ summary.total_stock }}
                                 </div>
                                 <div class="col-6">
-                                    <strong>Units Sold:</strong> {{ summary.total_sold }}
-                                </div>
-                                <div class="col-6">
-                                    <strong>Stock Value:</strong> ₹{{ summary.total_stock_value|floatformat:2 }}
+                                    <strong>Taxable Stock:</strong> ₹{{ summary.total_stock_value|floatformat:2 }}
                                 </div>
                                 <div class="col-12">
                                     <strong>Sales Value:</strong> ₹{{ summary.total_sales_value|floatformat:2 }}
+                                </div>
+                                <div class="col-6">
+                                    <strong>GST:</strong> ₹{{ summary.total_gst_collected|floatformat:2 }}
+                                </div>
+                                <div class="col-6">
+                                    <strong>IGST:</strong> ₹{{ summary.total_igst_collected|floatformat:2 }}
                                 </div>
                                 {% if summary.out_of_stock_count > 0 %}
                                 <div class="col-12 text-danger">

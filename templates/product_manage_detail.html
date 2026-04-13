@@ -72,9 +72,11 @@
                     <div class="col-md-6">
                         <dl class="row mb-0">
                             <dt class="col-sm-5">Unit Capacity</dt>
-                            <dd class="col-sm-7">{{ product.unit_capacity }} {{ product.measurement_type }}</dd>
+                            <dd class="col-sm-7">{{ product.unit_capacity }} {{ product.get_measurement_type_display }}</dd>
                             <dt class="col-sm-5">GST (%)</dt>
                             <dd class="col-sm-7">{{ product.gst }}%</dd>
+                            <dt class="col-sm-5">IGST (%)</dt>
+                            <dd class="col-sm-7">{{ product.igst }}%</dd>
                             <dt class="col-sm-5">HSN Code</dt>
                             <dd class="col-sm-7">{{ product.hsn_code|default:"—" }}</dd>
                             <dt class="col-sm-5">Batch No.</dt>
@@ -103,6 +105,7 @@
                                     <th>Stock Returned</th>
                                     <th>Taxable Unit Amt</th>
                                     <th>GST %</th>
+                                    <th>IGST %</th>
                                     <th>Total Amt</th>
                                     <th>Notes</th>
                                 </tr>
@@ -113,9 +116,10 @@
                                     <td>{{ r.return_date|date:"Y-m-d" }}</td>
                                     <td>{{ r.returned_invoice_number }}</td>
                                     <td class="fw-bold text-danger">{{ r.stock_returned }}</td>
-                                    <td>₹{{ r.taxable_unit_amount }}</td>
+                                    <td>₹{{ r.taxable_unit_amount|floatformat:2 }}</td>
                                     <td>{{ r.gst }}%</td>
-                                    <td class="fw-bold">₹{{ r.total_amount }}</td>
+                                    <td>{{ r.igst }}%</td>
+                                    <td class="fw-bold">₹{{ r.total_amount|floatformat:2 }}</td>
                                     <td>{{ r.notes|default:"-"|truncatechars:30 }}</td>
                                 </tr>
                                 {% endfor %}

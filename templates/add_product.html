@@ -70,9 +70,16 @@
                             {% if form.category.errors %}<div class="invalid-feedback d-block">{{ form.category.errors.0 }}</div>{% endif %}
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="{{ form.gst.id_for_label }}">GST (%) <span class="req">*</span></label>
+                            <label class="form-label" for="{{ form.gst.id_for_label }}">GST (%) </label>
                             {{ form.gst }}
                             {% if form.gst.errors %}<div class="invalid-feedback d-block">{{ form.gst.errors.0 }}</div>{% endif %}
+                            <div class="form-text">Fill GST or IGST (at least one required).</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.igst.id_for_label }}">IGST (%) </label>
+                            {{ form.igst }}
+                            {% if form.igst.errors %}<div class="invalid-feedback d-block">{{ form.igst.errors.0 }}</div>{% endif %}
+                            <div class="form-text">If both filled, IGST is used for calculations.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="{{ form.hsn_code.id_for_label }}">HSN <span class="req">*</span></label>
@@ -159,6 +166,7 @@
             const qtyInput = document.getElementById('{{ form.quantity.id_for_label }}');
             const taxableUnitInput = document.getElementById('{{ form.taxable_unit_amount.id_for_label }}');
             const gstInput = document.getElementById('{{ form.gst.id_for_label }}');
+            const igstInput = document.getElementById('{{ form.igst.id_for_label }}');
             const taxableTotalInput = document.getElementById('{{ form.taxable_total_amount.id_for_label }}');
             const totalAmtInput = document.getElementById('{{ form.total_amount.id_for_label }}');
             
@@ -169,6 +177,9 @@
                 const qty = parseFloat(qtyInput.value) || 0;
                 const unitPrice = parseFloat(taxableUnitInput.value) || 0;
                 const gstRate = parseFloat(gstInput.value) || 0;
+                const igstRate = parseFloat(igstInput.value) || 0;
+                // IGST takes priority when both are filled
+                const effectiveRate = igstRate > 0 ? igstRate : gstRate;
 
                 let taxableTotal = 0;
                 if (taxableOverride.checked) {
@@ -179,7 +190,7 @@
                 }
 
                 if (!totalOverride.checked) {
-                    const total = taxableTotal + (taxableTotal * gstRate / 100);
+                    const total = taxableTotal + (taxableTotal * effectiveRate / 100);
                     totalAmtInput.value = total.toFixed(2);
                 }
             }
@@ -194,7 +205,7 @@
                 calculate();
             });
 
-            [qtyInput, taxableUnitInput, gstInput].forEach(el => {
+            [qtyInput, taxableUnitInput, gstInput, igstInput].forEach(el => {
                 el.addEventListener('input', calculate);
             });
             

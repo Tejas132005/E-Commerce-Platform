@@ -17,7 +17,7 @@ class AddProductForm(forms.ModelForm):
         model = Product
         fields = [
             'purchased_from', 'company_gstin', 'purchase_date', 'purchase_invoice_number',
-            'name', 'category', 'gst', 'hsn_code', 'batch_number', 'image', 'quantity',
+            'name', 'category', 'gst', 'igst', 'hsn_code', 'batch_number', 'image', 'quantity',
             'measurement_type', 'unit_capacity', 'taxable_unit_amount', 'taxable_total_amount', 'total_amount'
         ]
         widgets = {
@@ -28,6 +28,7 @@ class AddProductForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Product name'}),
             'category': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Category'}),
             'gst': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'igst': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
             'hsn_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'HSN code'}),
             'batch_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Batch number'}),
             'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
@@ -46,6 +47,7 @@ class AddProductForm(forms.ModelForm):
             'name': 'Product name',
             'category': 'Category',
             'gst': 'GST (%)',
+            'igst': 'IGST (%)',
             'hsn_code': 'HSN',
             'batch_number': 'Batch no.',
             'image': 'Image',
@@ -63,7 +65,7 @@ class AddProductForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         required_fields = (
             'purchased_from', 'purchase_date', 'purchase_invoice_number',
-            'name', 'category', 'gst', 'hsn_code', 'batch_number', 'quantity', 'measurement_type',
+            'name', 'category', 'hsn_code', 'batch_number', 'quantity', 'measurement_type',
             'unit_capacity', 'taxable_unit_amount'
         )
         for fname in required_fields:
@@ -72,6 +74,10 @@ class AddProductForm(forms.ModelForm):
         
         if 'company_gstin' in self.fields:
             self.fields['company_gstin'].required = False
+        if 'gst' in self.fields:
+            self.fields['gst'].required = False
+        if 'igst' in self.fields:
+            self.fields['igst'].required = False
         if 'image' in self.fields:
             self.fields['image'].required = False
         if 'taxable_total_amount' in self.fields:
@@ -130,12 +136,21 @@ class AddProductForm(forms.ModelForm):
 
     def clean_gst(self):
         gst = self.cleaned_data.get('gst')
-        if gst is None:
-            raise forms.ValidationError('GST is required.')
+        if gst is None or gst == '':
+            return Decimal('0')
         g = Decimal(str(gst))
         if g < 0 or g > 100:
             raise forms.ValidationError('GST must be between 0 and 100.')
         return gst
+
+    def clean_igst(self):
+        igst = self.cleaned_data.get('igst')
+        if igst is None or igst == '':
+            return Decimal('0')
+        g = Decimal(str(igst))
+        if g < 0 or g > 100:
+            raise forms.ValidationError('IGST must be between 0 and 100.')
+        return igst
 
     def clean_quantity(self):
         qty = self.cleaned_data.get('quantity')
@@ -167,6 +182,11 @@ class AddProductForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        # At least one of GST or IGST must be filled
+        gst_val = cleaned.get('gst') or Decimal('0')
+        igst_val = cleaned.get('igst') or Decimal('0')
+        if Decimal(str(gst_val)) <= 0 and Decimal(str(igst_val)) <= 0:
+            self.add_error('gst', 'At least one of GST or IGST must be provided.')
         if self.ad_section:
             q = getattr(self, 'data', None) or {}
             manual = (q.get('net_manual_override') or '').strip() == '1'
@@ -188,7 +208,7 @@ class UpdateProductForm(forms.ModelForm):
         model = Product
         fields = [
             'purchased_from', 'company_gstin', 'purchase_date', 'purchase_invoice_number',
-            'name', 'category', 'gst', 'hsn_code', 'batch_number', 'image', 'quantity',
+            'name', 'category', 'gst', 'igst', 'hsn_code', 'batch_number', 'image', 'quantity',
             'measurement_type', 'unit_capacity', 'taxable_unit_amount', 'taxable_total_amount', 'total_amount'
         ]
         widgets = {
@@ -199,6 +219,7 @@ class UpdateProductForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Product name'}),
             'category': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Category'}),
             'gst': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'igst': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
             'hsn_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'HSN code'}),
             'batch_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Batch number'}),
             'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
@@ -217,6 +238,7 @@ class UpdateProductForm(forms.ModelForm):
             'name': 'Product name',
             'category': 'Category',
             'gst': 'GST (%)',
+            'igst': 'IGST (%)',
             'hsn_code': 'HSN',
             'batch_number': 'Batch no.',
             'image': 'Image',
@@ -234,7 +256,7 @@ class UpdateProductForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         required_fields = (
             'purchased_from', 'purchase_date', 'purchase_invoice_number',
-            'name', 'category', 'gst', 'hsn_code', 'batch_number', 'quantity', 'measurement_type',
+            'name', 'category', 'hsn_code', 'batch_number', 'quantity', 'measurement_type',
             'unit_capacity', 'taxable_unit_amount',
         )
         for fname in required_fields:
@@ -243,6 +265,10 @@ class UpdateProductForm(forms.ModelForm):
 
         if 'company_gstin' in self.fields:
             self.fields['company_gstin'].required = False
+        if 'gst' in self.fields:
+            self.fields['gst'].required = False
+        if 'igst' in self.fields:
+            self.fields['igst'].required = False
         if 'image' in self.fields:
             self.fields['image'].required = False
 
@@ -307,12 +333,21 @@ class UpdateProductForm(forms.ModelForm):
 
     def clean_gst(self):
         gst = self.cleaned_data.get('gst')
-        if gst is None:
-            raise forms.ValidationError('GST is required.')
+        if gst is None or gst == '':
+            return Decimal('0')
         g = Decimal(str(gst))
         if g < 0 or g > 100:
             raise forms.ValidationError('GST must be between 0 and 100.')
         return gst
+
+    def clean_igst(self):
+        igst = self.cleaned_data.get('igst')
+        if igst is None or igst == '':
+            return Decimal('0')
+        g = Decimal(str(igst))
+        if g < 0 or g > 100:
+            raise forms.ValidationError('IGST must be between 0 and 100.')
+        return igst
 
     def clean_quantity(self):
         qty = self.cleaned_data.get('quantity')
@@ -344,6 +379,10 @@ class UpdateProductForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        gst_val = cleaned.get('gst') or Decimal('0')
+        igst_val = cleaned.get('igst') or Decimal('0')
+        if Decimal(str(gst_val)) <= 0 and Decimal(str(igst_val)) <= 0:
+            self.add_error('gst', 'At least one of GST or IGST must be provided.')
         if self.ad_section:
             q = getattr(self, 'data', None) or {}
             manual = (q.get('net_manual_override') or '').strip() == '1'
