@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.db import models
 from accounts.models import CustomUser
+from django.utils import timezone
 
 
 def format_unit_value_display(value):
@@ -226,7 +227,7 @@ class SalesReport(models.Model):
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
     profit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     category = models.CharField(max_length=100, blank=True, null=True)
-    sale_date = models.DateTimeField(auto_now_add=True)
+    sale_date = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f"Sale: {self.product.name} - {self.store_owner.username}"

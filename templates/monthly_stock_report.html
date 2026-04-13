@@ -211,9 +211,6 @@
                         <a href="?month={{ next_month }}&year={{ next_year }}" class="btn btn-outline-light btn-sm">
                             Next <i class="bi bi-arrow-right"></i>
                         </a>
-                        <a href="?month={{ month }}&year={{ year }}&format=xlsx" class="btn btn-success btn-sm">
-                            <i class="bi bi-download"></i> Excel (bold headers)
-                        </a>
                         <a href="?month={{ month }}&year={{ year }}&format=csv" class="btn btn-outline-light btn-sm">
                             CSV
                         </a>
@@ -294,6 +291,7 @@
                             <th>CGST</th>
                             <th>SGST</th>
                             <th>Taxable Stock Val</th>
+                            <th>Stock Val GST amount</th>
                             <th>Total Stock Val</th>
                             <th>Status</th>
                         </tr>
@@ -317,12 +315,13 @@
                             <td>₹{{ detail.cgst_amount|floatformat:2 }}</td>
                             <td>₹{{ detail.sgst_amount|floatformat:2 }}</td>
                             <td>₹{{ detail.taxable_stock_value|floatformat:2 }}</td>
+                            <td>₹{{ detail.stock_val_gst_amt|floatformat:2 }}</td>
                             <td class="fw-bold">₹{{ detail.total_stock_value|floatformat:2 }}</td>
                             <td>
-                                {% if detail.status_class == 'success' %}
-                                <span class="stock-badge badge-in-stock">{{ detail.stock_status }}</span>
+                                {% if detail.current_stock > 0 %}
+                                <span class="stock-badge badge-in-stock">Available</span>
                                 {% else %}
-                                <span class="stock-badge badge-out-of-stock">{{ detail.stock_status }}</span>
+                                <span class="stock-badge badge-out-of-stock">Out of Stock</span>
                                 {% endif %}
                             </td>
                         </tr>

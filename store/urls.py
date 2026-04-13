@@ -11,6 +11,7 @@ urlpatterns = [
     # Stock Reports
     path('monthly-stock-report/', views.monthly_stock_report, name='monthly_stock_report'),
     path('yearly-stock-summary/', views.yearly_stock_summary, name='yearly_stock_summary'),
+    path('stock-at-date/', views.stock_at_date_view, name='stock_at_date'),
          
     # Global Analytics (uses request.user)
     path('analytics-dashboard/', views.analytics_dashboard_view, name='analytics_dashboard'),
@@ -20,7 +21,7 @@ urlpatterns = [
     path('analytics/ad-section/export-csv/', analytics.export_ad_section_csv, name='export_ad_section_csv'),
     path('analytics/item/<int:product_id>/', analytics.single_item_analytics_api, name='single_item_analytics_api'),
     path('analytics/categories/', analytics.category_analytics_api, name='category_analytics_api'),
-         
+    
     # User-specific Analytics (uses username parameter)
     path('<str:username>/analytics/', views.user_analytics_dashboard_view, name='user_analytics_dashboard'),
     path('<str:username>/analytics/items/', analytics.user_item_analytics_api, name='user_item_analytics_api'),
