@@ -386,6 +386,9 @@
                 <a href="{% url 'store_products' username=user.username %}" class="btn btn-primary">
                     🏪 View Store
                 </a>
+                <a href="{% url 'repair_sequence' %}" class="btn btn-warning" onclick="return confirm('This will re-index all orders and update invoice numbers format to INV-XX. Proceed?')">
+                    🔧 Repair Sequence
+                </a>
             </div>
         </div>
 

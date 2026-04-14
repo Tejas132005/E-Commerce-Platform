@@ -38,6 +38,8 @@ urlpatterns = [
     path('manage/product/<int:product_id>/details/', manage_products.product_manage_detail, name='product_manage_detail'),
     path('manage/return-product/<int:product_id>/', manage_products.return_product_view, name='return_product'),
     path('manage/customers/', views.customer_details_list_view, name='customer_details_list'),
+    path('manage/customer/edit/<int:customer_id>/', views.edit_customer_view, name='edit_customer'),
+    path('manage/repair-sequence/', views.repair_order_sequence_view, name='repair_sequence'),
 
     # Archive system
     path('manage/archive/<int:product_id>/', manage_products.archive_product, name='archive_product'),

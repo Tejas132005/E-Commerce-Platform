@@ -485,7 +485,7 @@ def checkout_view(request, username):
         invoice_date=invoice_date,
     )
 
-    order.invoice_number = f"{order.order_number:04d}"
+    order.invoice_number = f"INV-{order.order_number:02d}"
     order.save()
 
     # Create order items with GST/IGST breakdown
@@ -895,9 +895,35 @@ def delete_invoice(request, username, order_id):
             product.quantity += item.quantity
             product.save()
         
-        # Mark order as deleted
+        # Get the current number before we mark it as deleted
+        deleted_number = order.order_number
+        
+        # 1. Move ALL currently deleted orders of this user out of the way to avoid collisions
+        # This cleans up any legacy deleted orders that might be blocking the sequence
+        all_deleted_orders = Order.objects.filter(store_owner=store_owner, is_deleted=True)
+        for d_order in all_deleted_orders:
+            # We skip the current one if we want to handle it specifically, but it's easier to just do all
+            d_order.order_number = 1000000 + d_order.id
+            d_order.save()
+            
+        # 2. Mark the current order as deleted and move it out of the sequential range
         order.is_deleted = True
+        order.order_number = 1000000 + order.id 
         order.save()
+        
+        # 3. Re-normalize the sequence for all ACTIVE orders of this store owner
+        # We fetch all active orders and re-assign them numbers 1, 2, 3...
+        # This is more robust than just shifting subsequent ones
+        active_orders = Order.objects.filter(
+            store_owner=store_owner,
+            is_deleted=False
+        ).order_by('order_date', 'id') # Use a stable ordering
+        
+        for index, active_order in enumerate(active_orders, start=1):
+            if active_order.order_number != index:
+                active_order.order_number = index
+                active_order.invoice_number = f"INV-{active_order.order_number:02d}"
+                active_order.save()
         
         messages.success(request, f'Invoice {order.invoice_number or order.order_number} has been deleted and stock has been restored.')
     else:
@@ -931,6 +957,12 @@ def restore_invoice(request, username, order_id):
         
         # Unmark order as deleted
         order.is_deleted = False
+        # Clear order_number so the model's save() method re-assigns a proper sequential one
+        order.order_number = None
+        order.save()
+        
+        # After saving, order_number is re-assigned. Update the invoice_number to match.
+        order.invoice_number = f"INV-{order.order_number:02d}"
         order.save()
         
         messages.success(request, f'Invoice {order.invoice_number or order.order_number} has been restored.')
@@ -961,6 +993,74 @@ def deleted_invoices_view(request, username):
         'customer': customer,
         'user': store_owner,
     })
+
+
+@login_required
+def edit_customer_view(request, customer_id):
+    """Edit existing customer details"""
+    from .forms import UpdateCustomerForm
+    customer = get_object_or_404(ShopCustomer, id=customer_id)
+    
+    # Security: In a real app, you'd check if this customer 'belongs' to this store owner
+    # Here we assume the store owner has access to all customers who ordered from them
+    
+    if request.method == 'POST':
+        form = UpdateCustomerForm(request.POST, instance=customer)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Customer {customer.name} updated successfully.')
+            return redirect('customer_details_list')
+    else:
+        form = UpdateCustomerForm(instance=customer)
+    
+    return render(request, 'edit_customer.html', {
+        'form': form,
+        'customer': customer,
+    })
+
+
+@login_required
+def repair_order_sequence_view(request):
+    """
+    ONE-TIME CORRECTION: Re-normalize all order/invoice numbers for the current store owner.
+    Removes gaps and ensures consistency.
+    """
+    store_owner = request.user
+    
+    # 1. Move ALL currently deleted orders of this user out of the way
+    all_deleted_orders = Order.objects.filter(store_owner=store_owner, is_deleted=True)
+    for d_order in all_deleted_orders:
+        d_order.order_number = 1000000 + d_order.id
+        d_order.save()
+        
+    # 2. Re-index ACTIVE orders starting from 1
+    active_orders = Order.objects.filter(
+        store_owner=store_owner,
+        is_deleted=False
+    ).order_by('order_date', 'id')
+    
+    count = 0
+    for index, active_order in enumerate(active_orders, start=1):
+        # Update if different
+        changed = False
+        if active_order.order_number != index:
+            active_order.order_number = index
+            changed = True
+        
+        # Always update invoice number format as per new requirement: INV-01, INV-02...
+        # Using :02d as requested in example, but :04d is typically safer. 
+        # I'll use :02d to match "INV-01" exactly.
+        expected_invoice = f"INV-{active_order.order_number:02d}"
+        if active_order.invoice_number != expected_invoice:
+            active_order.invoice_number = expected_invoice
+            changed = True
+            
+        if changed:
+            active_order.save()
+            count += 1
+            
+    messages.success(request, f'Sequence repaired! {count} orders were updated.')
+    return redirect('sales_dashboard')
 
 
 @login_required

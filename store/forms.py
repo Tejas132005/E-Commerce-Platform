@@ -438,3 +438,15 @@ class CustomerRegisterForm(forms.ModelForm):
                 'placeholder': 'City / location',
             }),
         }
+
+
+class UpdateCustomerForm(forms.ModelForm):
+    class Meta:
+        model = ShopCustomer
+        fields = ['name', 'phone', 'email', 'place']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'place': forms.TextInput(attrs={'class': 'form-control'}),
+        }

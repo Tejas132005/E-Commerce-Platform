@@ -187,7 +187,11 @@ class Order(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.order_number:
-            last_order = Order.objects.filter(store_owner=self.store_owner).order_by('-order_number').first()
+            # Only consider non-deleted orders for the sequence
+            last_order = Order.objects.filter(
+                store_owner=self.store_owner,
+                is_deleted=False
+            ).order_by('-order_number').first()
             if last_order:
                 self.order_number = last_order.order_number + 1
             else:
