@@ -182,7 +182,7 @@ def user_item_analytics_api(request, username):
                 'total_igst_collected': float(total_igst_amount),
                 'total_revenue_with_gst': float(total_revenue_with_tax),
                 'total_orders': total_orders,
-                'revenue_per_unit': float(total_revenue_with_gst / sold_quantity) if sold_quantity > 0 else 0,
+                'revenue_per_unit': float(total_revenue_with_tax / sold_quantity) if sold_quantity > 0 else 0,
                 'is_fast_moving': sold_quantity > (total_stock * 0.7) if total_stock > 0 else False,
                 'stock_status': 'Out of Stock' if current_stock == 0 else (
                     'Low Stock' if current_stock < 10 else 'In Stock'

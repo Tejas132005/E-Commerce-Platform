@@ -158,22 +158,11 @@
         }
 
         .invoice-header {
-                {
-                % if as_pdf %
-            }
-
+            {% if as_pdf %}
             display: table;
-
-                {
-                % else %
-            }
-
+            {% else %}
             display: flex;
-
-                {
-                % endif %
-            }
-
+            {% endif %}
             width: 100%;
             justify-content: space-between;
             align-items: flex-start;
@@ -561,8 +550,7 @@
             </div>
             <div class="invoice-details">
                 <p class="invoice-no">Invoice No: {{ invoice.invoice_number|default:invoice.id }}</p>
-                <p><strong>Date:</strong> {% if invoice.invoice_date %}{{ invoice.invoice_date|date:"d/m/Y" }}{% else
-                    %}{{ invoice.order_date|date:"d/m/Y" }}{% endif %}</p>
+                <p><strong>Date:</strong> {% if invoice.invoice_date %}{{ invoice.invoice_date|date:"d/m/Y" }}{% else %}{{ invoice.order_date|date:"d/m/Y" }}{% endif %}</p>
             </div>
         </div>
 
@@ -578,8 +566,7 @@
                     <p>{{ customer.address2 }}</p>
                     {% endif %}
                     {% if customer.city %}
-                    <p>{{ customer.city }}, {{ customer.state|default:"State" }} - {{ customer.pincode|default:"000000"
-                        }}</p>
+                    <p>{{ customer.city }}, {{ customer.state|default:"State" }} - {{ customer.pincode|default:"000000" }}</p>
                     {% endif %}
                     <p><strong>Phone:</strong> {{ customer.phone }}</p>
                     {% if customer.email %}
