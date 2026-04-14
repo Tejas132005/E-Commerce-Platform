@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yearly Stock/Sales Details - {{ year }}</title>
+    <title>Yearly Stock/Sales Details (FY {{ fy_label }})</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -195,8 +195,8 @@
         <div class="summary-header">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <h1><i class="bi bi-bar-chart me-3"></i>Yearly Stock/Sales Details</h1>
-                    <p class="mb-0 fs-5 opacity-90">Comprehensive performance overview for {{ year }}</p>
+                    <h1><i class="bi bi-bar-chart me-3"></i>Yearly Stock/Sales Details (FY {{ fy_label }})</h1>
+                    <p class="mb-0 fs-5 opacity-90">Comprehensive performance overview for Financial Year {{ fy_label }}</p>
                 </div>
             </div>
 
@@ -245,8 +245,8 @@
             </div>
             <div class="col-lg-2 col-md-4 mb-3">
                 <div class="overview-card" style="border-left: 4px solid var(--success-color);">
-                    <h6 class="mb-2">Yearly Sales</h6>
-                    <div class="value" style="font-size: 1.5rem;">₹{{ yearly_sales|floatformat:2 }}</div>
+                    <h6 class="mb-2">FY Sales</h6>
+                    <div class="value" style="font-size: 1.5rem;">₹{{ total_sales_value|floatformat:2 }}</div>
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 mb-3">
@@ -335,7 +335,7 @@
         <!-- Monthly Data Table -->
         <div class="card mb-4">
             <div class="card-header bg-dark text-white">
-                <h4 class="mb-0"><i class="bi bi-table me-2"></i>Monthly Data Breakdown</h4>
+                <h4 class="mb-0"><i class="bi bi-table me-2"></i>Monthly Performance Breakdown (FY {{ fy_label }})</h4>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -360,10 +360,10 @@
                                     {% if data.total_sales > 0 %}
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="performance-indicator">
-                                            <div class="performance-fill" style="width: {% if yearly_sales > 0 %}{% widthratio data.total_sales yearly_sales 100 %}%{% else %}0%{% endif %}"></div>
+                                            <div class="performance-fill" style="width: {% if total_sales_value > 0 %}{% widthratio data.total_sales total_sales_value 100 %}%{% else %}0%{% endif %}"></div>
                                         </div>
                                         <small class="text-success">
-                                                {% if yearly_sales > 0 %}{% widthratio data.total_sales yearly_sales 100 %}%{% else %}0%{% endif %}
+                                                {% if total_sales_value > 0 %}{% widthratio data.total_sales total_sales_value 100 %}%{% else %}0%{% endif %}
                                             </small>
                                     </div>
                                     {% else %}
@@ -378,64 +378,82 @@
         </div>
 
         <!-- Yearly product detail (same structure as monthly stock report) -->
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0"><i class="bi bi-box-seam me-2"></i>Product Stock/Sales Details (Year {{ year }})</h4>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Product</th>
-                                <th>Batch</th>
-                                <th>GST%</th>
-                                <th>IGST%</th>
-                                <th>Initial Stock</th>
-                                <th>Current Stock</th>
-                                <th>Units Sold</th>
-                                <th>IGST</th>
-                                <th>CGST</th>
-                                <th>SGST</th>
-                                <th>Taxable Value</th>
-                                <th>Total Stock Value</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for detail in stock_details %}
-                            <tr>
-                                <td>
-                                    <div class="fw-semibold">{{ detail.product.name }}</div>
-                                    <small class="text-muted">{{ detail.category }}</small>
-                                </td>
-                                <td class="small">{{ detail.batch_number }}</td>
-                                <td>{{ detail.product.gst }}%</td>
-                                <td>{{ detail.product.igst }}%</td>
-                                <td>{{ detail.initial_stock }}</td>
-                                <td class="fw-bold">{{ detail.current_stock }}</td>
-                                <td>{{ detail.sold_quantity }}</td>
-                                <td>₹{{ detail.igst_amount|floatformat:2 }}</td>
-                                <td>₹{{ detail.cgst_amount|floatformat:2 }}</td>
-                                <td>₹{{ detail.sgst_amount|floatformat:2 }}</td>
-                                <td>₹{{ detail.taxable_stock_value|floatformat:2 }}</td>
-                                <td class="fw-bold">₹{{ detail.total_stock_value|floatformat:2 }}</td>
-                                <td>
-                                    {% if detail.status_class == 'success' %}
-                                    <span class="badge bg-success">{{ detail.stock_status }}</span>
-                                    {% else %}
-                                    <span class="badge bg-danger">{{ detail.stock_status }}</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="10" class="text-center py-4 text-muted">No active products.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+        <div class="table-container mb-4">
+            <div class="table-header no-print">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="bi bi-list-ul me-2"></i>Product Stock/Sales Details (FY {{ fy_label }})</h4>
+                    <div class="position-relative" style="max-width: 300px;">
+                        <input type="text" id="product-search" class="form-control form-control-sm" placeholder="Search products...">
+                        <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2"></i>
+                    </div>
                 </div>
+            </div>
+
+            <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <table class="table table-hover mb-0 text-nowrap table-sticky-first">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>GST%</th>
+                            <th>IGST%</th>
+                            <th>HSN</th>
+                            <th>Batch No</th>
+                            <th>Initial Stock</th>
+                            <th>Current Stock</th>
+                            <th>Units Sold</th>
+                            <th>Taxable Sales Amt</th>
+                            <th>IGST</th>
+                            <th>CGST</th>
+                            <th>SGST</th>
+                            <th>Total Sales Amt</th>
+                            <th>Taxable Stock Val</th>
+                            <th>Stock Val GST amount</th>
+                            <th>Total Stock Val</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in stock_details %}
+                        <tr class="product-row" data-category="{{ detail.category }}" data-name="{{ detail.product.name|lower }}">
+                            <td>
+                                <div class="fw-semibold">{{ detail.product.name }}</div>
+                            </td>
+                            <td>{{ detail.category }}</td>
+                            <td>{{ detail.product.gst }}%</td>
+                            <td>{{ detail.product.igst }}%</td>
+                            <td>{{ detail.product.hsn_code }}</td>
+                            <td>{{ detail.batch_number }}</td>
+                            <td class="fw-semibold">{{ detail.initial_stock }}</td>
+                            <td class="fw-bold">{{ detail.current_stock }}</td>
+                            <td class="fw-bold text-success">{{ detail.sold_quantity }}</td>
+                            <td>₹{{ detail.taxable_sales_amount|floatformat:2 }}</td>
+                            <td>₹{{ detail.igst_amount|floatformat:2 }}</td>
+                            <td>₹{{ detail.cgst_amount|floatformat:2 }}</td>
+                            <td>₹{{ detail.sgst_amount|floatformat:2 }}</td>
+                            <td class="fw-bold">₹{{ detail.total_sales_amount|floatformat:2 }}</td>
+                            <td>₹{{ detail.taxable_stock_value|floatformat:2 }}</td>
+                            <td>₹{{ detail.stock_val_gst_amt|floatformat:2 }}</td>
+                            <td class="fw-bold">₹{{ detail.total_stock_value|floatformat:2 }}</td>
+                            <td>
+                                {% if detail.current_stock > 0 %}
+                                <span class="badge bg-success">Available</span>
+                                {% else %}
+                                <span class="badge bg-danger">Out of Stock</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="18" class="text-center py-5 text-muted">
+                                <i class="bi bi-box-seam display-1 mb-3"></i>
+                                <h4>No products found</h4>
+                                <p>No product activity recorded for this year.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -491,7 +509,7 @@
             <div class="card-body text-center text-muted">
                 <p class="mb-1"><strong>Report Generated:</strong> <span id="current-time"></span></p>
                 <p class="mb-1"><strong>Store Owner:</strong> {{ user.company_name|default:user.username }}</p>
-                <p class="mb-0"><em>Year {{ year }} performance summary with {{ monthly_data|length }} months of data.</em></p>
+                <p class="mb-0"><em>Financial Year {{ fy_label }} performance summary with {{ monthly_data|length }} months of data.</em></p>
             </div>
         </div>
     </div>
@@ -535,6 +553,23 @@
                 setTimeout(() => {
                     bar.style.width = width;
                 }, index * 100 + 200);
+            });
+        });
+
+        // Product search functionality
+        document.getElementById('product-search').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.product-row');
+
+            rows.forEach(row => {
+                const productName = row.getAttribute('data-name');
+                const category = row.getAttribute('data-category').toLowerCase();
+
+                if (productName.includes(searchTerm) || category.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
             });
         });
     </script>

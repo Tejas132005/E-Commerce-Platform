@@ -26,7 +26,6 @@ def add_new_product(request):
             product = form.save(commit=False)
             product.store_owner = request.user
             product.price = 0
-            product.initial_stock = product.quantity  # Sync initial stock with latest user-entered quantity
             product.save()
             messages.success(request, f'Product "{product.name}" added successfully!')
             next_url = 'add_product'
@@ -67,9 +66,7 @@ def update_existing_product(request, product_id=None):
             ad_section=ad_section,
         )
         if form.is_valid():
-            product = form.save(commit=False)
-            product.initial_stock = product.quantity  # Sync initial stock on manual update
-            product.save()
+            form.save()
             messages.success(request, f'Product "{product.name}" updated successfully!')
             return redirect('product_list')
     elif product:
