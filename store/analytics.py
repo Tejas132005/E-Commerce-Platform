@@ -27,6 +27,7 @@ def _month_sales_totals(store_owner, product, year, month):
     qs = SalesReport.objects.filter(
         store_owner=store_owner,
         product=product,
+        order__is_deleted=False,
         sale_date__year=year,
         sale_date__month=month,
     )
@@ -96,7 +97,8 @@ def user_item_analytics_api(request, username):
             # Calculate sold quantity from SalesReport for THIS store owner only
             sales_data = SalesReport.objects.filter(
                 store_owner=store_owner,
-                product=product
+                product=product,
+                order__is_deleted=False
             ).aggregate(
                 total_sold=Sum('quantity'),
                 total_revenue=Sum('total_price'),
@@ -110,6 +112,7 @@ def user_item_analytics_api(request, username):
             # Get detailed order items for THIS store owner only
             order_items = OrderItem.objects.filter(
                 order__store_owner=store_owner,
+                order__is_deleted=False,
                 product=product
             )
             
@@ -153,7 +156,8 @@ def user_item_analytics_api(request, username):
             # Get last sale date
             last_sale = SalesReport.objects.filter(
                 store_owner=store_owner,
-                product=product
+                product=product,
+                order__is_deleted=False
             ).order_by('-sale_date').first()
             
             last_sale_date = None
@@ -251,7 +255,8 @@ def user_single_item_analytics_api(request, username, product_id):
         # Calculate sales data for this specific user's product
         sales_data = SalesReport.objects.filter(
             store_owner=store_owner,
-            product=product
+            product=product,
+            order__is_deleted=False
         ).aggregate(
             total_sold=Sum('quantity'),
             total_orders=Count('order', distinct=True)
@@ -263,6 +268,7 @@ def user_single_item_analytics_api(request, username, product_id):
         # Get order items for GST calculations
         order_items = OrderItem.objects.filter(
             order__store_owner=store_owner,
+            order__is_deleted=False,
             product=product
         )
         
@@ -300,7 +306,8 @@ def user_single_item_analytics_api(request, username, product_id):
         # Get recent sales
         recent_sales = SalesReport.objects.filter(
             store_owner=store_owner,
-            product=product
+            product=product,
+            order__is_deleted=False
         ).order_by('-sale_date')[:10]
         
         recent_sales_data = []
@@ -413,7 +420,8 @@ def user_category_analytics_api(request, username):
             # Calculate sales for this product for THIS store owner only
             sales_data = SalesReport.objects.filter(
                 store_owner=store_owner,
-                product=product
+                product=product,
+                order__is_deleted=False
             ).aggregate(
                 total_sold=Sum('quantity')
             )
@@ -423,6 +431,7 @@ def user_category_analytics_api(request, username):
             # Calculate GST for this product for THIS store owner only
             order_items = OrderItem.objects.filter(
                 order__store_owner=store_owner,
+                order__is_deleted=False,
                 product=product
             )
             
@@ -524,7 +533,8 @@ def item_analytics_api(request):
         for product in products:
             sales_data = SalesReport.objects.filter(
                 store_owner=store_owner,
-                product=product
+                product=product,
+                order__is_deleted=False
             ).aggregate(
                 total_sold=Sum('quantity'),
                 total_orders=Count('order', distinct=True)
@@ -535,6 +545,7 @@ def item_analytics_api(request):
             
             order_items = OrderItem.objects.filter(
                 order__store_owner=store_owner,
+                order__is_deleted=False,
                 product=product
             )
             
@@ -625,7 +636,8 @@ def single_item_analytics_api(request, product_id):
         # Same logic as user_single_item_analytics_api but using request.user
         sales_data = SalesReport.objects.filter(
             store_owner=store_owner,
-            product=product
+            product=product,
+            order__is_deleted=False
         ).aggregate(
             total_sold=Sum('quantity'),
             total_orders=Count('order', distinct=True)

@@ -59,6 +59,7 @@ def _stock_detail_for_product(user, product, year, month):
     sales_qs = SalesReport.objects.filter(
         store_owner=user,
         product=product,
+        order__is_deleted=False,
         sale_date__year=year,
     )
     if month is not None:
@@ -1030,17 +1031,20 @@ def monthly_stock_report(request):
     # Use Subqueries for optimized calculation of sales totals
     sold_before = SalesReport.objects.filter(
         product=OuterRef('pk'),
+        order__is_deleted=False,
         sale_date__date__lt=month_start
     ).values('product').annotate(total=Sum('quantity')).values('total')
 
     sold_in = SalesReport.objects.filter(
         product=OuterRef('pk'),
+        order__is_deleted=False,
         sale_date__date__gte=month_start,
         sale_date__date__lte=month_end
     ).values('product').annotate(total=Sum('quantity')).values('total')
 
     sales_total_in = SalesReport.objects.filter(
         product=OuterRef('pk'),
+        order__is_deleted=False,
         sale_date__date__gte=month_start,
         sale_date__date__lte=month_end
     ).values('product').annotate(total=Sum('total_price')).values('total')
@@ -1228,6 +1232,7 @@ def yearly_stock_summary(request):
         try:
             month_sales = SalesReport.objects.filter(
                 store_owner=user,
+                order__is_deleted=False,
                 sale_date__year=year,
                 sale_date__month=month,
             )
@@ -1245,6 +1250,7 @@ def yearly_stock_summary(request):
         except Exception:
             month_orders = Order.objects.filter(
                 store_owner=user,
+                is_deleted=False,
                 order_date__year=year,
                 order_date__month=month,
             )
@@ -1416,6 +1422,7 @@ def stock_at_date_view(request):
     # Only consider orders with order_date <= selected_date
     sold_subquery = OrderItem.objects.filter(
         product=OuterRef('pk'),
+        order__is_deleted=False,
         order__order_date__date__lte=selected_date
     ).values('product').annotate(total=Sum('quantity')).values('total')
 
