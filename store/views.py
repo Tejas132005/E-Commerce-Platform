@@ -1163,6 +1163,14 @@ def monthly_stock_report(request):
         sale_date__date__lte=month_end
     ).values('product').annotate(total=Sum('total_price')).values('total')
 
+    # New subquery for user-entered taxable sales amount
+    taxable_sales_total_in = OrderItem.objects.filter(
+        product=OuterRef('pk'),
+        order__is_deleted=False,
+        order__order_date__date__gte=month_start,
+        order__order_date__date__lte=month_end
+    ).values('product').annotate(total=Sum('subtotal')).values('total')
+
     # Get all products purchased on or before the end of the report month
     products_annotated = Product.objects.filter(
         store_owner=user,
@@ -1170,12 +1178,14 @@ def monthly_stock_report(request):
     ).annotate(
         qty_sold_before=Coalesce(Subquery(sold_before), 0),
         qty_sold_in=Coalesce(Subquery(sold_in), 0),
-        amnt_sold_in=Coalesce(Subquery(sales_total_in), Decimal('0.00'))
+        amnt_sold_in=Coalesce(Subquery(sales_total_in), Decimal('0.00')),
+        taxable_amnt_sold_in=Coalesce(Subquery(taxable_sales_total_in), Decimal('0.00'))
     ).order_by('category', 'name')
 
     stock_details = []
     total_taxable_stock_value = Decimal('0.00')
     total_stock_value = Decimal('0.00')
+    total_taxable_sales_value = Decimal('0.00')
     total_sales_value = Decimal('0.00')
     total_gst_collected = Decimal('0.00')
     total_igst_collected = Decimal('0.00')
@@ -1192,19 +1202,23 @@ def monthly_stock_report(request):
         units_sold = p.qty_sold_in
         total_sales_value_inclusive = p.amnt_sold_in
         
-        # Tax/Amt extraction from inclusive total
+        # Tax/Amt extraction
+        taxable_sales_amt = p.taxable_amnt_sold_in
+        
         if p.igst > 0:
             rate = Decimal(str(p.igst))
-            sales_amt = total_sales_value_inclusive / (Decimal('1') + (rate / Decimal('100')))
-            igst_val = sales_amt * (rate / Decimal('100'))
+            # Keep existing tax derivation (or we could calculate from taxable_sales_amt)
+            igst_val = taxable_sales_amt * (rate / Decimal('100'))
             cgst_val = Decimal('0.00')
             sgst_val = Decimal('0.00')
+            total_sales_amt = taxable_sales_amt + igst_val
         else:
             rate = Decimal(str(p.gst))
-            sales_amt = total_sales_value_inclusive / (Decimal('1') + (rate / Decimal('100')))
+            item_total_gst = taxable_sales_amt * (rate / Decimal('100'))
             igst_val = Decimal('0.00')
-            cgst_val = sales_amt * (rate / Decimal('200'))
-            sgst_val = sales_amt * (rate / Decimal('200'))
+            cgst_val = item_total_gst / Decimal('2')
+            sgst_val = item_total_gst / Decimal('2')
+            total_sales_amt = taxable_sales_amt + cgst_val + sgst_val
             
         current_stock = initial_for_month - units_sold
         
@@ -1224,10 +1238,11 @@ def monthly_stock_report(request):
             'initial_stock': initial_for_month,
             'current_stock': current_stock,
             'sold_quantity': units_sold,
-            'sales_amount': sales_amt,
+            'taxable_sales_amount': taxable_sales_amt,
             'igst_amount': igst_val,
             'cgst_amount': cgst_val,
             'sgst_amount': sgst_val,
+            'total_sales_amount': total_sales_amt,
             'taxable_stock_value': taxable_stock_val,
             'stock_val_gst_amt': stock_val_gst_amt,
             'total_stock_value': total_stock_val,
@@ -1237,8 +1252,9 @@ def monthly_stock_report(request):
         stock_details.append(detail)
         
         total_taxable_stock_value += taxable_stock_val
-        total_stock_value += total_stock_val
-        total_sales_value += sales_amt
+        total_stock_value += total_stock_value
+        total_taxable_sales_value += taxable_sales_amt
+        total_sales_value += total_sales_amt
         total_gst_collected += (cgst_val + sgst_val)
         total_igst_collected += igst_val
 
@@ -1248,6 +1264,7 @@ def monthly_stock_report(request):
         if category not in category_summary:
             category_summary[category] = {
                 'total_products': 0, 'total_stock': 0, 'total_sold': 0,
+                'total_taxable_sales_value': Decimal('0.00'),
                 'total_sales_value': Decimal('0.00'), 'total_stock_value': Decimal('0.00'),
                 'total_gst_collected': Decimal('0.00'), 'total_igst_collected': Decimal('0.00'),
                 'out_of_stock_count': 0, 'low_stock_count': 0,
@@ -1255,7 +1272,8 @@ def monthly_stock_report(request):
         category_summary[category]['total_products'] += 1
         category_summary[category]['total_stock'] += detail['current_stock']
         category_summary[category]['total_sold'] += detail['sold_quantity']
-        category_summary[category]['total_sales_value'] += detail['sales_amount']
+        category_summary[category]['total_taxable_sales_value'] += detail['taxable_sales_amount']
+        category_summary[category]['total_sales_value'] += detail['total_sales_amount']
         category_summary[category]['total_stock_value'] += detail['total_stock_value']
         category_summary[category]['total_gst_collected'] += (detail['cgst_amount'] + detail['sgst_amount'])
         category_summary[category]['total_igst_collected'] += detail['igst_amount']
@@ -1267,9 +1285,9 @@ def monthly_stock_report(request):
     # STRICT COLUMN ORDER
     export_headers = [
         'Product Name', 'Category', 'GST%', 'IGST%', 'HSN', 'Batch No', 
-        'Initial Stock', 'Current Stock', 'Units Sold', 'Sales Amt', 
-        'IGST', 'CGST', 'SGST', 'Taxable Stock Val', 'Stock Val GST amount', 
-        'Total Stock Val', 'Status'
+        'Initial Stock', 'Current Stock', 'Units Sold', 'Taxable Sales Amt', 
+        'IGST', 'CGST', 'SGST', 'Total Sales Amt', 'Taxable Stock Val', 
+        'Stock Val GST amount', 'Total Stock Val', 'Status'
     ]
 
     if request.GET.get('format') == 'xlsx':
@@ -1279,8 +1297,8 @@ def monthly_stock_report(request):
             rows.append([
                 p.name, p.category or '', str(p.gst), str(p.igst), p.hsn_code or '', p.batch_number or '',
                 d['initial_stock'], d['current_stock'], d['sold_quantity'],
-                f"{d['sales_amount']:.2f}", f"{d['igst_amount']:.2f}", f"{d['cgst_amount']:.2f}", f"{d['sgst_amount']:.2f}",
-                f"{d['taxable_stock_value']:.2f}", f"{d['stock_val_gst_amt']:.2f}", f"{d['total_stock_value']:.2f}",
+                f"{d['taxable_sales_amount']:.2f}", f"{d['igst_amount']:.2f}", f"{d['cgst_amount']:.2f}", f"{d['sgst_amount']:.2f}",
+                f"{d['total_sales_amount']:.2f}", f"{d['taxable_stock_value']:.2f}", f"{d['stock_val_gst_amt']:.2f}", f"{d['total_stock_value']:.2f}",
                 d['stock_status']
             ])
         buf, fname = build_workbook_response(
@@ -1302,8 +1320,8 @@ def monthly_stock_report(request):
             writer.writerow([
                 p.name, p.category or '', str(p.gst), str(p.igst), p.hsn_code or '', p.batch_number or '',
                 d['initial_stock'], d['current_stock'], d['sold_quantity'],
-                f"{d['sales_amount']:.2f}", f"{d['igst_amount']:.2f}", f"{d['cgst_amount']:.2f}", f"{d['sgst_amount']:.2f}",
-                f"{d['taxable_stock_value']:.2f}", f"{d['stock_val_gst_amt']:.2f}", f"{d['total_stock_value']:.2f}",
+                f"{d['taxable_sales_amount']:.2f}", f"{d['igst_amount']:.2f}", f"{d['cgst_amount']:.2f}", f"{d['sgst_amount']:.2f}",
+                f"{d['total_sales_amount']:.2f}", f"{d['taxable_stock_value']:.2f}", f"{d['stock_val_gst_amt']:.2f}", f"{d['total_stock_value']:.2f}",
                 d['stock_status']
             ])
         return response
