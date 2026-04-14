@@ -646,9 +646,23 @@ def sales_report_view(request):
 
 @login_required
 def customer_details_list_view(request):
-    """All shop customers for the logged-in store owner (Bootstrap table)."""
-    customers = ShopCustomer.objects.filter(store_owner=request.user).order_by('name', 'phone')
-    return render(request, 'customer_details.html', {'customers': customers})
+    """All shop customers for the logged-in store owner (Bootstrap table with search)."""
+    query = request.GET.get('q', '').strip()
+    customers = ShopCustomer.objects.filter(store_owner=request.user)
+    
+    if query:
+        customers = customers.filter(
+            Q(name__icontains=query) |
+            Q(phone__icontains=query) |
+            Q(email__icontains=query) |
+            Q(place__icontains=query)
+        )
+        
+    customers = customers.order_by('name', 'phone')
+    return render(request, 'customer_details.html', {
+        'customers': customers,
+        'search_query': query
+    })
 
 
 @login_required
