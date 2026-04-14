@@ -1,3 +1,10 @@
+import os
+import django
+
+# Setup Django environment
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'E-Commerce.settings')
+django.setup()
+
 from django.db import transaction
 from store.models import Order
 from accounts.models import CustomUser
