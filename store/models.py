@@ -114,7 +114,7 @@ class Product(models.Model):
         return (self.taxable_unit_amount * (Decimal('1') + rate)).quantize(Decimal('0.01'))
 
     def save(self, *args, **kwargs):
-        # Set initial_stock on first creation
+        # On creation, initial_stock must match the starting quantity
         if not self.pk:
             self.initial_stock = self.quantity
         super().save(*args, **kwargs)

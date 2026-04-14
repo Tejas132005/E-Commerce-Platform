@@ -1156,11 +1156,6 @@ def monthly_stock_report(request):
         sale_date__date__lte=month_end
     ).values('product').annotate(total=Sum('quantity')).values('total')
 
-    sold_ever = SalesReport.objects.filter(
-        product=OuterRef('pk'),
-        order__is_deleted=False
-    ).values('product').annotate(total=Sum('quantity')).values('total')
-
     sales_total_in = SalesReport.objects.filter(
         product=OuterRef('pk'),
         order__is_deleted=False,
@@ -1183,7 +1178,6 @@ def monthly_stock_report(request):
     ).annotate(
         qty_sold_before=Coalesce(Subquery(sold_before), 0),
         qty_sold_in=Coalesce(Subquery(sold_in), 0),
-        qty_sold_ever=Coalesce(Subquery(sold_ever), 0),
         amnt_sold_in=Coalesce(Subquery(sales_total_in), Decimal('0.00')),
         taxable_amnt_sold_in=Coalesce(Subquery(taxable_sales_total_in), Decimal('0.00'))
     ).order_by('category', 'name')
@@ -1197,12 +1191,9 @@ def monthly_stock_report(request):
     total_igst_collected = Decimal('0.00')
 
     for p in products_annotated:
-        # Dynamic Initial Stock calculation as requested:
-        # Total Batch Size = Current Quantity + Total Ever Sold
-        total_batch_size = p.quantity + p.qty_sold_ever
-        
-        # 'Initial Stock' for the month is: (Total Batch Size) - (Sold before this month)
-        initial_for_month = total_batch_size - p.qty_sold_before
+        # Initial Stock is now directly the base value from the product record
+        # which is synced to quantity during manual adds/updates
+        initial_for_month = p.initial_stock
         
         # If product had no stock at start and no sales during month, skip it for clutter
         if initial_for_month <= 0 and p.qty_sold_in == 0:
@@ -1229,9 +1220,11 @@ def monthly_stock_report(request):
             sgst_val = item_total_gst / Decimal('2')
             total_sales_amt = taxable_sales_amt + cgst_val + sgst_val
             
+        # units_sold = initial_stock - current_stock
+        # Rearranged: current_stock = initial_stock - units_sold
         current_stock = initial_for_month - units_sold
         
-        # Stock Value Calculation as strictly defined
+        # Stock Value Calculation based on derived current stock
         taxable_stock_val = current_stock * p.taxable_unit_amount
         if p.igst > 0:
             stock_val_gst_amt = taxable_stock_val * (p.igst / Decimal('100'))
@@ -1559,13 +1552,7 @@ def stock_at_date_view(request):
         except (ValueError, TypeError):
             pass
 
-    # 1a. Calculate TOTAL sold ever for each product (to anchor dynamic initial stock)
-    sold_ever_subquery = OrderItem.objects.filter(
-        product=OuterRef('pk'),
-        order__is_deleted=False
-    ).values('product').annotate(total=Sum('quantity')).values('total')
-
-    # 1b. Efficiently calculate total sold per product up to selected date
+    # 1. Efficiently calculate total sold per product up to selected date
     # Only consider orders with order_date <= selected_date
     sold_subquery = OrderItem.objects.filter(
         product=OuterRef('pk'),
@@ -1579,12 +1566,9 @@ def stock_at_date_view(request):
         store_owner=request.user,
         purchase_date__lte=selected_date
     ).annotate(
-        total_sold_ever=Coalesce(Subquery(sold_ever_subquery), 0),
-        total_sold_till_date=Coalesce(Subquery(sold_subquery), 0)
+        total_sold=Coalesce(Subquery(sold_subquery), 0)
     ).annotate(
-        # Dynamic Initial Stock: current quantity + total sold ever
-        # Calculated Remaining Stock: Dynamic Initial - Sold till date
-        calculated_remaining_stock=(F('quantity') + F('total_sold_ever')) - F('total_sold_till_date')
+        calculated_remaining_stock=F('initial_stock') - F('total_sold')
     ).filter(calculated_remaining_stock__gt=0)
 
     results = []
