@@ -1759,3 +1759,172 @@ def stock_at_date_view(request):
         'selected_date': selected_date.strftime('%Y-%m-%d'),
         'display_date': selected_date
     })
+
+# -------------------- PURCHASE DETAILS (MONTHLY & YEARLY) --------------------
+
+@login_required
+def monthly_purchase_details(request):
+    """View products purchased in a specific month."""
+    user = request.user
+    current_date = timezone.now()
+    year = int(request.GET.get('year', current_date.year))
+    month = int(request.GET.get('month', current_date.month))
+
+    products = Product.objects.filter(
+        store_owner=user,
+        purchase_date__year=year,
+        purchase_date__month=month
+    ).order_by('category', 'name')
+
+    details = _calculate_purchase_report_data(products)
+    
+    if request.GET.get('format') == 'csv':
+        return _export_purchase_csv(details, f"Monthly_Purchase_{calendar.month_name[month]}_{year}.csv")
+
+    context = {
+        'details': details,
+        'year': year,
+        'month': month,
+        'month_name': calendar.month_name[month],
+        'months': [(i, calendar.month_name[i]) for i in range(1, 13)],
+        'years': list(range(2020, current_date.year + 2)),
+        'report_type': 'monthly',
+    }
+    return render(request, 'purchase_details.html', context)
+
+@login_required
+def yearly_purchase_details(request):
+    """View products purchased in a financial year (April 1 to March 31)."""
+    user = request.user
+    current_date = timezone.now()
+    default_fy_year = current_date.year if current_date.month >= 4 else current_date.year - 1
+    year = int(request.GET.get('year', default_fy_year))
+    
+    fy_start = date(year, 4, 1)
+    fy_end = date(year + 1, 3, 31)
+
+    products = Product.objects.filter(
+        store_owner=user,
+        purchase_date__range=(fy_start, fy_end)
+    ).order_by('category', 'name')
+
+    details = _calculate_purchase_report_data(products)
+
+    if request.GET.get('format') == 'csv':
+        return _export_purchase_csv(details, f"Yearly_Purchase_FY_{year}_{year+1}.csv")
+
+    context = {
+        'details': details,
+        'year': year,
+        'fy_label': f"{year}–{year+1}",
+        'years': list(range(2020, current_date.year + 2)),
+        'report_type': 'yearly',
+    }
+    return render(request, 'purchase_details.html', context)
+
+def _calculate_purchase_report_data(products):
+    """Helper to calculate tax and totals for purchase reports."""
+    results = []
+    for p in products:
+        # Per user instruction: Quantity MUST come from product.quantity
+        qty = p.quantity
+        
+        # Per user instruction: Taxable Unit Amt MUST come from product.unit_amount
+        # Falling back to taxable_unit_amount if unit_amount is 0 to ensure it's not silently 0
+        taxable_unit_amt = p.unit_amount
+        if taxable_unit_amt == 0 or taxable_unit_amt is None:
+            taxable_unit_amt = p.taxable_unit_amount
+            
+        # Calculation (STRICT): taxable_total = unit_amount × quantity
+        taxable_total = taxable_unit_amt * qty
+        
+        if p.igst > 0:
+            igst_amt = taxable_total * (p.igst / Decimal('100'))
+            cgst_amt = Decimal('0.00')
+            sgst_amt = Decimal('0.00')
+        else:
+            igst_amt = Decimal('0.00')
+            # IF CGST/SGST: cgst = taxable_total × (gst/2) / 100
+            gst_rate = p.gst
+            cgst_amt = taxable_total * (gst_rate / 2) / Decimal('100')
+            sgst_amt = taxable_total * (gst_rate / 2) / Decimal('100')
+            
+        total_amt = taxable_total + igst_amt + cgst_amt + sgst_amt
+        
+        results.append({
+            'product': p,
+            'taxable_unit_amt': taxable_unit_amt,
+            'quantity': qty,
+            'taxable_total': taxable_total,
+            'igst_amt': igst_amt,
+            'cgst_amt': cgst_amt,
+            'sgst_amt': sgst_amt,
+            'total_amt': total_amt,
+        })
+    return results
+
+def _export_purchase_csv(details, filename):
+    """Export purchase data to CSV grouped by GST slabs."""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    writer = csv.writer(response)
+    
+    # Columns as specified in the requirement
+    headers = [
+        'Product Name', 'Category', 'GST %', 'IGST %', 'HSN', 'Batch No',
+        'Stock Purchased', 'Taxable Unit Amt', 'IGST Amt', 'CGST Amt', 'SGST Amt', 'Total Amt'
+    ]
+
+    # GST Grouping: 5%, 12%, 18%, IGST
+    tables = [
+        ('Table 1: 5% GST', [d for d in details if d['product'].igst == 0 and d['product'].gst == 5]),
+        ('Table 2: 12% GST', [d for d in details if d['product'].igst == 0 and d['product'].gst == 12]),
+        ('Table 3: 18% GST', [d for d in details if d['product'].igst == 0 and d['product'].gst == 18]),
+        ('Table 4: IGST', [d for d in details if d['product'].igst > 0]),
+    ]
+
+    for title, table_data in tables:
+        writer.writerow([title])
+        writer.writerow(headers)
+        
+        sum_taxable_unit = sum_igst = sum_cgst = sum_sgst = sum_total = Decimal('0.00')
+        
+        if table_data:
+            for d in table_data:
+                p = d['product']
+                writer.writerow([
+                    p.name, 
+                    p.category or '', 
+                    f"{p.gst}%", 
+                    f"{p.igst}%", 
+                    p.hsn_code or '', 
+                    p.batch_number or '',
+                    d['quantity'], 
+                    f"{d['taxable_unit_amt']:.2f}", 
+                    f"{d['igst_amt']:.2f}", 
+                    f"{d['cgst_amt']:.2f}", 
+                    f"{d['sgst_amt']:.2f}", 
+                    f"{d['total_amt']:.2f}"
+                ])
+                sum_taxable_unit += d['taxable_unit_amt']
+                sum_igst += d['igst_amt']
+                sum_cgst += d['cgst_amt']
+                sum_sgst += d['sgst_amt']
+                sum_total += d['total_amt']
+                
+            # Totals at bottom of EACH table: [Taxable Unit Amt, IGST Amt, CGST Amt, SGST Amt, Total Amt]
+            # Column mapping (0-indexed): 0:TOTAL, 1-6:empty, 7:unit_amt_sum, 8:igst_sum, 9:cgst_sum, 10:sgst_sum, 11:total_sum
+            writer.writerow([
+                'TOTAL', '', '', '', '', '', '',
+                f"{sum_taxable_unit:.2f}",
+                f"{sum_igst:.2f}",
+                f"{sum_cgst:.2f}",
+                f"{sum_sgst:.2f}",
+                f"{sum_total:.2f}"
+            ])
+        else:
+            writer.writerow(["No data found for this GST slab"])
+            
+        writer.writerow([]) # Blank line after each table
+        
+    return response

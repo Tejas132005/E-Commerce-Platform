@@ -11,6 +11,8 @@ urlpatterns = [
     # Stock Reports
     path('monthly-stock-report/', views.monthly_stock_report, name='monthly_stock_report'),
     path('yearly-stock-summary/', views.yearly_stock_summary, name='yearly_stock_summary'),
+    path('monthly-purchase-details/', views.monthly_purchase_details, name='monthly_purchase_details'),
+    path('yearly-purchase-details/', views.yearly_purchase_details, name='yearly_purchase_details'),
     path('stock-at-date/', views.stock_at_date_view, name='stock_at_date'),
          
     # Global Analytics (uses request.user)

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report_type|title }} Purchase Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #6366f1;
+            --accent-color: #f59e0b;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: var(--text-main);
+            padding-bottom: 3rem;
+        }
+
+        .premium-header {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+            padding:1rem 0;
+            margin-bottom: 2rem;
+            border-bottom: 4px solid var(--accent-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .premium-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+            transform: translate(100px, -100px);
+        }
+
+        .report-card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border: none;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .table thead th {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            padding: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .table tbody td {
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .btn-premium {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-premium:hover {
+            background: var(--secondary-color);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .filter-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .slab-header {
+            background: #f8fafc;
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            border-left: 5px solid var(--accent-color);
+            margin: 2rem 0 1rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .total-row {
+            background-color: #f1f5f9 !important;
+            font-weight: 700;
+        }
+
+        .badge-gst {
+            background: #e0e7ff;
+            color: #4338ca;
+            font-weight: 600;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+            .report-card { box-shadow: none; border: 1px solid #e2e8f0; }
+        }
+
+        .report-subtitle {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .report-subtitle:hover {
+            text-shadow: 0 0 15px rgba(245, 158, 11, 0.8), 0 0 30px rgba(245, 158, 11, 0.4);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="premium-header">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold">Purchase Details</h1>
+            <p class="lead opacity-75 fw-bold fs-4 text-white report-subtitle">
+                {% if report_type == 'monthly' %}
+                    Monthly Report for {{ month_name }} {{ year }}
+                {% else %}
+                    Yearly Report for Financial Year {{ fy_label }}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Filters -->
+        <div class="filter-section no-print">
+            <form method="get" class="row g-3 align-items-end">
+                {% if report_type == 'monthly' %}
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Select Month</label>
+                    <select name="month" class="form-select" onchange="this.form.submit()">
+                        {% for m_num, m_name in months %}
+                        <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">{% if report_type == 'monthly' %}Select Year{% else %}Select Financial Year (Start){% endif %}</label>
+                    <select name="year" class="form-select" onchange="this.form.submit()">
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{% if report_type == 'monthly' %}{{ y }}{% else %}{{ y }}–{{ y|add:1 }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 text-end">
+                    <a href="?{% if report_type == 'monthly' %}month={{ month }}&{% endif %}year={{ year }}&format=csv" class="btn btn-success ms-2">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+                    </a>
+                    <button type="button" onclick="window.print()" class="btn btn-outline-dark ms-2">
+                        <i class="bi bi-printer"></i> Print
+                    </button>
+                    <a href="{% url 'home' %}" class="btn btn-outline-secondary ms-2">Back to Home</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Data Presentation -->
+        <div class="report-card">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>GST / IGST</th>
+                            <th>HSN</th>
+                            <th>Batch No</th>
+                            <th>Qty</th>
+                            <th>Taxable Unit</th>
+                            <th>Taxable Total</th>
+                            <th>GST Amt</th>
+                            <th>Total Amt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% regroup details by product.gst as gst_list %}
+                        
+                        {% for gst_group in gst_list %}
+                            <!-- Slab Header can be added here if you want UI grouping too -->
+                            {% for d in gst_group.list %}
+                            <tr>
+                                <td class="fw-bold">{{ d.product.name }}</td>
+                                <td>{{ d.product.category|default:"-" }}</td>
+                                <td>
+                                    {% if d.product.igst > 0 %}
+                                        <span class="badge badge-gst">IGST {{ d.product.igst }}%</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">GST {{ d.product.gst }}%</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ d.product.hsn_code|default:"-" }}</td>
+                                <td>{{ d.product.batch_number|default:"-" }}</td>
+                                <td>{{ d.quantity }}</td>
+                                <td>₹{{ d.taxable_unit_amt|floatformat:2 }}</td>
+                                <td>₹{{ d.taxable_total|floatformat:2 }}</td>
+                                <td>
+                                    {% if d.product.igst > 0 %}
+                                        ₹{{ d.igst_amt|floatformat:2 }} (IGST)
+                                    {% else %}
+                                        ₹{{ d.cgst_amt|add:d.sgst_amt|floatformat:2 }} (C+S)
+                                    {% endif %}
+                                </td>
+                                <td class="fw-bold text-primary">₹{{ d.total_amt|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox display-4 mb-3"></i>
+                                <p>No purchase records found for this period.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="alert alert-info no-print">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <strong>Note:</strong> Regular GST (C+S) is split 50/50 between CGST and SGST in calculations. Click "Export CSV" for the structured audit report.
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
