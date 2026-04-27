@@ -1705,6 +1705,7 @@ def stock_at_date_view(request):
             'batch_no': p.batch_number,
             'remaining_stock': rem_stock,
             'measurement_type': p.get_measurement_type_display(),
+            'measurement': p.get_unit_label(),
             'unit_capacity': p.unit_capacity,
             'taxable_unit_value': p.taxable_unit_amount,
             'taxable_total_value': taxable_total_value,
@@ -1872,7 +1873,7 @@ def _export_purchase_csv(details, filename):
     # Columns as specified in the requirement
     headers = [
         'Product Name', 'Category', 'GST %', 'IGST %', 'HSN', 'Batch No',
-        'Stock Purchased', 'Taxable Unit Amt', 'IGST Amt', 'CGST Amt', 'SGST Amt', 'Total Amt'
+        'Stock Purchased', 'Unit Capacity', 'Taxable Unit Amt', 'IGST Amt', 'CGST Amt', 'SGST Amt', 'Total Amt'
     ]
 
     # GST Grouping: 5%, 12%, 18%, IGST
@@ -1900,6 +1901,7 @@ def _export_purchase_csv(details, filename):
                     p.hsn_code or '', 
                     p.batch_number or '',
                     d['quantity'], 
+                    f"{p.unit_capacity} {p.measurement_type}" if p.unit_capacity else "-",
                     f"{d['taxable_unit_amt']:.2f}", 
                     f"{d['igst_amt']:.2f}", 
                     f"{d['cgst_amt']:.2f}", 
@@ -1913,9 +1915,9 @@ def _export_purchase_csv(details, filename):
                 sum_total += d['total_amt']
                 
             # Totals at bottom of EACH table: [Taxable Unit Amt, IGST Amt, CGST Amt, SGST Amt, Total Amt]
-            # Column mapping (0-indexed): 0:TOTAL, 1-6:empty, 7:unit_amt_sum, 8:igst_sum, 9:cgst_sum, 10:sgst_sum, 11:total_sum
+            # Column mapping (0-indexed): 0:TOTAL, 1-7:empty, 8:unit_amt_sum, 9:igst_sum, 10:cgst_sum, 11:sgst_sum, 12:total_sum
             writer.writerow([
-                'TOTAL', '', '', '', '', '', '',
+                'TOTAL', '', '', '', '', '', '', '',
                 f"{sum_taxable_unit:.2f}",
                 f"{sum_igst:.2f}",
                 f"{sum_cgst:.2f}",

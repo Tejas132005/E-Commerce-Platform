@@ -199,6 +199,7 @@
                             <th>HSN</th>
                             <th>Batch No</th>
                             <th>Qty</th>
+                            <th>Unit Capacity</th>
                             <th>Taxable Unit</th>
                             <th>Taxable Total</th>
                             <th>GST Amt</th>
@@ -224,6 +225,7 @@
                                 <td>{{ d.product.hsn_code|default:"-" }}</td>
                                 <td>{{ d.product.batch_number|default:"-" }}</td>
                                 <td>{{ d.quantity }}</td>
+                                <td>{{ d.product.unit_capacity|default:"-" }}{% if d.product.unit_capacity and d.product.measurement_type %} {{ d.product.measurement_type }}{% endif %}</td>
                                 <td>₹{{ d.taxable_unit_amt|floatformat:2 }}</td>
                                 <td>₹{{ d.taxable_total|floatformat:2 }}</td>
                                 <td>
