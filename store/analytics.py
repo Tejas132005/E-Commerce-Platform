@@ -877,64 +877,110 @@ def export_ad_section_csv(request):
     response['Content-Disposition'] = f'attachment; filename="ad_section_{year}_{month}.csv"'
     
     writer = csv.writer(response)
-    writer.writerow([
-        'Company/Supplier', 'GSTIN', 'Purchase Date', 'Invoice #', 'Product', 'Category',
-        'GST%', 'IGST%', 'HSN', 'Batch #', 'Qty (Stock)', 'Unit', 'Unit Amt', 'Net Amt',
-        'Initial Stock', 'Current Stock', 'Units Sold', 'Sold Value', 'Sold GST', 'Sold IGST',
-        'Rem. Taxable Value', 'Rem. GST', 'Rem. IGST', 'Rem. Total Value'
-    ])
-    
-    products = Product.objects.filter(store_owner=user)
-    for product in products:
-        sold_qty, sales_amt = _month_sales_totals(user, product, year, month)
-        
-        uses_igst = product.igst is not None and product.igst > 0
-        if uses_igst:
-            igst_amt = _tax_amount_from_total(sales_amt, product.igst)
-            gst_amt = Decimal('0.00')
-        else:
-            gst_amt = _tax_amount_from_total(sales_amt, product.gst)
-            igst_amt = Decimal('0.00')
-
-        current_stock = int(product.quantity)
-        initial_stock = current_stock + sold_qty
-        
-        # Values from Add Product data
-        remaining_stock_taxable_value = product.taxable_unit_amount * Decimal(str(current_stock))
-        remaining_stock_total_value = product.total_unit_amount * Decimal(str(current_stock))
-        
-        if uses_igst:
-            rem_igst = remaining_stock_total_value - remaining_stock_taxable_value
-            rem_gst = Decimal('0.00')
-        else:
-            rem_gst = remaining_stock_total_value - remaining_stock_taxable_value
-            rem_igst = Decimal('0.00')
-        
+    # Section 1: GST TABLE
+    writer.writerow(["--- SECTION 1: GST TABLE (CGST + SGST) ---"])
+    writer.writerow([])
+    for rate in [5, 12, 18]:
+        writer.writerow([f"Table: {rate}% GST"])
         writer.writerow([
-            product.purchased_from or '—',
-            product.company_gstin or '—',
-            product.purchase_date.strftime('%d/%m/%Y') if product.purchase_date else '—',
-            product.purchase_invoice_number or '—',
-            product.name,
-            product.category or 'General',
-            product.gst,
-            product.igst,
-            product.hsn_code or '—',
-            product.batch_number or '—',
-            product.quantity,
-            product.get_measurement_type_display(),
-            f"{product.unit_amount:.2f}",
-            f"{product.net_amount:.2f}",
-            initial_stock,
-            current_stock,
-            sold_qty,
-            f"{sales_amt:.2f}",
-            f"{gst_amt:.2f}",
-            f"{igst_amt:.2f}",
-            f"{remaining_stock_taxable_value:.2f}",
-            f"{rem_gst:.2f}",
-            f"{rem_igst:.2f}",
-            f"{remaining_stock_total_value:.2f}"
+            'Company/Supplier', 'GSTIN', 'Purchase Date', 'Invoice #', 'Product', 'Category',
+            'GST%', 'IGST%', 'HSN', 'Batch #', 'Qty (Stock)', 'Unit', 'Unit Amt', 'Net Amt',
+            'Initial Stock', 'Current Stock', 'Units Sold', 'Sold Value', 'Sold CGST', 'Sold SGST', 'Sold IGST',
+            'Rem. Taxable Value', 'Rem. CGST', 'Rem. SGST', 'Rem. IGST', 'Rem. Total Value'
         ])
+        table_products = Product.objects.filter(store_owner=user, igst=0, gst=rate)
+        
+        s_sold_val = s_sold_cgst = s_sold_sgst = s_sold_igst = s_rem_taxable = s_rem_cgst = s_rem_sgst = s_rem_igst = s_rem_total = Decimal('0.00')
+        
+        for product in table_products:
+            sold_qty, sales_amt = _month_sales_totals(user, product, year, month)
+            gst_amt = _tax_amount_from_total(sales_amt, product.gst)
+            sold_cgst = gst_amt / Decimal('2')
+            sold_sgst = gst_amt / Decimal('2')
+            
+            current_stock = int(product.quantity)
+            initial_stock = current_stock + sold_qty
+            remaining_stock_taxable_value = product.taxable_unit_amount * Decimal(str(current_stock))
+            remaining_stock_total_value = product.total_unit_amount * Decimal(str(current_stock))
+            rem_gst = remaining_stock_total_value - remaining_stock_taxable_value
+            rem_cgst = rem_gst / Decimal('2')
+            rem_sgst = rem_gst / Decimal('2')
+
+            writer.writerow([
+                product.purchased_from or '—', product.company_gstin or '—',
+                product.purchase_date.strftime('%d/%m/%Y') if product.purchase_date else '—',
+                product.purchase_invoice_number or '—', product.name, product.category or 'General',
+                product.gst, product.igst, product.hsn_code or '—', product.batch_number or '—',
+                product.quantity, product.get_measurement_type_display(),
+                f"{product.unit_amount:.2f}", f"{product.net_amount:.2f}",
+                initial_stock, current_stock, sold_qty, f"{sales_amt:.2f}",
+                f"{sold_cgst:.2f}", f"{sold_sgst:.2f}", "0.00",
+                f"{remaining_stock_taxable_value:.2f}", f"{rem_cgst:.2f}", f"{rem_sgst:.2f}", "0.00",
+                f"{remaining_stock_total_value:.2f}"
+            ])
+            s_sold_val += sales_amt
+            s_sold_cgst += sold_cgst
+            s_sold_sgst += sold_sgst
+            s_rem_taxable += remaining_stock_taxable_value
+            s_rem_cgst += rem_cgst
+            s_rem_sgst += rem_sgst
+            s_rem_total += remaining_stock_total_value
+            
+        writer.writerow([
+            'TOTAL', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+            f"{s_sold_val:.2f}", f"{s_sold_cgst:.2f}", f"{s_sold_sgst:.2f}", "0.00",
+            f"{s_rem_taxable:.2f}", f"{s_rem_cgst:.2f}", f"{s_rem_sgst:.2f}", "0.00", f"{s_rem_total:.2f}"
+        ])
+        writer.writerow([])
+
+    # Section 2: IGST TABLE
+    writer.writerow(["--- SECTION 2: IGST TABLE ---"])
+    writer.writerow([])
+    for rate in [5, 12, 18]:
+        writer.writerow([f"Table: {rate}% IGST"])
+        writer.writerow([
+            'Company/Supplier', 'GSTIN', 'Purchase Date', 'Invoice #', 'Product', 'Category',
+            'GST%', 'IGST%', 'HSN', 'Batch #', 'Qty (Stock)', 'Unit', 'Unit Amt', 'Net Amt',
+            'Initial Stock', 'Current Stock', 'Units Sold', 'Sold Value', 'Sold CGST', 'Sold SGST', 'Sold IGST',
+            'Rem. Taxable Value', 'Rem. CGST', 'Rem. SGST', 'Rem. IGST', 'Rem. Total Value'
+        ])
+        table_products = Product.objects.filter(store_owner=user, igst=rate)
+        
+        s_sold_val = s_sold_cgst = s_sold_sgst = s_sold_igst = s_rem_taxable = s_rem_cgst = s_rem_sgst = s_rem_igst = s_rem_total = Decimal('0.00')
+        
+        for product in table_products:
+            sold_qty, sales_amt = _month_sales_totals(user, product, year, month)
+            sold_igst = _tax_amount_from_total(sales_amt, product.igst)
+            
+            current_stock = int(product.quantity)
+            initial_stock = current_stock + sold_qty
+            remaining_stock_taxable_value = product.taxable_unit_amount * Decimal(str(current_stock))
+            remaining_stock_total_value = product.total_unit_amount * Decimal(str(current_stock))
+            rem_igst = remaining_stock_total_value - remaining_stock_taxable_value
+
+            writer.writerow([
+                product.purchased_from or '—', product.company_gstin or '—',
+                product.purchase_date.strftime('%d/%m/%Y') if product.purchase_date else '—',
+                product.purchase_invoice_number or '—', product.name, product.category or 'General',
+                product.gst, product.igst, product.hsn_code or '—', product.batch_number or '—',
+                product.quantity, product.get_measurement_type_display(),
+                f"{product.unit_amount:.2f}", f"{product.net_amount:.2f}",
+                initial_stock, current_stock, sold_qty, f"{sales_amt:.2f}",
+                "0.00", "0.00", f"{sold_igst:.2f}",
+                f"{remaining_stock_taxable_value:.2f}", "0.00", "0.00", f"{rem_igst:.2f}",
+                f"{remaining_stock_total_value:.2f}"
+            ])
+            s_sold_val += sales_amt
+            s_sold_igst += sold_igst
+            s_rem_taxable += remaining_stock_taxable_value
+            s_rem_igst += rem_igst
+            s_rem_total += remaining_stock_total_value
+            
+        writer.writerow([
+            'TOTAL', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+            f"{s_sold_val:.2f}", "0.00", "0.00", f"{s_sold_igst:.2f}",
+            f"{s_rem_taxable:.2f}", "0.00", "0.00", f"{s_rem_igst:.2f}", f"{s_rem_total:.2f}"
+        ])
+        writer.writerow([])
     
     return response

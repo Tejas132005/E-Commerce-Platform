@@ -1314,16 +1314,76 @@ def monthly_stock_report(request):
         filename = f'monthly_stock_report_{month_name}_{year}.csv'
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         writer = csv.writer(response)
-        writer.writerow(export_headers)
-        for d in stock_details:
-            p = d['product']
+
+        # Section 1: GST TABLE
+        writer.writerow(["--- SECTION 1: GST TABLE (CGST + SGST) ---"])
+        writer.writerow([])
+        for rate in [5, 12, 18]:
+            writer.writerow([f"Table: {rate}% GST"])
+            writer.writerow(export_headers)
+            table_data = [d for d in stock_details if d['product'].igst == 0 and d['product'].gst == rate]
+            
+            s_tax_sales = s_igst = s_cgst = s_sgst = s_total_sales = s_tax_stock = s_stock_gst = s_total_stock = Decimal('0.00')
+            if table_data:
+                for d in table_data:
+                    p = d['product']
+                    writer.writerow([
+                        p.name, p.category or '', str(p.gst), str(p.igst), p.hsn_code or '', p.batch_number or '',
+                        d['initial_stock'], d['current_stock'], d['sold_quantity'],
+                        f"{d['taxable_sales_amount']:.2f}", f"{d['igst_amount']:.2f}", f"{d['cgst_amount']:.2f}", f"{d['sgst_amount']:.2f}",
+                        f"{d['total_sales_amount']:.2f}", f"{d['taxable_stock_value']:.2f}", f"{d['stock_val_gst_amt']:.2f}", f"{d['total_stock_value']:.2f}",
+                        d['stock_status']
+                    ])
+                    s_tax_sales += d['taxable_sales_amount']
+                    s_igst += d['igst_amount']
+                    s_cgst += d['cgst_amount']
+                    s_sgst += d['sgst_amount']
+                    s_total_sales += d['total_sales_amount']
+                    s_tax_stock += d['taxable_stock_value']
+                    s_stock_gst += d['stock_val_gst_amt']
+                    s_total_stock += d['total_stock_value']
+            
             writer.writerow([
-                p.name, p.category or '', str(p.gst), str(p.igst), p.hsn_code or '', p.batch_number or '',
-                d['initial_stock'], d['current_stock'], d['sold_quantity'],
-                f"{d['taxable_sales_amount']:.2f}", f"{d['igst_amount']:.2f}", f"{d['cgst_amount']:.2f}", f"{d['sgst_amount']:.2f}",
-                f"{d['total_sales_amount']:.2f}", f"{d['taxable_stock_value']:.2f}", f"{d['stock_val_gst_amt']:.2f}", f"{d['total_stock_value']:.2f}",
-                d['stock_status']
+                'TOTAL', '', '', '', '', '', '', '', '',
+                f"{s_tax_sales:.2f}", f"{s_igst:.2f}", f"{s_cgst:.2f}", f"{s_sgst:.2f}",
+                f"{s_total_sales:.2f}", f"{s_tax_stock:.2f}", f"{s_stock_gst:.2f}", f"{s_total_stock:.2f}", ''
             ])
+            writer.writerow([])
+
+        # Section 2: IGST TABLE
+        writer.writerow(["--- SECTION 2: IGST TABLE ---"])
+        writer.writerow([])
+        for rate in [5, 12, 18]:
+            writer.writerow([f"Table: {rate}% IGST"])
+            writer.writerow(export_headers)
+            table_data = [d for d in stock_details if d['product'].igst == rate]
+            
+            s_tax_sales = s_igst = s_cgst = s_sgst = s_total_sales = s_tax_stock = s_stock_gst = s_total_stock = Decimal('0.00')
+            if table_data:
+                for d in table_data:
+                    p = d['product']
+                    writer.writerow([
+                        p.name, p.category or '', str(p.gst), str(p.igst), p.hsn_code or '', p.batch_number or '',
+                        d['initial_stock'], d['current_stock'], d['sold_quantity'],
+                        f"{d['taxable_sales_amount']:.2f}", f"{d['igst_amount']:.2f}", f"{d['cgst_amount']:.2f}", f"{d['sgst_amount']:.2f}",
+                        f"{d['total_sales_amount']:.2f}", f"{d['taxable_stock_value']:.2f}", f"{d['stock_val_gst_amt']:.2f}", f"{d['total_stock_value']:.2f}",
+                        d['stock_status']
+                    ])
+                    s_tax_sales += d['taxable_sales_amount']
+                    s_igst += d['igst_amount']
+                    s_cgst += d['cgst_amount']
+                    s_sgst += d['sgst_amount']
+                    s_total_sales += d['total_sales_amount']
+                    s_tax_stock += d['taxable_stock_value']
+                    s_stock_gst += d['stock_val_gst_amt']
+                    s_total_stock += d['total_stock_value']
+            
+            writer.writerow([
+                'TOTAL', '', '', '', '', '', '', '', '',
+                f"{s_tax_sales:.2f}", f"{s_igst:.2f}", f"{s_cgst:.2f}", f"{s_sgst:.2f}",
+                f"{s_total_sales:.2f}", f"{s_tax_stock:.2f}", f"{s_stock_gst:.2f}", f"{s_total_stock:.2f}", ''
+            ])
+            writer.writerow([])
         return response
 
     context = {
@@ -1610,16 +1670,76 @@ def yearly_stock_summary(request):
             ])
         writer.writerow([])
         writer.writerow(['PRODUCT DETAILS (YEAR)'])
-        writer.writerow(export_headers)
-        for d in stock_details:
-            p = d['product']
+        
+        # Section 1: GST TABLE
+        writer.writerow(["--- SECTION 1: GST TABLE (CGST + SGST) ---"])
+        writer.writerow([])
+        for rate in [5, 12, 18]:
+            writer.writerow([f"Table: {rate}% GST"])
+            writer.writerow(export_headers)
+            table_data = [d for d in stock_details if d['product'].igst == 0 and d['product'].gst == rate]
+            
+            s_tax_sales = s_igst = s_cgst = s_sgst = s_total_sales = s_tax_stock = s_stock_gst = s_total_stock = Decimal('0.00')
+            if table_data:
+                for d in table_data:
+                    p = d['product']
+                    writer.writerow([
+                        p.name, p.category or '', str(p.gst), str(p.igst), p.hsn_code or '', p.batch_number or '',
+                        d['initial_stock'], d['current_stock'], d['sold_quantity'],
+                        f"{d['taxable_sales_amount']:.2f}", f"{d['igst_amount']:.2f}", f"{d['cgst_amount']:.2f}", f"{d['sgst_amount']:.2f}",
+                        f"{d['total_sales_amount']:.2f}", f"{d['taxable_stock_value']:.2f}", f"{d['stock_val_gst_amt']:.2f}", f"{d['total_stock_value']:.2f}",
+                        d['stock_status']
+                    ])
+                    s_tax_sales += d['taxable_sales_amount']
+                    s_igst += d['igst_amount']
+                    s_cgst += d['cgst_amount']
+                    s_sgst += d['sgst_amount']
+                    s_total_sales += d['total_sales_amount']
+                    s_tax_stock += d['taxable_stock_value']
+                    s_stock_gst += d['stock_val_gst_amt']
+                    s_total_stock += d['total_stock_value']
+            
             writer.writerow([
-                p.name, p.category or '', str(p.gst), str(p.igst), p.hsn_code or '', p.batch_number or '',
-                d['initial_stock'], d['current_stock'], d['sold_quantity'],
-                f"{d['taxable_sales_amount']:.2f}", f"{d['igst_amount']:.2f}", f"{d['cgst_amount']:.2f}", f"{d['sgst_amount']:.2f}",
-                f"{d['total_sales_amount']:.2f}", f"{d['taxable_stock_value']:.2f}", f"{d['stock_val_gst_amt']:.2f}", f"{d['total_stock_value']:.2f}",
-                d['stock_status']
+                'TOTAL', '', '', '', '', '', '', '', '',
+                f"{s_tax_sales:.2f}", f"{s_igst:.2f}", f"{s_cgst:.2f}", f"{s_sgst:.2f}",
+                f"{s_total_sales:.2f}", f"{s_tax_stock:.2f}", f"{s_stock_gst:.2f}", f"{s_total_stock:.2f}", ''
             ])
+            writer.writerow([])
+
+        # Section 2: IGST TABLE
+        writer.writerow(["--- SECTION 2: IGST TABLE ---"])
+        writer.writerow([])
+        for rate in [5, 12, 18]:
+            writer.writerow([f"Table: {rate}% IGST"])
+            writer.writerow(export_headers)
+            table_data = [d for d in stock_details if d['product'].igst == rate]
+            
+            s_tax_sales = s_igst = s_cgst = s_sgst = s_total_sales = s_tax_stock = s_stock_gst = s_total_stock = Decimal('0.00')
+            if table_data:
+                for d in table_data:
+                    p = d['product']
+                    writer.writerow([
+                        p.name, p.category or '', str(p.gst), str(p.igst), p.hsn_code or '', p.batch_number or '',
+                        d['initial_stock'], d['current_stock'], d['sold_quantity'],
+                        f"{d['taxable_sales_amount']:.2f}", f"{d['igst_amount']:.2f}", f"{d['cgst_amount']:.2f}", f"{d['sgst_amount']:.2f}",
+                        f"{d['total_sales_amount']:.2f}", f"{d['taxable_stock_value']:.2f}", f"{d['stock_val_gst_amt']:.2f}", f"{d['total_stock_value']:.2f}",
+                        d['stock_status']
+                    ])
+                    s_tax_sales += d['taxable_sales_amount']
+                    s_igst += d['igst_amount']
+                    s_cgst += d['cgst_amount']
+                    s_sgst += d['sgst_amount']
+                    s_total_sales += d['total_sales_amount']
+                    s_tax_stock += d['taxable_stock_value']
+                    s_stock_gst += d['stock_val_gst_amt']
+                    s_total_stock += d['total_stock_value']
+            
+            writer.writerow([
+                'TOTAL', '', '', '', '', '', '', '', '',
+                f"{s_tax_sales:.2f}", f"{s_igst:.2f}", f"{s_cgst:.2f}", f"{s_sgst:.2f}",
+                f"{s_total_sales:.2f}", f"{s_tax_stock:.2f}", f"{s_stock_gst:.2f}", f"{s_total_stock:.2f}", ''
+            ])
+            writer.writerow([])
         return response
 
     context = {
@@ -1686,12 +1806,17 @@ def stock_at_date_view(request):
         # IGST priority for tax calculation
         is_igst = p.igst and p.igst > 0
         tax_rate = p.igst if is_igst else p.gst
-        gst_amount = taxable_total_value * (tax_rate / Decimal('100'))
-        
-        # Total amount: instruction says "already stored -> use directly"
-        # We use the stored unit total price 'price' scaled by remaining stock
-        total_amt = rem_stock * p.price
-        
+        gst_val = Decimal('0.00')
+        cgst_val = Decimal('0.00')
+        sgst_val = Decimal('0.00')
+        igst_val = Decimal('0.00')
+        if is_igst:
+            igst_val = gst_amount
+        else:
+            gst_val = gst_amount
+            cgst_val = gst_val / Decimal('2')
+            sgst_val = gst_val / Decimal('2')
+
         results.append({
             'purchased_from': p.purchased_from,
             'company_gstin': p.company_gstin,
@@ -1710,6 +1835,9 @@ def stock_at_date_view(request):
             'taxable_unit_value': p.taxable_unit_amount,
             'taxable_total_value': taxable_total_value,
             'gst_amount': gst_amount,
+            'cgst_amount': cgst_val,
+            'sgst_amount': sgst_val,
+            'igst_amount': igst_val,
             'total_amount': total_amt
         })
 
@@ -1717,42 +1845,73 @@ def stock_at_date_view(request):
     if request.GET.get('export') == 'csv':
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="stock_grouped_{selected_date}.csv"'
-        
         writer = csv.writer(response)
         headers = [
             'Company Name', 'Company GSTIN', 'Purchase date', 'Purchase invoice number',
             'Product name', 'Category', 'GST (%)', 'IGST', 'HSN', 'Batch no.',
             'Quantity', 'Measurement type', 'Unit Capacity', 'Taxable unit value',
-            'Taxable total value', 'GST AMOUNT', 'Total amount'
+            'Taxable total value', 'IGST AMT', 'CGST AMT', 'SGST AMT', 'Total amount'
         ]
 
-        # Categorize data
-        gst_5_data = [r for r in results if r['gst'] == 5]
-        gst_18_data = [r for r in results if r['gst'] == 18]
-        igst_data = [
-            r for r in results 
-            if (r['igst'] and r['igst'] != 0) and (r['gst'] == 0 or r['gst'] is None)
-        ]
-
-        def write_table(title, data):
-            writer.writerow(["--- " + title + " ---"])
+        # Section 1: GST TABLE
+        writer.writerow(["--- SECTION 1: GST TABLE (CGST + SGST) ---"])
+        writer.writerow([])
+        for rate in [5, 12, 18]:
+            writer.writerow([f"Table: {rate}% GST"])
             writer.writerow(headers)
-            if data:
-                for row in data:
+            table_data = [r for r in results if r['igst'] == 0 and r['gst'] == rate]
+            
+            s_taxable = s_igst = s_cgst = s_sgst = s_total = Decimal('0.00')
+            if table_data:
+                for row in table_data:
                     writer.writerow([
                         row['purchased_from'], row['company_gstin'], row['purchase_date'], row['purchase_invoice_number'],
                         row['name'], row['category'], row['gst'], row['igst'], row['hsn'], row['batch_no'],
                         row['remaining_stock'], row['measurement_type'], row['unit_capacity'],
-                        row['taxable_unit_value'], row['taxable_total_value'], row['gst_amount'], row['total_amount']
+                        row['taxable_unit_value'], row['taxable_total_value'], 
+                        row['igst_amount'], row['cgst_amount'], row['sgst_amount'], row['total_amount']
                     ])
-            else:
-                writer.writerow(["No Data available for this category", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""])
-            writer.writerow([]) # Blank line after table
+                    s_taxable += row['taxable_total_value']
+                    s_igst += row['igst_amount']
+                    s_cgst += row['cgst_amount']
+                    s_sgst += row['sgst_amount']
+                    s_total += row['total_amount']
+            
+            writer.writerow([
+                'TOTAL', '', '', '', '', '', '', '', '', '', '', '', '', '',
+                f"{s_taxable:.2f}", f"{s_igst:.2f}", f"{s_cgst:.2f}", f"{s_sgst:.2f}", f"{s_total:.2f}"
+            ])
+            writer.writerow([])
 
-        write_table("Table 1: GST 5%", gst_5_data)
-        write_table("Table 2: GST 18%", gst_18_data)
-        write_table("Table 3: IGST", igst_data)
-        
+        # Section 2: IGST TABLE
+        writer.writerow(["--- SECTION 2: IGST TABLE ---"])
+        writer.writerow([])
+        for rate in [5, 12, 18]:
+            writer.writerow([f"Table: {rate}% IGST"])
+            writer.writerow(headers)
+            table_data = [r for r in results if r['igst'] == rate]
+            
+            s_taxable = s_igst = s_cgst = s_sgst = s_total = Decimal('0.00')
+            if table_data:
+                for row in table_data:
+                    writer.writerow([
+                        row['purchased_from'], row['company_gstin'], row['purchase_date'], row['purchase_invoice_number'],
+                        row['name'], row['category'], row['gst'], row['igst'], row['hsn'], row['batch_no'],
+                        row['remaining_stock'], row['measurement_type'], row['unit_capacity'],
+                        row['taxable_unit_value'], row['taxable_total_value'], 
+                        row['igst_amount'], row['cgst_amount'], row['sgst_amount'], row['total_amount']
+                    ])
+                    s_taxable += row['taxable_total_value']
+                    s_igst += row['igst_amount']
+                    s_cgst += row['cgst_amount']
+                    s_sgst += row['sgst_amount']
+                    s_total += row['total_amount']
+            
+            writer.writerow([
+                'TOTAL', '', '', '', '', '', '', '', '', '', '', '', '', '',
+                f"{s_taxable:.2f}", f"{s_igst:.2f}", f"{s_cgst:.2f}", f"{s_sgst:.2f}", f"{s_total:.2f}"
+            ])
+            writer.writerow([])
         return response
 
     return render(request, 'stock_at_date.html', {
@@ -1882,59 +2041,63 @@ def _export_purchase_csv(details, filename):
         'IGST Amt', 'CGST Amt', 'SGST Amt', 'Total Amt'
     ]
 
-    # GST Grouping: 5%, 12%, 18%, IGST
-    tables = [
-        ('Table 1: 5% GST', [d for d in details if d['product'].igst == 0 and d['product'].gst == 5]),
-        ('Table 2: 12% GST', [d for d in details if d['product'].igst == 0 and d['product'].gst == 12]),
-        ('Table 3: 18% GST', [d for d in details if d['product'].igst == 0 and d['product'].gst == 18]),
-        ('Table 4: IGST', [d for d in details if d['product'].igst > 0]),
-    ]
-
-    for title, table_data in tables:
-        writer.writerow([title])
+    # Section 1: GST TABLE
+    writer.writerow(["--- SECTION 1: GST TABLE (CGST + SGST) ---"])
+    writer.writerow([])
+    for rate in [5, 12, 18]:
+        writer.writerow([f"Table: {rate}% GST"])
         writer.writerow(headers)
+        table_data = [d for d in details if d['product'].igst == 0 and d['product'].gst == rate]
         
-        sum_taxable_unit = sum_taxable_total = sum_igst = sum_cgst = sum_sgst = sum_total = Decimal('0.00')
-        
+        sum_taxable_total = sum_igst = sum_cgst = sum_sgst = sum_total = Decimal('0.00')
         if table_data:
             for d in table_data:
                 p = d['product']
                 writer.writerow([
-                    p.name, 
-                    p.category or '', 
-                    f"{p.gst}%", 
-                    f"{p.igst}%", 
-                    p.hsn_code or '', 
-                    p.batch_number or '',
-                    d['quantity'], 
-                    f"{p.unit_capacity} {p.measurement_type}" if p.unit_capacity else "-",
-                    f"{d['taxable_unit_amt']:.2f}",
-                    f"{d['taxable_total']:.2f}",
-                    f"{d['igst_amt']:.2f}", 
-                    f"{d['cgst_amt']:.2f}", 
-                    f"{d['sgst_amt']:.2f}", 
-                    f"{d['total_amt']:.2f}"
+                    p.name, p.category or '', f"{p.gst}%", f"{p.igst}%", p.hsn_code or '', p.batch_number or '',
+                    d['quantity'], f"{p.unit_capacity} {p.measurement_type}" if p.unit_capacity else "-",
+                    f"{d['taxable_unit_amt']:.2f}", f"{d['taxable_total']:.2f}",
+                    f"{d['igst_amt']:.2f}", f"{d['cgst_amt']:.2f}", f"{d['sgst_amt']:.2f}", f"{d['total_amt']:.2f}"
                 ])
-                sum_taxable_unit += d['taxable_unit_amt']
                 sum_taxable_total += d['taxable_total']
                 sum_igst += d['igst_amt']
                 sum_cgst += d['cgst_amt']
                 sum_sgst += d['sgst_amt']
                 sum_total += d['total_amt']
-                
-            # Totals row per table
-            writer.writerow([
-                'TOTAL', '', '', '', '', '', '', '',
-                f"{sum_taxable_unit:.2f}",
-                f"{sum_taxable_total:.2f}",
-                f"{sum_igst:.2f}",
-                f"{sum_cgst:.2f}",
-                f"{sum_sgst:.2f}",
-                f"{sum_total:.2f}"
-            ])
-        else:
-            writer.writerow(["No data found for this GST slab"])
-            
-        writer.writerow([]) # Blank line after each table
         
+        writer.writerow([
+            'TOTAL', '', '', '', '', '', '', '', '',
+            f"{sum_taxable_total:.2f}", f"{sum_igst:.2f}", f"{sum_cgst:.2f}", f"{sum_sgst:.2f}", f"{sum_total:.2f}"
+        ])
+        writer.writerow([])
+
+    # Section 2: IGST TABLE
+    writer.writerow(["--- SECTION 2: IGST TABLE ---"])
+    writer.writerow([])
+    for rate in [5, 12, 18]:
+        writer.writerow([f"Table: {rate}% IGST"])
+        writer.writerow(headers)
+        table_data = [d for d in details if d['product'].igst == rate]
+        
+        sum_taxable_total = sum_igst = sum_cgst = sum_sgst = sum_total = Decimal('0.00')
+        if table_data:
+            for d in table_data:
+                p = d['product']
+                writer.writerow([
+                    p.name, p.category or '', f"{p.gst}%", f"{p.igst}%", p.hsn_code or '', p.batch_number or '',
+                    d['quantity'], f"{p.unit_capacity} {p.measurement_type}" if p.unit_capacity else "-",
+                    f"{d['taxable_unit_amt']:.2f}", f"{d['taxable_total']:.2f}",
+                    f"{d['igst_amt']:.2f}", f"{d['cgst_amt']:.2f}", f"{d['sgst_amt']:.2f}", f"{d['total_amt']:.2f}"
+                ])
+                sum_taxable_total += d['taxable_total']
+                sum_igst += d['igst_amt']
+                sum_cgst += d['cgst_amt']
+                sum_sgst += d['sgst_amt']
+                sum_total += d['total_amt']
+        
+        writer.writerow([
+            'TOTAL', '', '', '', '', '', '', '', '',
+            f"{sum_taxable_total:.2f}", f"{sum_igst:.2f}", f"{sum_cgst:.2f}", f"{sum_sgst:.2f}", f"{sum_total:.2f}"
+        ])
+        writer.writerow([])
     return response
