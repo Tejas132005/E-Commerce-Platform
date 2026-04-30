@@ -1806,6 +1806,11 @@ def stock_at_date_view(request):
         # IGST priority for tax calculation
         is_igst = p.igst and p.igst > 0
         tax_rate = p.igst if is_igst else p.gst
+        
+        # Missing calculation fix
+        gst_amount = taxable_total_value * (tax_rate / Decimal('100'))
+        total_amt = taxable_total_value + gst_amount
+        
         gst_val = Decimal('0.00')
         cgst_val = Decimal('0.00')
         sgst_val = Decimal('0.00')
