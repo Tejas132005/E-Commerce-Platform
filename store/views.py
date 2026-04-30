@@ -2036,7 +2036,7 @@ def _export_purchase_csv(details, filename):
     
     # Columns as specified in the requirement (must match UI exactly)
     headers = [
-        'Product Name', 'Category', 'GST %', 'IGST %', 'HSN', 'Batch No',
+        'Product Name', 'Invoice Number', 'Category', 'GST %', 'IGST %', 'HSN', 'Batch No',
         'Stock Purchased', 'Unit Capacity', 'Taxable Unit Amt', 'Taxable Total Amt',
         'IGST Amt', 'CGST Amt', 'SGST Amt', 'Total Amt'
     ]
@@ -2054,7 +2054,7 @@ def _export_purchase_csv(details, filename):
             for d in table_data:
                 p = d['product']
                 writer.writerow([
-                    p.name, p.category or '', f"{p.gst}%", f"{p.igst}%", p.hsn_code or '', p.batch_number or '',
+                    p.name, p.purchase_invoice_number or '-', p.category or '', f"{p.gst}%", f"{p.igst}%", p.hsn_code or '', p.batch_number or '',
                     d['quantity'], f"{p.unit_capacity} {p.measurement_type}" if p.unit_capacity else "-",
                     f"{d['taxable_unit_amt']:.2f}", f"{d['taxable_total']:.2f}",
                     f"{d['igst_amt']:.2f}", f"{d['cgst_amt']:.2f}", f"{d['sgst_amt']:.2f}", f"{d['total_amt']:.2f}"
@@ -2066,7 +2066,7 @@ def _export_purchase_csv(details, filename):
                 sum_total += d['total_amt']
         
         writer.writerow([
-            'TOTAL', '', '', '', '', '', '', '', '',
+            'TOTAL', '', '', '', '', '', '', '', '', '',
             f"{sum_taxable_total:.2f}", f"{sum_igst:.2f}", f"{sum_cgst:.2f}", f"{sum_sgst:.2f}", f"{sum_total:.2f}"
         ])
         writer.writerow([])
@@ -2084,7 +2084,7 @@ def _export_purchase_csv(details, filename):
             for d in table_data:
                 p = d['product']
                 writer.writerow([
-                    p.name, p.category or '', f"{p.gst}%", f"{p.igst}%", p.hsn_code or '', p.batch_number or '',
+                    p.name, p.purchase_invoice_number or '-', p.category or '', f"{p.gst}%", f"{p.igst}%", p.hsn_code or '', p.batch_number or '',
                     d['quantity'], f"{p.unit_capacity} {p.measurement_type}" if p.unit_capacity else "-",
                     f"{d['taxable_unit_amt']:.2f}", f"{d['taxable_total']:.2f}",
                     f"{d['igst_amt']:.2f}", f"{d['cgst_amt']:.2f}", f"{d['sgst_amt']:.2f}", f"{d['total_amt']:.2f}"
@@ -2096,7 +2096,7 @@ def _export_purchase_csv(details, filename):
                 sum_total += d['total_amt']
         
         writer.writerow([
-            'TOTAL', '', '', '', '', '', '', '', '',
+            'TOTAL', '', '', '', '', '', '', '', '', '',
             f"{sum_taxable_total:.2f}", f"{sum_igst:.2f}", f"{sum_cgst:.2f}", f"{sum_sgst:.2f}", f"{sum_total:.2f}"
         ])
         writer.writerow([])

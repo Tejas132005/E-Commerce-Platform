@@ -194,6 +194,7 @@
                     <thead>
                         <tr>
                             <th>Product Name</th>
+                            <th>Invoice Number</th>
                             <th>Category</th>
                             <th>GST / IGST</th>
                             <th>HSN</th>
@@ -214,6 +215,7 @@
                             {% for d in gst_group.list %}
                             <tr>
                                 <td class="fw-bold">{{ d.product.name }}</td>
+                                <td>{{ d.product.purchase_invoice_number|default:"-" }}</td>
                                 <td>{{ d.product.category|default:"-" }}</td>
                                 <td>
                                     {% if d.product.igst > 0 %}
