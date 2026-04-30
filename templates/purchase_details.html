@@ -195,6 +195,7 @@
                         <tr>
                             <th>Product Name</th>
                             <th>Invoice Number</th>
+                            <th>GSTIN</th>
                             <th>Category</th>
                             <th>GST / IGST</th>
                             <th>HSN</th>
@@ -216,6 +217,7 @@
                             <tr>
                                 <td class="fw-bold">{{ d.product.name }}</td>
                                 <td>{{ d.product.purchase_invoice_number|default:"-" }}</td>
+                                <td>{{ d.product.company_gstin|default:"-" }}</td>
                                 <td>{{ d.product.category|default:"-" }}</td>
                                 <td>
                                     {% if d.product.igst > 0 %}
