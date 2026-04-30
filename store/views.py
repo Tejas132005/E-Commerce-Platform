@@ -1824,14 +1824,19 @@ def yearly_purchase_details(request):
     return render(request, 'purchase_details.html', context)
 
 def _calculate_purchase_report_data(products):
-    """Helper to calculate tax and totals for purchase reports."""
+    """Helper to calculate tax and totals for purchase reports.
+    
+    IMPORTANT: Uses initial_stock (immutable snapshot at time of product entry),
+    NOT product.quantity (which changes after sales/returns).
+    This ensures purchase data remains static and never changes after checkout.
+    """
     results = []
     for p in products:
-        # Per user instruction: Quantity MUST come from product.quantity
-        qty = p.quantity
+        # Use initial_stock: the ORIGINAL purchase quantity snapshot.
+        # product.quantity is dynamic (decreases after sales) — must NOT be used here.
+        qty = p.initial_stock
         
-        # Per user instruction: Taxable Unit Amt MUST come from product.unit_amount
-        # Falling back to taxable_unit_amount if unit_amount is 0 to ensure it's not silently 0
+        # Taxable Unit Amt: prefer unit_amount, fallback to taxable_unit_amount
         taxable_unit_amt = p.unit_amount
         if taxable_unit_amt == 0 or taxable_unit_amt is None:
             taxable_unit_amt = p.taxable_unit_amount
@@ -1870,10 +1875,11 @@ def _export_purchase_csv(details, filename):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     writer = csv.writer(response)
     
-    # Columns as specified in the requirement
+    # Columns as specified in the requirement (must match UI exactly)
     headers = [
         'Product Name', 'Category', 'GST %', 'IGST %', 'HSN', 'Batch No',
-        'Stock Purchased', 'Unit Capacity', 'Taxable Unit Amt', 'IGST Amt', 'CGST Amt', 'SGST Amt', 'Total Amt'
+        'Stock Purchased', 'Unit Capacity', 'Taxable Unit Amt', 'Taxable Total Amt',
+        'IGST Amt', 'CGST Amt', 'SGST Amt', 'Total Amt'
     ]
 
     # GST Grouping: 5%, 12%, 18%, IGST
@@ -1888,7 +1894,7 @@ def _export_purchase_csv(details, filename):
         writer.writerow([title])
         writer.writerow(headers)
         
-        sum_taxable_unit = sum_igst = sum_cgst = sum_sgst = sum_total = Decimal('0.00')
+        sum_taxable_unit = sum_taxable_total = sum_igst = sum_cgst = sum_sgst = sum_total = Decimal('0.00')
         
         if table_data:
             for d in table_data:
@@ -1902,23 +1908,25 @@ def _export_purchase_csv(details, filename):
                     p.batch_number or '',
                     d['quantity'], 
                     f"{p.unit_capacity} {p.measurement_type}" if p.unit_capacity else "-",
-                    f"{d['taxable_unit_amt']:.2f}", 
+                    f"{d['taxable_unit_amt']:.2f}",
+                    f"{d['taxable_total']:.2f}",
                     f"{d['igst_amt']:.2f}", 
                     f"{d['cgst_amt']:.2f}", 
                     f"{d['sgst_amt']:.2f}", 
                     f"{d['total_amt']:.2f}"
                 ])
                 sum_taxable_unit += d['taxable_unit_amt']
+                sum_taxable_total += d['taxable_total']
                 sum_igst += d['igst_amt']
                 sum_cgst += d['cgst_amt']
                 sum_sgst += d['sgst_amt']
                 sum_total += d['total_amt']
                 
-            # Totals at bottom of EACH table: [Taxable Unit Amt, IGST Amt, CGST Amt, SGST Amt, Total Amt]
-            # Column mapping (0-indexed): 0:TOTAL, 1-7:empty, 8:unit_amt_sum, 9:igst_sum, 10:cgst_sum, 11:sgst_sum, 12:total_sum
+            # Totals row per table
             writer.writerow([
                 'TOTAL', '', '', '', '', '', '', '',
                 f"{sum_taxable_unit:.2f}",
+                f"{sum_taxable_total:.2f}",
                 f"{sum_igst:.2f}",
                 f"{sum_cgst:.2f}",
                 f"{sum_sgst:.2f}",
