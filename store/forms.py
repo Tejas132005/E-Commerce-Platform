@@ -139,7 +139,9 @@ class AddProductForm(forms.ModelForm):
         if gst is None or gst == '':
             return Decimal('0')
         g = Decimal(str(gst))
-        if g < 0 or g > 100:
+        if g < 0:
+            raise forms.ValidationError('GST / IGST cannot be less than 0')
+        if g > 100:
             raise forms.ValidationError('GST must be between 0 and 100.')
         return gst
 
@@ -148,7 +150,9 @@ class AddProductForm(forms.ModelForm):
         if igst is None or igst == '':
             return Decimal('0')
         g = Decimal(str(igst))
-        if g < 0 or g > 100:
+        if g < 0:
+            raise forms.ValidationError('GST / IGST cannot be less than 0')
+        if g > 100:
             raise forms.ValidationError('IGST must be between 0 and 100.')
         return igst
 
@@ -182,11 +186,8 @@ class AddProductForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        # At least one of GST or IGST must be filled
-        gst_val = cleaned.get('gst') or Decimal('0')
-        igst_val = cleaned.get('igst') or Decimal('0')
-        if Decimal(str(gst_val)) <= 0 and Decimal(str(igst_val)) <= 0:
-            self.add_error('gst', 'At least one of GST or IGST must be provided.')
+        # No restriction on 0% tax anymore
+        pass
         if self.ad_section:
             q = getattr(self, 'data', None) or {}
             manual = (q.get('net_manual_override') or '').strip() == '1'
@@ -336,7 +337,9 @@ class UpdateProductForm(forms.ModelForm):
         if gst is None or gst == '':
             return Decimal('0')
         g = Decimal(str(gst))
-        if g < 0 or g > 100:
+        if g < 0:
+            raise forms.ValidationError('GST / IGST cannot be less than 0')
+        if g > 100:
             raise forms.ValidationError('GST must be between 0 and 100.')
         return gst
 
@@ -345,7 +348,9 @@ class UpdateProductForm(forms.ModelForm):
         if igst is None or igst == '':
             return Decimal('0')
         g = Decimal(str(igst))
-        if g < 0 or g > 100:
+        if g < 0:
+            raise forms.ValidationError('GST / IGST cannot be less than 0')
+        if g > 100:
             raise forms.ValidationError('IGST must be between 0 and 100.')
         return igst
 
@@ -379,10 +384,8 @@ class UpdateProductForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        gst_val = cleaned.get('gst') or Decimal('0')
-        igst_val = cleaned.get('igst') or Decimal('0')
-        if Decimal(str(gst_val)) <= 0 and Decimal(str(igst_val)) <= 0:
-            self.add_error('gst', 'At least one of GST or IGST must be provided.')
+        # No restriction on 0% tax anymore
+        pass
         if self.ad_section:
             q = getattr(self, 'data', None) or {}
             manual = (q.get('net_manual_override') or '').strip() == '1'

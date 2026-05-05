@@ -1087,7 +1087,7 @@ def analytics_dashboard_view(request):
         'username': request.user.username,
         'page_title': 'Item Analytics Dashboard',
     })
-    
+
     
 # -------------------- USER ANALYTICS DASHBOARD --------------------
 @login_required
@@ -1318,7 +1318,7 @@ def monthly_stock_report(request):
         # Section 1: GST TABLE
         writer.writerow(["--- SECTION 1: GST TABLE (CGST + SGST) ---"])
         writer.writerow([])
-        for rate in [5, 12, 18]:
+        for rate in [0, 5, 12, 18]:
             writer.writerow([f"Table: {rate}% GST"])
             writer.writerow(export_headers)
             table_data = [d for d in stock_details if d['product'].igst == 0 and d['product'].gst == rate]
@@ -1861,7 +1861,7 @@ def stock_at_date_view(request):
         # Section 1: GST TABLE
         writer.writerow(["--- SECTION 1: GST TABLE (CGST + SGST) ---"])
         writer.writerow([])
-        for rate in [5, 12, 18]:
+        for rate in [0, 5, 12, 18]:
             writer.writerow([f"Table: {rate}% GST"])
             writer.writerow(headers)
             table_data = [r for r in results if r['igst'] == 0 and r['gst'] == rate]
@@ -2049,7 +2049,7 @@ def _export_purchase_csv(details, filename):
     # Section 1: GST TABLE
     writer.writerow(["--- SECTION 1: GST TABLE (CGST + SGST) ---"])
     writer.writerow([])
-    for rate in [5, 12, 18]:
+    for rate in [0, 5, 12, 18]:
         writer.writerow([f"Table: {rate}% GST"])
         writer.writerow(headers)
         table_data = [d for d in details if d['product'].igst == 0 and d['product'].gst == rate]
