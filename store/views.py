@@ -1,11 +1,11 @@
 # store/views.py 
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.utils import timezone
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.views.decorators.http import require_POST
-from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+from django.shortcuts import render, redirect, get_object_or_404 
+from django.utils import timezone  
+from django.contrib.auth.decorators import login_required 
+from django.contrib import messages 
+from django.views.decorators.http import require_POST 
+from django.db.models import Sum, F, ExpressionWrapper, DecimalField 
 from django.http import HttpResponse, Http404
 from django.template.loader import render_to_string
 from .models import Product, Cart, Order, OrderItem, SalesReport, ShopCustomer, ProductReturn
@@ -13,9 +13,9 @@ from .forms import AddProductForm, UpdateProductForm, CustomerLoginForm, Custome
 from accounts.models import CustomUser
 from collections import defaultdict
 from decimal import Decimal
-import html as html_stdlib
-import re
-import csv
+import html as html_stdlib 
+import re 
+import csv 
 
 from django.db.models import Q, Case, When, IntegerField, Sum, F, OuterRef, Subquery
 from django.db.models.functions import Coalesce
@@ -2041,7 +2041,7 @@ def _export_purchase_csv(details, filename):
     
     # Columns as specified in the requirement (must match UI exactly)
     headers = [
-        'Product Name', 'Invoice Number', 'GSTIN', 'Category', 'GST %', 'IGST %', 'HSN', 'Batch No',
+        'Product Name', 'Invoice Number', 'Invoice Date', 'GSTIN', 'Category', 'GST %', 'IGST %', 'HSN', 'Batch No',
         'Stock Purchased', 'Unit Capacity', 'Taxable Unit Amt', 'Taxable Total Amt',
         'IGST Amt', 'CGST Amt', 'SGST Amt', 'Total Amt'
     ]
@@ -2059,7 +2059,7 @@ def _export_purchase_csv(details, filename):
             for d in table_data:
                 p = d['product']
                 writer.writerow([
-                    p.name, p.purchase_invoice_number or '-', p.company_gstin or '-', p.category or '', f"{p.gst}%", f"{p.igst}%", p.hsn_code or '', p.batch_number or '',
+                    p.name, p.purchase_invoice_number or '-', p.purchase_date.strftime('%d-%m-%Y') if p.purchase_date else '-', p.company_gstin or '-', p.category or '', f"{p.gst}%", f"{p.igst}%", p.hsn_code or '', p.batch_number or '',
                     d['quantity'], f"{p.unit_capacity} {p.measurement_type}" if p.unit_capacity else "-",
                     f"{d['taxable_unit_amt']:.2f}", f"{d['taxable_total']:.2f}",
                     f"{d['igst_amt']:.2f}", f"{d['cgst_amt']:.2f}", f"{d['sgst_amt']:.2f}", f"{d['total_amt']:.2f}"
@@ -2071,7 +2071,7 @@ def _export_purchase_csv(details, filename):
                 sum_total += d['total_amt']
         
         writer.writerow([
-            'TOTAL', '', '', '', '', '', '', '', '', '', '',
+            'TOTAL', '', '', '', '', '', '', '', '', '', '', '',
             f"{sum_taxable_total:.2f}", f"{sum_igst:.2f}", f"{sum_cgst:.2f}", f"{sum_sgst:.2f}", f"{sum_total:.2f}"
         ])
         writer.writerow([])
@@ -2089,7 +2089,7 @@ def _export_purchase_csv(details, filename):
             for d in table_data:
                 p = d['product']
                 writer.writerow([
-                    p.name, p.purchase_invoice_number or '-', p.company_gstin or '-', p.category or '', f"{p.gst}%", f"{p.igst}%", p.hsn_code or '', p.batch_number or '',
+                    p.name, p.purchase_invoice_number or '-', p.purchase_date.strftime('%d-%m-%Y') if p.purchase_date else '-', p.company_gstin or '-', p.category or '', f"{p.gst}%", f"{p.igst}%", p.hsn_code or '', p.batch_number or '',
                     d['quantity'], f"{p.unit_capacity} {p.measurement_type}" if p.unit_capacity else "-",
                     f"{d['taxable_unit_amt']:.2f}", f"{d['taxable_total']:.2f}",
                     f"{d['igst_amt']:.2f}", f"{d['cgst_amt']:.2f}", f"{d['sgst_amt']:.2f}", f"{d['total_amt']:.2f}"
@@ -2101,7 +2101,7 @@ def _export_purchase_csv(details, filename):
                 sum_total += d['total_amt']
         
         writer.writerow([
-            'TOTAL', '', '', '', '', '', '', '', '', '', '',
+            'TOTAL', '', '', '', '', '', '', '', '', '', '', '',
             f"{sum_taxable_total:.2f}", f"{sum_igst:.2f}", f"{sum_cgst:.2f}", f"{sum_sgst:.2f}", f"{sum_total:.2f}"
         ])
         writer.writerow([])
