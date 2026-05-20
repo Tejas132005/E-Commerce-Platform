@@ -158,11 +158,22 @@
         }
 
         .invoice-header {
-            {% if as_pdf %}
+                {
+                % if as_pdf %
+            }
+
             display: table;
-            {% else %}
+
+                {
+                % else %
+            }
+
             display: flex;
-            {% endif %}
+
+                {
+                % endif %
+            }
+
             width: 100%;
             justify-content: space-between;
             align-items: flex-start;
@@ -530,7 +541,7 @@
                 </td>
 
                 <!-- Right column (Contact Info) -->
-                <td style="width: 20%; text-align: right; vertical-align: top; font-size: 11px; line-height: 1.4;">
+                <td style="width: 20%; vertical-align: top; font-size: 11px; line-height: 1.4; margin-right: 40px;">
                     <div class="company-right">
                         <p style="margin: 0;"><strong>Phone:</strong> {{ company.phone }}</p>
                         <p style="margin: 0;"><strong>Email:</strong> {{ company.email }}</p>
@@ -550,7 +561,8 @@
             </div>
             <div class="invoice-details">
                 <p class="invoice-no">Invoice No: {{ invoice.invoice_number|default:invoice.id }}</p>
-                <p><strong>Date:</strong> {% if invoice.invoice_date %}{{ invoice.invoice_date|date:"d/m/Y" }}{% else %}{{ invoice.order_date|date:"d/m/Y" }}{% endif %}</p>
+                <p><strong>Date:</strong> {% if invoice.invoice_date %}{{ invoice.invoice_date|date:"d/m/Y" }}{% else
+                    %}{{ invoice.order_date|date:"d/m/Y" }}{% endif %}</p>
             </div>
         </div>
 
@@ -566,7 +578,8 @@
                     <p>{{ customer.address2 }}</p>
                     {% endif %}
                     {% if customer.city %}
-                    <p>{{ customer.city }}, {{ customer.state|default:"State" }} - {{ customer.pincode|default:"000000" }}</p>
+                    <p>{{ customer.city }}, {{ customer.state|default:"State" }} - {{ customer.pincode|default:"000000"
+                        }}</p>
                     {% endif %}
                     <p><strong>Phone:</strong> {{ customer.phone }}</p>
                     {% if customer.email %}
