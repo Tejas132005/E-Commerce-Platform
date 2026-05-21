@@ -519,7 +519,7 @@
                             Sowing Seeds, Chemical Fertilizers, Pesticides
                         </h4>
                         <h4 style="margin: 4px 0; font-size: 14px; font-weight: normal; color: #333;">
-                            {{ company.address }}, {{ company.city }} - {{ company.pincode }}, {{ company.state }}
+                            <span style="font-weight: bold">HARANAGIRI</span>, {{ company.city }} - {{ company.pincode }}, {{ company.state }}
                         </h4>
                         <div style="margin-top: 8px;">
                             <span class="bill-type-btn" style="margin: 0; display: inline-block;">
@@ -550,7 +550,7 @@
             </div>
             <div class="invoice-details">
                 <p class="invoice-no">Invoice No: {{ invoice.invoice_number|default:invoice.id }}</p>
-                <p style="font-size: calc(0.95rem + 10px); font-weight: bold; color: #000;">Date: {% if invoice.invoice_date %}{{ invoice.invoice_date|date:"d/m/Y" }}{% else %}{{ invoice.order_date|date:"d/m/Y" }}{% endif %}</p>
+                <p style="font-size: calc(0.95rem + 5px); font-weight: bold; color: #000;">Date: {% if invoice.invoice_date %}{{ invoice.invoice_date|date:"d/m/Y" }}{% else %}{{ invoice.order_date|date:"d/m/Y" }}{% endif %}</p>
             </div>
         </div>
 
@@ -560,8 +560,8 @@
                 <div class="customer-details">
                     <p><strong>{{ customer.name }}</strong></p>
                     {% if customer.address %}
-                    <p>{{ customer.address }}</p>
-                    {% endif %}
+                    <p>{{ customer.address }}</p> 
+                    {% endif %} 
                     {% if customer.address2 %}
                     <p>{{ customer.address2 }}</p>
                     {% endif %}
@@ -569,7 +569,7 @@
                     <p>{{ customer.city }}, {{ customer.state|default:"State" }} - {{ customer.pincode|default:"000000"
                         }}</p>
                     {% endif %}
-                    <p><strong>Phone:</strong> {{ customer.phone }}</p>
+                  
                     {% if customer.email %}
                     <p><strong>Email:</strong> {{ customer.email }}</p>
                     {% endif %}
