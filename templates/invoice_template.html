@@ -158,22 +158,11 @@
         }
 
         .invoice-header {
-                {
-                % if as_pdf %
-            }
-
+            {% if as_pdf %}
             display: table;
-
-                {
-                % else %
-            }
-
+            {% else %}
             display: flex;
-
-                {
-                % endif %
-            }
-
+            {% endif %}
             width: 100%;
             justify-content: space-between;
             align-items: flex-start;
@@ -561,8 +550,7 @@
             </div>
             <div class="invoice-details">
                 <p class="invoice-no">Invoice No: {{ invoice.invoice_number|default:invoice.id }}</p>
-                <p><strong>Date:</strong> {% if invoice.invoice_date %}{{ invoice.invoice_date|date:"d/m/Y" }}{% else
-                    %}{{ invoice.order_date|date:"d/m/Y" }}{% endif %}</p>
+                <p style="font-size: calc(0.95rem + 10px); font-weight: bold; color: #000;">Date: {% if invoice.invoice_date %}{{ invoice.invoice_date|date:"d/m/Y" }}{% else %}{{ invoice.order_date|date:"d/m/Y" }}{% endif %}</p>
             </div>
         </div>
 
