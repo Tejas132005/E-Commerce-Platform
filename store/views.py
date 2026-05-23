@@ -1008,6 +1008,37 @@ def deleted_invoices_view(request, username):
         'user': store_owner,
     })
 
+@login_required
+def all_invoices_view(request, username):
+    """View all invoices (active and deleted) for the store owner"""
+    store_owner = get_store_owner(username)
+    
+    # Ensure only the store owner can view all invoices
+    if request.user != store_owner:
+        return redirect('home')
+
+    # Get search query
+    search_query = request.GET.get('q', '').strip()
+    
+    # Get all orders for this store owner
+    orders = Order.objects.filter(store_owner=store_owner)
+    
+    if search_query:
+        # Search by invoice number
+        orders = orders.filter(
+            Q(invoice_number__icontains=search_query) | 
+            Q(order_number__icontains=search_query) |
+            Q(id__icontains=search_query)
+        )
+        
+    orders = orders.order_by('-invoice_date', '-order_date')
+    
+    return render(request, 'all_invoices.html', {
+        'orders': orders,
+        'store_owner': store_owner,
+        'search_query': search_query,
+    })
+
 
 @login_required
 def edit_customer_view(request, customer_id):

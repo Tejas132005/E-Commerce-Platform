@@ -68,6 +68,7 @@ urlpatterns = [
     path('<str:username>/invoice/delete/<int:order_id>/', views.delete_invoice, name='delete_invoice'),
     path('<str:username>/invoice/restore/<int:order_id>/', views.restore_invoice, name='restore_invoice'),
     path('<str:username>/deleted-invoices/', views.deleted_invoices_view, name='deleted_invoices'),
+    path('<str:username>/all-invoices/', views.all_invoices_view, name='all_invoices'),
 
     # Customer authentication for specific stores
     path('<str:username>/login/', views.customer_login, name='customer_login'),

@@ -351,6 +351,9 @@
                         <a href="/store/yearly-purchase-details/" class="btn premium-btn d-flex align-items-center justify-content-start">
                             <i class="bi bi-calendar-range me-2"></i> Yearly Purchase Details
                         </a>
+                        <a href="{% url 'deleted_invoices' username=user.username %}" class="btn premium-btn d-flex align-items-center justify-content-start">
+                            <i class="bi bi-trash-fill text-danger me-2"></i> Deleted Invoices
+                        </a>
                         <a href="/accounts/logout/" class="btn premium-btn d-flex align-items-center justify-content-start">
                             <i class="bi bi-box-arrow-right me-2"></i> Logout
                         </a>
@@ -426,6 +429,11 @@
                         <div class="col-lg-3 col-md-6 mb-3">
                             <a href="{% url 'customer_details_list' %}" class="btn premium-btn d-flex align-items-center justify-content-start">
                                 <i class="bi bi-people me-2"></i> Customer Details
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'all_invoices' username=user.username %}" class="btn premium-btn d-flex align-items-center justify-content-start">
+                                <i class="bi bi-receipt me-2"></i> All Invoices
                             </a>
                         </div>
 

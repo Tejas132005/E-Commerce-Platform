@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Invoices - {{ store_owner.company_name|default:store_owner.username }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <style>
+        body { 
+            background-color: #f8f9fa; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .invoice-card { 
+            transition: 0.3s; 
+            cursor: pointer; 
+            text-decoration: none; 
+            color: inherit; 
+            display: block; 
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+        }
+        .invoice-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15); 
+            color: inherit;
+        }
+        .deleted-invoice { 
+            opacity: 0.8; 
+            background-color: #fff0f0; 
+            border-color: #f5c6cb;
+        }
+        .invoice-header-text {
+            font-family: monospace;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-receipt"></i> All Invoices</h2>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Dashboard</a>
+        </div>
+
+        <!-- Search Form -->
+        <div class="card mb-4 shadow-sm border-0 rounded-4">
+            <div class="card-body p-4">
+                <form method="GET" action="" class="d-flex gap-2">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control form-control-lg" placeholder="Search by Invoice Number (e.g. INV-01)" value="{{ search_query }}">
+                        {% if search_query %}
+                        <a href="?" class="btn btn-outline-secondary d-flex align-items-center">Clear</a>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">Search</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Invoices List -->
+        <div class="row g-4">
+            {% for order in orders %}
+            <div class="col-md-6 col-lg-4">
+                <a href="{% url 'generate_invoice_view' username=store_owner.username order_id=order.id %}" class="card invoice-card h-100 {% if order.is_deleted %}deleted-invoice{% else %}bg-white{% endif %} shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0 fw-bold invoice-header-text">
+                                [ {{ order.invoice_number|default:order.order_number }} &nbsp;&nbsp; {{ order.invoice_date|date:"d-m-Y" }} ]
+                            </h5>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-end">
+                            <div>
+                                <p class="mb-1 text-muted"><i class="bi bi-person"></i> {{ order.customer.name|default:"Unknown Customer" }}</p>
+                                <p class="mb-0 fw-bold fs-5">₹{{ order.total_price|floatformat:2 }}</p>
+                            </div>
+                            <div>
+                                {% if order.is_deleted %}
+                                <span class="badge bg-danger rounded-pill px-3 py-2">Deleted</span>
+                                {% else %}
+                                <span class="badge bg-success rounded-pill px-3 py-2">Active</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <div class="text-muted mb-3">
+                    <i class="bi bi-inbox fs-1"></i>
+                </div>
+                <h4 class="text-muted">No invoices found.</h4>
+                {% if search_query %}
+                <p class="text-muted">No invoices matched your search for "{{ search_query }}"</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
