@@ -585,14 +585,15 @@
                 <thead>
                     <tr>
                         <th style="width:4%;">Sr.</th>
-                        <th style="width:24%;">Description</th>
-                        <th style="width:9%;">HSN/SAC</th>
+                        <th style="width:22%;">Description</th>
+                        <th style="width:8%;">HSN/SAC</th>
+                        <th style="width:10%;">Batch No</th>
                         <th style="width:6%;">Qty</th>
-                        <th style="width:10%;">Unit</th>
-                        <th style="width:11%;">Rate (₹)</th>
+                        <th style="width:9%;">Unit</th>
+                        <th style="width:10%;">Rate (₹)</th>
                         <th style="width:11%;">Amount (₹)</th>
                         <th style="width:9%;">GST Rate</th>
-                        <th style="width:10%;">GST (₹)</th>
+                        <th style="width:11%;">GST (₹)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -606,6 +607,7 @@
                             {% endif %}
                         </td>
                         <td class="text-center">{{ item.product.hsn_code|default:"-" }}</td>
+                        <td class="text-center">{{ item.product.batch_number|default:"-" }}</td>
                         <td class="text-center">{{ item.quantity }}</td>
                         <td class="text-center">{{ item.product.get_unit_label }}</td>
                         <td class="text-right">{{ item.item_price|floatformat:2 }}</td>
