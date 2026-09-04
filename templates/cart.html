@@ -259,7 +259,7 @@
             <div class="cart-item">
                 <div class="item-image">
                     {% if item_data.product.image %}
-                    <img src="{{ item_data.product.image.url }}" alt="{{ item_data.product.name }}"> {% else %} 📦 {% endif %}
+                    <img src="{{ item_data.product.image.url }}" alt="{{ item_data.product.name }}" onerror="this.style.display='none'; this.parentElement.innerHTML='📦';"> {% else %} 📦 {% endif %}
                 </div>
 
                 <div class="item-info">

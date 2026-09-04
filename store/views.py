@@ -5,7 +5,8 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required 
 from django.contrib import messages 
 from django.views.decorators.http import require_POST 
-from django.db.models import Sum, F, ExpressionWrapper, DecimalField 
+from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+from django.db import transaction
 from django.http import HttpResponse, Http404
 from django.template.loader import render_to_string
 from .models import Product, Cart, Order, OrderItem, SalesReport, ShopCustomer, ProductReturn
@@ -270,6 +271,12 @@ def add_to_cart_view(request, username, product_id):
             msg.error(request, 'Invalid date. Use the date picker.')
             return _redirect_after_cart_error(request, username)
 
+        today = timezone.now().date()
+        if transaction_date > today:
+            from django.contrib import messages as msg
+            msg.error(request, "Future dates are not allowed. Please select today's date or a past date.")
+            return _redirect_after_cart_error(request, username)
+
         if not custom_amount:
             from django.contrib import messages as msg
             msg.error(request, 'Please enter an amount (unit price).')
@@ -283,12 +290,27 @@ def add_to_cart_view(request, username, product_id):
 
         if product.quantity <= 0:
             from django.contrib import messages as msg
-            msg.error(request, 'This product is out of stock.')
+            msg.error(request, f'Product "{product.name}" is out of stock.')
             return _redirect_after_cart_error(request, username)
 
-        if quantity > product.quantity:
+        existing_cart_item = Cart.objects.filter(
+            store_owner=store_owner,
+            customer=customer,
+            product=product
+        ).first()
+
+        existing_qty = existing_cart_item.quantity if existing_cart_item else 0
+        total_requested = existing_qty + quantity
+
+        if total_requested > product.quantity:
             from django.contrib import messages as msg
-            msg.error(request, f'Only {product.quantity} items available in stock.')
+            if existing_qty > 0:
+                msg.error(
+                    request,
+                    f'Cannot add {quantity} more of "{product.name}". Only {product.quantity} items available in stock, and you already have {existing_qty} in cart.',
+                )
+            else:
+                msg.error(request, f'Cannot add {quantity} items of "{product.name}". Only {product.quantity} available in stock.')
             return _redirect_after_cart_error(request, username)
         
         # Calculate total price WITHOUT GST for cart storage
@@ -307,16 +329,7 @@ def add_to_cart_view(request, username, product_id):
         )
 
         if not created:
-            new_quantity = cart_item.quantity + quantity
-            if new_quantity > product.quantity:
-                from django.contrib import messages as msg
-                msg.error(
-                    request,
-                    f'Cannot add more. Only {product.quantity} items available, you already have {cart_item.quantity} in cart.',
-                )
-                return _redirect_after_cart_error(request, username)
-
-            cart_item.quantity = new_quantity
+            cart_item.quantity = total_requested
             cart_item.unit_price = unit_price
             cart_item.total_price = unit_price * cart_item.quantity
             cart_item.transaction_date = transaction_date
@@ -438,109 +451,139 @@ def checkout_view(request, username):
         product__is_archived=True,
     ).delete()
 
-    cart_items = Cart.objects.filter(store_owner=store_owner, customer=customer)
+    cart_items = Cart.objects.filter(store_owner=store_owner, customer=customer).select_related('product')
     if not cart_items.exists():
         return redirect('cart_view', username=username)
 
-    # Calculate totals with GST/IGST breakdown
-    subtotal = Decimal('0.00')
-    total_cgst = Decimal('0.00')
-    total_sgst = Decimal('0.00')
-    total_igst = Decimal('0.00')
-    
+    # Step 1: Pre-validate stock for ALL cart items BEFORE performing any updates
     for item in cart_items:
-        effective_price = item.unit_price if item.unit_price > 0 else item.product.price
-        item_subtotal = effective_price * item.quantity
-        product = item.product
-        uses_igst = product.igst is not None and product.igst > 0
-        
-        if uses_igst:
-            igst_rate = Decimal(str(product.igst)) / Decimal('100')
-            item_igst = item_subtotal * igst_rate
-            total_igst += item_igst
-        else:
-            gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
-            item_total_gst = item_subtotal * gst_rate_decimal
-            total_cgst += item_total_gst / Decimal('2')
-            total_sgst += item_total_gst / Decimal('2')
-        
-        subtotal += item_subtotal
+        if item.quantity > item.product.quantity:
+            messages.error(
+                request,
+                f"Insufficient stock for {item.product.name}. Available: {item.product.quantity}, Requested: {item.quantity}."
+            )
+            return redirect('cart_view', username=username)
 
-    total_gst = total_cgst + total_sgst
-    grand_total = subtotal + total_gst + total_igst
+    # Step 2: Atomic transaction for order creation, stock deduction, sales report, and cart clearing
+    try:
+        with transaction.atomic():
+            cart_items_list = list(Cart.objects.filter(store_owner=store_owner, customer=customer).select_related('product'))
+            if not cart_items_list:
+                return redirect('cart_view', username=username)
 
-    line_dates = [c.transaction_date for c in cart_items if getattr(c, 'transaction_date', None)]
-    invoice_date = max(line_dates) if line_dates else timezone.now().date()
+            # Re-verify stock inside the atomic transaction block
+            for item in cart_items_list:
+                product = item.product
+                if item.quantity > product.quantity:
+                    raise ValueError(
+                        f"Insufficient stock for {product.name}. Available: {product.quantity}, Requested: {item.quantity}."
+                    )
 
-    order = Order.objects.create(
-        store_owner=store_owner,
-        customer=customer,
-        total_price=grand_total,
-        subtotal=subtotal,
-        total_cgst=total_cgst,
-        total_sgst=total_sgst,
-        total_gst=total_gst,
-        total_igst=total_igst,
-        status='pending',
-        invoice_date=invoice_date,
-    )
+            # Calculate totals with GST/IGST breakdown
+            subtotal = Decimal('0.00')
+            total_cgst = Decimal('0.00')
+            total_sgst = Decimal('0.00')
+            total_igst = Decimal('0.00')
+            
+            for item in cart_items_list:
+                effective_price = item.unit_price if item.unit_price > 0 else item.product.price
+                item_subtotal = effective_price * item.quantity
+                product = item.product
+                uses_igst = product.igst is not None and product.igst > 0
+                
+                if uses_igst:
+                    igst_rate = Decimal(str(product.igst)) / Decimal('100')
+                    item_igst = item_subtotal * igst_rate
+                    total_igst += item_igst
+                else:
+                    gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
+                    item_total_gst = item_subtotal * gst_rate_decimal
+                    total_cgst += item_total_gst / Decimal('2')
+                    total_sgst += item_total_gst / Decimal('2')
+                
+                subtotal += item_subtotal
 
-    order.invoice_number = f"INV-{order.order_number:02d}"
-    order.save()
+            total_gst = total_cgst + total_sgst
+            grand_total = subtotal + total_gst + total_igst
 
-    # Create order items with GST/IGST breakdown
-    for item in cart_items:
-        effective_price = item.unit_price if item.unit_price > 0 else item.product.price
-        item_subtotal = effective_price * item.quantity
-        product = item.product
-        uses_igst = product.igst is not None and product.igst > 0
-        
-        if uses_igst:
-            igst_rate = Decimal(str(product.igst)) / Decimal('100')
-            item_igst = item_subtotal * igst_rate
-            item_cgst = Decimal('0.00')
-            item_sgst = Decimal('0.00')
-            item_gst = Decimal('0.00')
-            item_total = item_subtotal + item_igst
-        else:
-            gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
-            item_gst = item_subtotal * gst_rate_decimal
-            item_cgst = item_gst / Decimal('2')
-            item_sgst = item_gst / Decimal('2')
-            item_igst = Decimal('0.00')
-            item_total = item_subtotal + item_gst
-        
-        OrderItem.objects.create(
-            order=order,
-            product=product,
-            quantity=item.quantity,
-            item_price=effective_price,
-            total_price=item_total,
-            subtotal=item_subtotal,
-            cgst_amount=item_cgst,
-            sgst_amount=item_sgst,
-            gst_amount=item_gst,
-            igst_amount=item_igst,
-        )
+            line_dates = [c.transaction_date for c in cart_items_list if getattr(c, 'transaction_date', None)]
+            invoice_date = max(line_dates) if line_dates else timezone.now().date()
 
-        product.quantity -= item.quantity
-        product.save()
+            order = Order.objects.create(
+                store_owner=store_owner,
+                customer=customer,
+                total_price=grand_total,
+                subtotal=subtotal,
+                total_cgst=total_cgst,
+                total_sgst=total_sgst,
+                total_gst=total_gst,
+                total_igst=total_igst,
+                status='pending',
+                invoice_date=invoice_date,
+            )
 
-        sale_day = item.transaction_date or invoice_date
-        sale_dt = timezone.make_aware(datetime.combine(sale_day, time(12, 0, 0)))
-        SalesReport.objects.create(
-            store_owner=store_owner,
-            customer=customer,
-            product=product,
-            order=order,
-            quantity=item.quantity,
-            total_price=item_total,
-            profit=Decimal('0.00'),
-            category=product.category or 'Uncategorized',
-            sale_date=sale_dt,
-        )
+            order.invoice_number = f"INV-{order.order_number:02d}"
+            order.save()
 
-    cart_items.delete()
+            # Create order items with GST/IGST breakdown and deduct stock
+            for item in cart_items_list:
+                effective_price = item.unit_price if item.unit_price > 0 else item.product.price
+                item_subtotal = effective_price * item.quantity
+                product = item.product
+                uses_igst = product.igst is not None and product.igst > 0
+                
+                if uses_igst:
+                    igst_rate = Decimal(str(product.igst)) / Decimal('100')
+                    item_igst = item_subtotal * igst_rate
+                    item_cgst = Decimal('0.00')
+                    item_sgst = Decimal('0.00')
+                    item_gst = Decimal('0.00')
+                    item_total = item_subtotal + item_igst
+                else:
+                    gst_rate_decimal = Decimal(str(product.gst)) / Decimal('100')
+                    item_gst = item_subtotal * gst_rate_decimal
+                    item_cgst = item_gst / Decimal('2')
+                    item_sgst = item_gst / Decimal('2')
+                    item_igst = Decimal('0.00')
+                    item_total = item_subtotal + item_gst
+                
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=item.quantity,
+                    item_price=effective_price,
+                    total_price=item_total,
+                    subtotal=item_subtotal,
+                    cgst_amount=item_cgst,
+                    sgst_amount=item_sgst,
+                    gst_amount=item_gst,
+                    igst_amount=item_igst,
+                )
+
+                product.quantity -= item.quantity
+                product.save()
+
+                sale_day = item.transaction_date or invoice_date
+                sale_dt = timezone.make_aware(datetime.combine(sale_day, time(12, 0, 0)))
+                SalesReport.objects.create(
+                    store_owner=store_owner,
+                    customer=customer,
+                    product=product,
+                    order=order,
+                    quantity=item.quantity,
+                    total_price=item_total,
+                    profit=Decimal('0.00'),
+                    category=product.category or 'Uncategorized',
+                    sale_date=sale_dt,
+                )
+
+            # Clear cart items ONLY after everything succeeds
+            Cart.objects.filter(store_owner=store_owner, customer=customer).delete()
+
+    except ValueError as err:
+        messages.error(request, str(err))
+        return redirect('cart_view', username=username)
+
     return redirect('my_orders', username=username)
 
 
@@ -903,42 +946,39 @@ def delete_invoice(request, username, order_id):
     
     # Prevent double deletion
     if not order.is_deleted:
-        # Restore stock for each order item
-        for item in order.items.all():
-            product = item.product
-            product.quantity += item.quantity
-            product.save()
-        
-        # Get the current number before we mark it as deleted
-        deleted_number = order.order_number
-        
-        # 1. Move ALL currently deleted orders of this user out of the way to avoid collisions
-        # This cleans up any legacy deleted orders that might be blocking the sequence
-        all_deleted_orders = Order.objects.filter(store_owner=store_owner, is_deleted=True)
-        for d_order in all_deleted_orders:
-            # We skip the current one if we want to handle it specifically, but it's easier to just do all
-            d_order.order_number = 1000000 + d_order.id
-            d_order.save()
+        with transaction.atomic():
+            # Restore stock for each order item
+            for item in order.items.all():
+                product = item.product
+                product.quantity += item.quantity
+                product.save()
             
-        # 2. Mark the current order as deleted and move it out of the sequential range
-        order.is_deleted = True
-        order.order_number = 1000000 + order.id 
-        order.save()
-        
-        # 3. Re-normalize the sequence for all ACTIVE orders of this store owner
-        # We fetch all active orders and re-assign them numbers 1, 2, 3...
-        # This is more robust than just shifting subsequent ones
-        active_orders = Order.objects.filter(
-            store_owner=store_owner,
-            is_deleted=False
-        ).order_by('order_date', 'id') # Use a stable ordering
-        
-        for index, active_order in enumerate(active_orders, start=1):
-            if active_order.order_number != index:
-                active_order.order_number = index
-                active_order.invoice_number = f"INV-{active_order.order_number:02d}"
-                active_order.save()
-        
+            # Get the current number before we mark it as deleted
+            deleted_number = order.order_number
+            
+            # 1. Move ALL currently deleted orders of this user out of the way to avoid collisions
+            all_deleted_orders = Order.objects.filter(store_owner=store_owner, is_deleted=True)
+            for d_order in all_deleted_orders:
+                d_order.order_number = 1000000 + d_order.id
+                d_order.save()
+                
+            # 2. Mark the current order as deleted and move it out of the sequential range
+            order.is_deleted = True
+            order.order_number = 1000000 + order.id 
+            order.save()
+            
+            # 3. Re-normalize the sequence for all ACTIVE orders of this store owner
+            active_orders = Order.objects.filter(
+                store_owner=store_owner,
+                is_deleted=False
+            ).order_by('order_date', 'id')
+            
+            for index, active_order in enumerate(active_orders, start=1):
+                if active_order.order_number != index:
+                    active_order.order_number = index
+                    active_order.invoice_number = f"INV-{active_order.order_number:02d}"
+                    active_order.save()
+            
         messages.success(request, f'Invoice {order.invoice_number or order.order_number} has been deleted and stock has been restored.')
     else:
         messages.warning(request, 'This invoice has already been deleted.')
@@ -959,26 +999,33 @@ def restore_invoice(request, username, order_id):
     
     # Only restore if it's deleted
     if order.is_deleted:
-        # Deduct stock for each order item
+        # Pre-validate stock availability for all items in the order FIRST
         for item in order.items.all():
             product = item.product
-            if product.quantity >= item.quantity:
+            if product.quantity < item.quantity:
+                messages.error(
+                    request,
+                    f'Cannot restore invoice: Insufficient stock for {product.name}. Available: {product.quantity}, Required: {item.quantity}.'
+                )
+                return redirect('deleted_invoices', username=username)
+
+        with transaction.atomic():
+            # Deduct stock for each order item
+            for item in order.items.all():
+                product = item.product
                 product.quantity -= item.quantity
                 product.save()
-            else:
-                messages.error(request, f'Cannot restore: Insufficient stock for {product.name}.')
-                return redirect('deleted_invoices', username=username)
-        
-        # Unmark order as deleted
-        order.is_deleted = False
-        # Clear order_number so the model's save() method re-assigns a proper sequential one
-        order.order_number = None
-        order.save()
-        
-        # After saving, order_number is re-assigned. Update the invoice_number to match.
-        order.invoice_number = f"INV-{order.order_number:02d}"
-        order.save()
-        
+            
+            # Unmark order as deleted
+            order.is_deleted = False
+            # Clear order_number so the model's save() method re-assigns a proper sequential one
+            order.order_number = None
+            order.save()
+            
+            # After saving, order_number is re-assigned. Update the invoice_number to match.
+            order.invoice_number = f"INV-{order.order_number:02d}"
+            order.save()
+            
         messages.success(request, f'Invoice {order.invoice_number or order.order_number} has been restored.')
     else:
         messages.warning(request, 'This invoice is not deleted.')

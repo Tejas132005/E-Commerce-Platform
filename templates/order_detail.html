@@ -345,8 +345,8 @@
                         <span class="info-value">{{ order.invoice_number|default:order.order_number }}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Order Date:</span>
-                        <span class="info-value">{{ order.order_date|date:"M d, Y" }}</span>
+                        <span class="info-label">Invoice Date:</span>
+                        <span class="info-value">{{ order.invoice_date|default:order.order_date|date:"M d, Y" }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Order Time:</span>

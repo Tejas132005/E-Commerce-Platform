@@ -23,7 +23,7 @@
             <div class="card-body">
                 {% if product.image %}
                 <div class="text-center mb-3">
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-height: 220px;">
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-height: 220px;" onerror="this.style.display='none';">
                 </div>
                 {% endif %}
                 <div class="row">
