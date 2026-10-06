@@ -6,12 +6,13 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'E-Commerce.settings')
 django.setup()
 
 from django.db import transaction
-from store.models import Order
+from store.models import Order, RESEQUENCE_TEMP_OFFSET
 from accounts.models import CustomUser
 
 def resequence_orders():
     """
     One-time fix to re-sequence ALL orders based on order_date (ascending).
+    Numbering restarts at 1 in every financial year (1 April - 31 March).
     Handles unique constraint conflicts by temporary offsetting.
     """
     store_owners = CustomUser.objects.all()
@@ -35,21 +36,19 @@ def resequence_orders():
             # to avoid IntegrityError during re-numbering.
             all_orders = Order.objects.filter(store_owner=owner)
             for order in all_orders:
-                order.order_number = 2000000 + order.id
+                order.order_number = RESEQUENCE_TEMP_OFFSET + order.id
                 order.save(update_fields=['order_number'])
             
-            # 2. Re-assign sequential numbers to active orders
-            for index, order in enumerate(active_orders, start=1):
-                order.order_number = index
-                order.invoice_number = f"INV-{index:02d}"
-                order.save(update_fields=['order_number', 'invoice_number'])
+            # 2. Re-assign sequential numbers to active orders, per financial year
+            for fy in sorted(set(active_orders.values_list('financial_year', flat=True))):
+                Order.resequence_financial_year(owner, fy)
             
             # 3. Ensure deleted orders are also kept in a unique range 
             # (though they are already in 2,000,000+ from step 1)
             # This just ensures consistency.
             deleted_orders = Order.objects.filter(store_owner=owner, is_deleted=True)
             for d_order in deleted_orders:
-                d_order.order_number = 2000000 + d_order.id
+                d_order.order_number = RESEQUENCE_TEMP_OFFSET + d_order.id
                 d_order.save(update_fields=['order_number'])
 
     print("Order resequencing completed successfully.")

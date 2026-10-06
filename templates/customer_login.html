@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Customer Login - {{ store_owner.company_name|default:store_owner.username }}</title>
     <style>
         * {
@@ -128,9 +129,12 @@
             font-size: 0.9rem;
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
 
-<body>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main ix-center">
     <div class="login-container">
         <div class="store-info">
             <h1>{{ store_owner.company_name|default:store_owner.username }}</h1>
@@ -162,9 +166,11 @@
         </div>
 
         <div class="back-link">
-            <a href="/">← Back to Main Site</a>
+            <a href="/"><i class="bi bi-arrow-left"></i> Back to Main Site</a>
         </div>
     </div>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 </body>
 
 </html>

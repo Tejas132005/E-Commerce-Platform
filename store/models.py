@@ -1,10 +1,57 @@
 # store/models.py
 
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
-from django.db import models
+from django.db import models, transaction
+from django.db.models import F, Max
 from accounts.models import CustomUser
 from django.utils import timezone
+
+
+# -------------------- FINANCIAL YEAR HELPERS --------------------
+# Indian financial year: 1 April -> 31 March.
+# A financial year is identified by its START year, e.g. FY 2025-26 -> 2025.
+
+FINANCIAL_YEAR_START_MONTH = 4
+
+# Order numbers at/above this offset are "parked" (deleted invoices use
+# 1000000 + id, temporary resequencing uses 2000000 + id). They are never
+# real invoice numbers.
+DELETED_ORDER_NUMBER_OFFSET = 1000000
+RESEQUENCE_TEMP_OFFSET = 2000000
+
+
+def get_financial_year(value=None):
+    """
+    Return the FY start year for a date/datetime.
+    31-Mar-2026 -> 2025 (FY 2025-26), 01-Apr-2026 -> 2026 (FY 2026-27).
+    None means today (in the project's TIME_ZONE).
+    """
+    if value is None:
+        value = timezone.localdate()
+    elif isinstance(value, datetime):
+        value = timezone.localtime(value).date() if timezone.is_aware(value) else value.date()
+    elif isinstance(value, str):
+        value = date.fromisoformat(value[:10])
+    return value.year if value.month >= FINANCIAL_YEAR_START_MONTH else value.year - 1
+
+
+def format_financial_year(start_year):
+    """2025 -> '2025-26'."""
+    if start_year is None:
+        return ''
+    return f"{start_year}-{(start_year + 1) % 100:02d}"
+
+
+def financial_year_bounds(start_year):
+    """(first_day, last_day) of a financial year."""
+    return date(start_year, 4, 1), date(start_year + 1, 3, 31)
+
+
+def format_invoice_number(sequence):
+    """Existing display format of invoice numbers: INV-01, INV-02 ..."""
+    return f"INV-{sequence:02d}"
 
 
 def format_unit_value_display(value):
@@ -162,7 +209,13 @@ class Order(models.Model):
     
     store_owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='orders')
     customer = models.ForeignKey(ShopCustomer, on_delete=models.CASCADE)
-    order_number = models.PositiveIntegerField()  # Per-user order numbering
+    order_number = models.PositiveIntegerField()  # Per-user, per-financial-year invoice sequence
+    financial_year = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text='Start year of the financial year (Apr-Mar) this invoice belongs to, e.g. 2025 = FY 2025-26',
+    )
     order_date = models.DateTimeField(auto_now_add=True)
     invoice_date = models.DateField(
         null=True,
@@ -182,20 +235,75 @@ class Order(models.Model):
     is_deleted = models.BooleanField(default=False)
 
     class Meta:
-        unique_together = ('store_owner', 'order_number')
+        # Invoice numbers restart every financial year, so a number is only
+        # unique within (store owner, financial year).
+        unique_together = ('store_owner', 'financial_year', 'order_number')
         ordering = ['-order_date']
 
+    # ---- financial year helpers ----
+
+    def get_invoice_reference_date(self):
+        """The date that decides the financial year: invoice date, else order date, else today."""
+        if self.invoice_date:
+            return self.invoice_date
+        if self.order_date:
+            return self.order_date
+        return timezone.localdate()
+
+    @property
+    def financial_year_label(self):
+        return format_financial_year(self.financial_year)
+
+    @classmethod
+    def next_invoice_sequence(cls, store_owner, financial_year):
+        """Next invoice number for this store in this financial year (1 if none yet)."""
+        last = cls.objects.filter(
+            store_owner=store_owner,
+            financial_year=financial_year,
+            is_deleted=False,
+            order_number__lt=DELETED_ORDER_NUMBER_OFFSET,
+        ).aggregate(last=Max('order_number'))['last']
+        return (last or 0) + 1
+
+    @classmethod
+    def resequence_financial_year(cls, store_owner, financial_year):
+        """
+        Renumber the ACTIVE invoices of one financial year to 1..N (by order_date, id)
+        and refresh their INV-XX labels. Other financial years are untouched.
+        Returns the number of invoices whose number changed.
+        """
+        with transaction.atomic():
+            active = cls.objects.filter(
+                store_owner=store_owner,
+                financial_year=financial_year,
+                is_deleted=False,
+            )
+            ordered = list(active.order_by('order_date', 'id').values_list('id', 'order_number', 'invoice_number'))
+            # Park first so intermediate states never collide on the unique constraint.
+            active.update(order_number=F('id') + RESEQUENCE_TEMP_OFFSET)
+            changed = 0
+            for index, (pk, old_number, old_label) in enumerate(ordered, start=1):
+                label = format_invoice_number(index)
+                cls.objects.filter(pk=pk).update(order_number=index, invoice_number=label)
+                if old_number != index or old_label != label:
+                    changed += 1
+            return changed
+
     def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields')
+        if update_fields is not None:
+            kwargs['update_fields'] = set(update_fields) | {'financial_year', 'order_number'}
         if not self.order_number:
-            # Only consider non-deleted orders for the sequence
-            last_order = Order.objects.filter(
-                store_owner=self.store_owner,
-                is_deleted=False
-            ).order_by('-order_number').first()
-            if last_order:
-                self.order_number = last_order.order_number + 1
-            else:
-                self.order_number = 1
+            # New invoice (or restored one): number it inside its financial year.
+            self.financial_year = get_financial_year(self.get_invoice_reference_date())
+            with transaction.atomic():
+                # Serialise numbering per store owner (row lock on PostgreSQL; SQLite locks the DB on write).
+                list(CustomUser.objects.select_for_update().filter(pk=self.store_owner_id).values_list('pk', flat=True))
+                self.order_number = Order.next_invoice_sequence(self.store_owner_id, self.financial_year)
+                super().save(*args, **kwargs)
+            return
+        if self.financial_year is None:
+            self.financial_year = get_financial_year(self.get_invoice_reference_date())
         super().save(*args, **kwargs)
 
     def __str__(self):

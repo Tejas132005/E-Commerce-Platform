@@ -5,8 +5,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>{{ store_owner.company_name|default:store_owner.username }} Store</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -232,33 +232,36 @@
             .products-grid { grid-template-columns: 1fr; }
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
 
-<body>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <div class="store-name">🏪 {{ store_owner.company_name|default:store_owner.username }}</div>
+            <div class="store-name">{{ store_owner.company_name|default:store_owner.username }}</div>
             <div class="store-tagline">Welcome to our store — Browse & shop with ease</div>
         </div>
 
         <!-- Navigation -->
         <div class="nav-bar">
             <div class="customer-info">
-                <div class="customer-avatar">{{ customer.name|truncatechars:1 }}</div>
+                <div class="customer-avatar">{{ customer.name|slice:":1"|upper }}</div>
                 <span>Welcome, <strong>{{ customer.name }}</strong></span>
             </div>
             <div class="search-bar">
                 <form method="get">
                     <input type="text" name="q" placeholder="Search products..." value="{{ request.GET.q|default:'' }}">
-                    <button type="submit" class="btn btn-primary">🔍 Search</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Search</button>
                 </form>
             </div>
             <div class="nav-buttons">
-                <a href="/" class="btn btn-outline">🏠 Home</a>
-                <a href="{% url 'cart_view' username=store_owner.username %}" class="btn btn-primary">🛒 Cart</a>
-                <a href="{% url 'my_orders' username=store_owner.username %}" class="btn btn-secondary">📦 Orders</a>
-                <a href="{% url 'customer_logout' username=store_owner.username %}" class="btn btn-danger">🚪 Logout</a>
+                <a href="/" class="btn btn-outline"><i class="bi bi-house"></i> Home</a>
+                <a href="{% url 'cart_view' username=store_owner.username %}" class="btn btn-primary"><i class="bi bi-cart3"></i> Cart</a>
+                <a href="{% url 'my_orders' username=store_owner.username %}" class="btn btn-secondary"><i class="bi bi-box-seam"></i> Orders</a>
+                <a href="{% url 'customer_logout' username=store_owner.username %}" class="btn btn-danger"><i class="bi bi-box-arrow-right"></i> Logout</a>
             </div>
         </div>
 
@@ -278,7 +281,7 @@
         {% if all_products %}
             {% for group in product_categories %}
             <div class="category-section">
-                <div class="category-title">📂 {{ group.grouper|default:"Uncategorized" }}</div>
+                <div class="category-title">{{ group.grouper|default:"Uncategorized" }}</div>
                 <div class="products-grid">
                     {% for product in group.list %}
                     <div class="product-card">
@@ -286,7 +289,7 @@
                             {% if product.image %}
                             <img src="{{ product.image.url }}" alt="{{ product.name }}" onerror="this.style.display='none'; this.parentElement.innerHTML='📦';">
                             {% else %}
-                            📦
+                            <i class="bi bi-box-seam"></i>
                             {% endif %}
                         </div>
                         <div class="product-info">
@@ -320,7 +323,7 @@
                                         '{{ product.quantity }}',
                                         '{{ store_owner.username|escapejs }}'
                                     )">
-                                    🛒 Add to Cart
+                                    <i class="bi bi-cart3"></i> Add to Cart
                                 </button>
                                 {% else %}
                                 <button class="btn btn-secondary" style="flex:1;" disabled>Out of Stock</button>
@@ -334,7 +337,7 @@
             {% endfor %}
         {% else %}
             <div class="no-products">
-                <div class="no-products-icon">🔍</div>
+                <div class="no-products-icon"><i class="bi bi-search"></i></div>
                 {% if request.GET.q %}
                 <h3>No results found for "{{ request.GET.q }}"</h3>
                 <p>We couldn't find any products matching your search. Try different keywords or clear the search.</p>
@@ -352,7 +355,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title fs-5" id="cartModalLabel">🛒 Add to Cart</h3>
+                    <h3 class="modal-title fs-5" id="cartModalLabel">Add to Cart</h3>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="cartForm" method="post">
@@ -361,31 +364,31 @@
                     <div class="modal-body">
                         <h4 id="modalProductName" class="mb-3 text-secondary"></h4>
                         <div class="form-row mb-3">
-                            <label class="form-label fw-semibold">💰 Amount / Unit Price (₹)</label>
+                            <label class="form-label fw-semibold"><i class="bi bi-cash-stack"></i> Amount / Unit Price (₹)</label>
                             <input type="number" class="form-control" id="modalAmount" name="amount" step="0.01" min="0.01" required oninput="calculateGST()">
                         </div>
                         <div class="form-row mb-3">
-                            <label class="form-label fw-semibold">📦 Quantity</label>
+                            <label class="form-label fw-semibold"><i class="bi bi-box-seam"></i> Quantity</label>
                             <input type="number" class="form-control" id="modalQuantity" name="quantity" min="1" value="1" required oninput="calculateGST()">
                         </div>
                         <div class="form-row mb-3">
-                            <label class="form-label fw-semibold">📅 Date</label>
+                            <label class="form-label fw-semibold"><i class="bi bi-calendar3"></i> Date</label>
                             <input type="date" class="form-control" id="modalTransactionDate" name="transaction_date" required>
                         </div>
                         <div class="form-row mb-2">
-                            <label class="form-label fw-semibold">📋 HSN Code</label>
+                            <label class="form-label fw-semibold"><i class="bi bi-list-ul"></i> HSN Code</label>
                             <input type="text" class="form-control" id="modalHSN" readonly tabindex="-1">
                         </div>
                         <div class="form-row mb-2">
-                            <label class="form-label fw-semibold">🏷️ Batch Number</label>
+                            <label class="form-label fw-semibold"><i class="bi bi-tag"></i> Batch Number</label>
                             <input type="text" class="form-control" id="modalBatch" readonly tabindex="-1">
                         </div>
                         <div class="form-row mb-3">
-                            <label class="form-label fw-semibold">📏 Pack / unit</label>
+                            <label class="form-label fw-semibold"><i class="bi bi-rulers"></i> Pack / unit</label>
                             <input type="text" class="form-control" id="modalMeasurement" readonly tabindex="-1">
                         </div>
                         <div class="gst-breakdown">
-                            <h4>📊 Price Breakdown</h4>
+                            <h4>Price Breakdown</h4>
                             <div class="calc-row"><span>Subtotal</span><span id="calcSubtotal">₹0.00</span></div>
                             <div class="calc-row"><span>GST (<span id="calcGSTRate">0</span>%)</span><span id="calcGST">₹0.00</span></div>
                             <div class="calc-row"><span>CGST (<span id="calcCGSTRate">0</span>%)</span><span id="calcCGST">₹0.00</span></div>
@@ -395,7 +398,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">🛒 Add to Cart</button>
+                        <button type="submit" class="btn btn-success"><i class="bi bi-cart3"></i> Add to Cart</button>
                     </div>
                 </form>
             </div>
@@ -471,6 +474,8 @@
             }
         });
     </script>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=False %}
 </body>
 
 </html>

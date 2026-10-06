@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Product Management - {{ user.company_name|default:user.username }}</title>
     <style>
         * {
@@ -359,11 +360,14 @@
             animation: fadeIn 0.6s ease-out;
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
 
-<body>
+<body class="ix" style="--ix-page-width: 1400px;">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
     <div class="header">
-        <h1>📦 Product Management</h1>
+        <h1>Product Management</h1>
         <p>{{ user.company_name|default:user.username }} - Inventory Overview</p>
     </div>
 
@@ -406,21 +410,21 @@
             </div>
 
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <a href="/" class="btn btn-primary">🏠 Home</a>
+                <a href="/" class="btn btn-primary"><i class="bi bi-house"></i> Home</a>
                 <a href="{% url 'add_product' %}" class="btn btn-success">
-                    ➕ Add Product
+                    <i class="bi bi-plus-lg"></i> Add Product
                 </a>
                 <a href="{% url 'update_product' %}" class="btn btn-warning">
-                    ✏️ Update Product
+                    <i class="bi bi-pencil"></i> Update Product
                 </a>
                 <a href="{% url 'delete_product' %}" class="btn btn-danger">
-                    🗑️ Delete Product
+                    <i class="bi bi-trash"></i> Delete Product
                 </a>
                 <a href="{% url 'archived_products' %}" class="btn" style="background:#636e72;color:white;">
-                    📁 Archived
+                    <i class="bi bi-folder2"></i> Archived
                 </a>
                 <a href="{% url 'sales_dashboard' %}" class="btn btn-info">
-                    📊 Dashboard
+                    <i class="bi bi-bar-chart"></i> Dashboard
                 </a>
             </div>
         </div>
@@ -438,7 +442,7 @@
                 <div class="product-card" data-name="{{ product.name|lower }}" data-category="{{ product.category|default:'uncategorized'|lower }}">
                     <div class="product-image">
                         {% if product.image %}
-                        <img src="{{ product.image.url }}" alt="{{ product.name }}" onerror="this.style.display='none'; this.parentElement.innerHTML='📦';"> {% else %} 📦 {% endif %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" onerror="this.style.display='none'; this.parentElement.innerHTML='📦';"> {% else %} <i class="bi bi-box-seam"></i> {% endif %}
                     </div>
 
                     <div class="product-info">
@@ -490,22 +494,22 @@
                                 View details
                             </a>
                             <a href="{% url 'update_product_id' product.id %}" class="btn btn-warning btn-sm">
-                                ✏️ Edit
+                                <i class="bi bi-pencil"></i> Edit
                             </a>
                             <a href="{% url 'return_product' product.id %}" class="btn btn-secondary btn-sm" style="background:#5a6268;color:white;">
-                                ↩️ Return Product
+                                <i class="bi bi-arrow-return-left"></i> Return Product
                             </a>
                             {% if product.quantity == 0 %}
                             <form method="post" action="{% url 'archive_product' product.id %}" style="flex:1;">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm" style="background:#636e72;color:white;width:100%;">
-                                    📁 Archive
+                                    <i class="bi bi-folder2"></i> Archive
                                 </button>
                             </form>
                             {% endif %}
                             <a href="{% url 'delete_product_id' product.id %}" class="btn btn-danger btn-sm"
                                onclick="return confirm('Are you sure you want to delete {{ product.name }}?');">
-                                🗑️ Delete
+                                <i class="bi bi-trash"></i> Delete
                             </a>
                         </div>
                     </div>
@@ -514,12 +518,12 @@
             </div>
             {% else %}
             <div class="no-products">
-                <div class="no-products-icon">📦</div>
+                <div class="no-products-icon"><i class="bi bi-box-seam"></i></div>
                 <h3>No products yet</h3>
                 <p>Start building your inventory by adding your first product!</p>
                 <br>
                 <a href="{% url 'add_product' %}" class="btn btn-success">
-                        ➕ Add Your First Product
+                        <i class="bi bi-plus-lg"></i> Add Your First Product
                     </a>
             </div>
             {% endif %}
@@ -527,10 +531,10 @@
 
         <!-- Navigation -->
         <div class="navigation">
-            <a href="/">🏠 Home</a>
-            <a href="{% url 'sales_dashboard' %}">📊 Dashboard</a>
-            <a href="{% url 'sales_report' %}">📋 Reports</a>
-            <a href="{% url 'store_products' username=user.username %}">🏪 View Store</a>
+            <a href="/"><i class="bi bi-house"></i> Home</a>
+            <a href="{% url 'sales_dashboard' %}"><i class="bi bi-bar-chart"></i> Dashboard</a>
+            <a href="{% url 'sales_report' %}"><i class="bi bi-list-ul"></i> Reports</a>
+            <a href="{% url 'store_products' username=user.username %}"><i class="bi bi-shop"></i> View Store</a>
         </div>
     </div>
 
@@ -607,6 +611,8 @@
             }
         });
     </script>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 </body>
 
 </html>

@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Archived Products</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -79,19 +80,22 @@
             .products-table { overflow-x: auto; }
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
-<body>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
     <div class="container">
         <div class="header">
-            <h1>📁 Archived Products</h1>
+            <h1>Archived Products</h1>
             <p>Products that have been archived (stock = 0)</p>
         </div>
 
         <div class="nav-bar">
             <span><strong>{{ products|length }}</strong> archived product{{ products|length|pluralize }}</span>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <a href="/" class="btn btn-outline">🏠 Home</a>
-                <a href="{% url 'product_list' %}" class="btn btn-primary">📦 Active Products</a>
+                <a href="/" class="btn btn-outline"><i class="bi bi-house"></i> Home</a>
+                <a href="{% url 'product_list' %}" class="btn btn-primary"><i class="bi bi-box-seam"></i> Active Products</a>
             </div>
         </div>
 
@@ -134,7 +138,7 @@
                             <form method="post" action="{% url 'unarchive_product' product.id %}" style="display:inline;">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-success" style="padding:6px 14px; font-size:0.85rem;">
-                                    ♻️ Restore
+                                    <i class="bi bi-arrow-counterclockwise"></i> Restore
                                 </button>
                             </form>
                         </td>
@@ -145,11 +149,13 @@
         </div>
         {% else %}
         <div class="empty-state">
-            <div class="icon">📁</div>
+            <div class="icon"><i class="bi bi-folder2"></i></div>
             <h3>No Archived Products</h3>
             <p>Products with 0 stock can be archived from the product list.</p>
         </div>
         {% endif %}
     </div>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 </body>
 </html>

@@ -5,6 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>My Orders - {{ store_owner.username }}</title>
     <style>
         body {
@@ -333,26 +334,29 @@
             }
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
 
-<body>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
     <div class="container">
         <!-- Header -->
         <div class="header">
             <div class="store-info">
                 <div>
-                    <h1>📦 My Orders</h1>
+                    <h1>My Orders</h1>
                     <div class="customer-info">
-                        <strong>{{ store_owner.company_name|default:store_owner.username }} Company</strong><br> 🏪 Store → My Orders<br> 👋 <strong>{{ customer.name }}</strong>'s Order History 📱 {{ customer.phone }} • <span> <span> </span></span>📍
+                        <strong>{{ store_owner.company_name|default:store_owner.username }} Company</strong><br> <i class="bi bi-shop"></i> Store <i class="bi bi-arrow-right"></i> My Orders<br> <strong>{{ customer.name }}</strong>'s Order History <i class="bi bi-phone"></i> {{ customer.phone }} • <span> <span> </span></span><i class="bi bi-geo-alt"></i>
                         {{ customer.place|default:"Location not provided" }}
                     </div>
                 </div>
                 <div class="navigation">
-                    <a href="/" class="nav-btn secondary">🏠 Home</a>
-                    <a href="{% url 'store_products' username=store_owner.username %}" class="nav-btn primary">🏪 Continue Shopping</a>
-                    <a href="{% url 'cart_view' username=store_owner.username %}" class="nav-btn secondary">🛒 View Cart</a>
-                    <a href="{% url 'deleted_invoices' username=store_owner.username %}" class="nav-btn secondary">🗑️ Deleted Invoices</a>
-                    <a href="{% url 'customer_logout' username=store_owner.username %}" class="nav-btn danger">🚪 Logout</a>
+                    <a href="/" class="nav-btn secondary"><i class="bi bi-house"></i> Home</a>
+                    <a href="{% url 'store_products' username=store_owner.username %}" class="nav-btn primary"><i class="bi bi-shop"></i> Continue Shopping</a>
+                    <a href="{% url 'cart_view' username=store_owner.username %}" class="nav-btn secondary"><i class="bi bi-cart3"></i> View Cart</a>
+                    <a href="{% url 'deleted_invoices' username=store_owner.username %}" class="nav-btn secondary"><i class="bi bi-trash"></i> Deleted Invoices</a>
+                    <a href="{% url 'customer_logout' username=store_owner.username %}" class="nav-btn danger"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </div>
             </div>
         </div>
@@ -374,15 +378,15 @@
                         <div><strong>Items:</strong> {{ order.items.count }} item{{ order.items.count|pluralize }}</div>
                         <div><strong>Invoice:</strong> {{ order.invoice_number|default:order.order_number }}</div>
                     </div>
-                    <div class="order-status status-{{ order.status }}">⏳ {{ order.get_status_display }}</div>
+                    <div class="order-status status-{{ order.status }}"><i class="bi bi-hourglass-split"></i> {{ order.get_status_display }}</div>
                     <div class="order-actions" style="display: flex; gap: 10px; align-items: center;">
-                        <a href="{% url 'order_detail_view' username=store_owner.username order_id=order.id %}" class="btn btn-primary">👁️ View Details</a>
+                        <a href="{% url 'order_detail_view' username=store_owner.username order_id=order.id %}" class="btn btn-primary"><i class="bi bi-eye"></i> View Details</a>
                         
                         {% if not order.is_deleted %}
                         <form method="POST" action="{% url 'delete_invoice' username=store_owner.username order_id=order.id %}" style="display:inline;">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this invoice? This will restore the stock.');">
-                                🗑️ Delete
+                                <i class="bi bi-trash"></i> Delete
                             </button>
                         </form>
                         {% endif %}
@@ -407,7 +411,7 @@
 
                     <!-- GST Breakdown -->
                     <div class="gst-breakdown">
-                        <h4>💰 GST Breakdown</h4>
+                        <h4>GST Breakdown</h4>
                         <div class="gst-grid">
                             <div class="gst-item">
                                 <div class="gst-label">Subtotal</div>
@@ -430,19 +434,19 @@
 
                     <!-- Action Buttons -->
                     <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                        <a href="{% url 'order_detail_view' username=store_owner.username order_id=order.id %}" class="btn btn-primary">👁️ View Details</a>
-                        <a href="{% url 'generate_invoice_view' username=store_owner.username order_id=order.id %}" class="btn btn-info">📄 View Invoice</a>
-                        <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=order.id %}" class="btn btn-success">📥 Download PDF</a>
+                        <a href="{% url 'order_detail_view' username=store_owner.username order_id=order.id %}" class="btn btn-primary"><i class="bi bi-eye"></i> View Details</a>
+                        <a href="{% url 'generate_invoice_view' username=store_owner.username order_id=order.id %}" class="btn btn-info"><i class="bi bi-file-earmark-text"></i> View Invoice</a>
+                        <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=order.id %}" class="btn btn-success"><i class="bi bi-download"></i> Download PDF</a>
                         {% if not order.is_deleted %}
                         <form method="POST" action="{% url 'delete_invoice' username=store_owner.username order_id=order.id %}" style="display:inline;">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this invoice? This will restore the stock.');">
-                                🗑️ Delete Invoice
+                                <i class="bi bi-trash"></i> Delete Invoice
                             </button>
                         </form>
                         {% else %}
                         <span class="btn" style="background: #6c757d; color: white; cursor: not-allowed;" title="This invoice has been deleted">
-                            🗑️ Deleted
+                            <i class="bi bi-trash"></i> Deleted
                         </span>
                         {% endif %}
                     </div>
@@ -450,9 +454,9 @@
             </div>
             {% endfor %} {% else %}
             <div class="no-orders">
-                <h3>🛒 No Orders Yet</h3>
+                <h3>No Orders Yet</h3>
                 <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
-                <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-primary">🏪 Start Shopping</a>
+                <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-primary"><i class="bi bi-shop"></i> Start Shopping</a>
             </div>
             {% endif %}
         </div>
@@ -461,13 +465,15 @@
         <div class="quick-links">
             <h4>Quick Links</h4>
             <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-primary">🏪 Back to Store</a>
-                <a href="{% url 'cart_view' username=store_owner.username %}" class="btn btn-secondary">🛒 Shopping Cart</a>
-                <a href="{% url 'deleted_invoices' username=store_owner.username %}" class="btn btn-secondary">🗑️ Deleted Invoices</a>
-                <a href="{% url 'customer_logout' username=store_owner.username %}" class="btn btn-danger">🚪 Logout</a>
+                <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-primary"><i class="bi bi-shop"></i> Back to Store</a>
+                <a href="{% url 'cart_view' username=store_owner.username %}" class="btn btn-secondary"><i class="bi bi-cart3"></i> Shopping Cart</a>
+                <a href="{% url 'deleted_invoices' username=store_owner.username %}" class="btn btn-secondary"><i class="bi bi-trash"></i> Deleted Invoices</a>
+                <a href="{% url 'customer_logout' username=store_owner.username %}" class="btn btn-danger"><i class="bi bi-box-arrow-right"></i> Logout</a>
             </div>
         </div>
     </div>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 </body>
 
 </html>

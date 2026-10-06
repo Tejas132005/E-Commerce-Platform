@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
+    <title>Bank Payment Management - {{ store_owner.company_name|default:store_owner.username }}</title>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .stat-card { border-radius: 12px; border: 1px solid rgba(0,0,0,0.1); }
+        .balance-value { font-size: 2rem; font-weight: 700; }
+        .amount-in { color: #198754; font-weight: 600; }
+        .amount-out { color: #dc3545; font-weight: 600; }
+        .desc-cell { white-space: pre-line; max-width: 380px; }
+    </style>
+    {% include 'partials/head_end.html' %}
+</head>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="ix-page-title">Bank Payment Management</h1>
+                <p class="ix-page-sub">Your bank book, separate from billing</p>
+            </div>
+            <a href="{% url 'home' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Home</a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Balance summary -->
+        <div class="row g-3 mb-4">
+            <div class="col-lg-4">
+                <div class="card stat-card shadow-sm h-100 bg-white">
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Current Net Balance</p>
+                        <div class="balance-value {% if summary.balance < 0 %}text-danger{% else %}text-primary{% endif %}" id="net-balance">₹{{ summary.balance|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="card stat-card shadow-sm h-100 bg-white">
+                    <div class="card-body row text-center">
+                        <div class="col-6 col-md-3"><p class="text-muted mb-1 small">Credited</p><span class="amount-in">+₹{{ summary.credited|floatformat:2 }}</span></div>
+                        <div class="col-6 col-md-3"><p class="text-muted mb-1 small">Debited</p><span class="amount-out">-₹{{ summary.debited|floatformat:2 }}</span></div>
+                        <div class="col-6 col-md-3"><p class="text-muted mb-1 small">Transferred In</p><span class="amount-in">+₹{{ summary.transferred_in|floatformat:2 }}</span></div>
+                        <div class="col-6 col-md-3"><p class="text-muted mb-1 small">Transferred Out</p><span class="amount-out">-₹{{ summary.transferred_out|floatformat:2 }}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add transaction -->
+        <div class="card mb-4 shadow-sm border-0 rounded-4">
+            <div class="card-body p-4">
+                <h5 class="mb-3"><i class="bi bi-plus-circle"></i> Add Transaction</h5>
+                <form method="POST" action="{% url 'bank_payment_management' %}" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label" for="{{ form.transaction_date.id_for_label }}">{{ form.transaction_date.label }}</label>
+                            {{ form.transaction_date }}
+                            {% for e in form.transaction_date.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="{{ form.amount.id_for_label }}">{{ form.amount.label }} (₹)</label>
+                            {{ form.amount }}
+                            {% for e in form.amount.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="{{ form.transaction_type.id_for_label }}">{{ form.transaction_type.label }}</label>
+                            {{ form.transaction_type }}
+                            {% for e in form.transaction_type.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-3 transfer-only">
+                            <label class="form-label" for="{{ form.transfer_direction.id_for_label }}">{{ form.transfer_direction.label }}</label>
+                            {{ form.transfer_direction }}
+                            {% for e in form.transfer_direction.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-4 transfer-only">
+                            <label class="form-label" for="{{ form.counterparty_account.id_for_label }}">{{ form.counterparty_account.label }} <span class="text-muted small">(optional)</span></label>
+                            {{ form.counterparty_account }}
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                            {{ form.description }}
+                            {% for e in form.description.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-3 mb-3">
+                        <i class="bi bi-info-circle"></i>
+                        Credited adds to the balance, Debited subtracts. A Transfer moves money between this account and another account you hold:
+                        <strong>Out</strong> subtracts, <strong>In</strong> adds. Transfers are shown separately and are not counted as income or expense.
+                    </p>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold"><i class="bi bi-save"></i> Add Transaction</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4">
+                <h5 class="mb-3"><i class="bi bi-clock-history"></i> Transaction History</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th class="text-end">Amount</th>
+                                <th>Description</th>
+                                <th class="text-end">Running Balance</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                            {% with txn=row.txn %}
+                            <tr>
+                                <td>{{ txn.transaction_date|date:"d-m-Y" }}</td>
+                                <td>
+                                    {% if txn.transaction_type == 'credited' %}
+                                    <span class="badge bg-success">Credited</span>
+                                    {% elif txn.transaction_type == 'debited' %}
+                                    <span class="badge bg-danger">Debited</span>
+                                    {% else %}
+                                    <span class="badge bg-info text-dark">Transferred {% if txn.transfer_direction == 'in' %}In{% else %}Out{% endif %}</span>
+                                    {% if txn.counterparty_account %}<div class="small text-muted">{% if txn.transfer_direction == 'in' %}from{% else %}to{% endif %} {{ txn.counterparty_account }}</div>{% endif %}
+                                    {% endif %}
+                                </td>
+                                <td class="text-end {% if txn.is_inflow %}amount-in{% else %}amount-out{% endif %}">
+                                    {% if txn.is_inflow %}+{% else %}-{% endif %}₹{{ txn.amount|floatformat:2 }}
+                                </td>
+                                <td class="desc-cell">{{ txn.description }}</td>
+                                <td class="text-end fw-semibold">₹{{ row.running_balance|floatformat:2 }}</td>
+                                <td class="text-end">
+                                    <form method="POST" action="{% url 'delete_bank_transaction' txn.pk %}" onsubmit="return confirm('Delete this bank transaction? The balance will be recalculated.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endwith %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No bank transactions yet. Tip: add your current bank balance as a "Credited" entry with the description "Opening balance".
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function () {
+            const typeSelect = document.getElementById('id_transaction_type');
+            function toggleTransferFields() {
+                const isTransfer = typeSelect.value === 'transferred';
+                document.querySelectorAll('.transfer-only').forEach(el => el.style.display = isTransfer ? '' : 'none');
+            }
+            typeSelect.addEventListener('change', toggleTransferFields);
+            toggleTransferFields();
+        })();
+    </script>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=False %}
+</body>
+</html>

@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Error {{ error_code }}</title>
     <style>
         body {
@@ -58,15 +59,20 @@
             background: #5a6fd8;
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
 
-<body>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main ix-center">
     <div class="error-container">
         <h1 class="error-code">{{ error_code|default:"500" }}</h1>
         <p class="error-message">{{ error_message|default:"An error occurred while processing your request." }}</p>
-        <a href="/" class="back-button" style="margin-right:8px;">🏠 Home</a>
-        <a href="javascript:history.back()" class="back-button">← Go Back</a>
+        <a href="/" class="back-button" style="margin-right:8px;"><i class="bi bi-house"></i> Home</a>
+        <a href="javascript:history.back()" class="back-button"><i class="bi bi-arrow-left"></i> Go Back</a>
     </div>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 </body>
 
 </html>

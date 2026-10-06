@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Stock As Of Date</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         :root { 
             --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
@@ -22,11 +21,14 @@
         .form-control-custom:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); outline: none; }
         .extra-small { font-size: 0.75rem; }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
-<body>
+<body class="ix ix-w-bs">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
 
 <header class="page-header">
-    <div class="container">
+    <div class="container-fluid px-lg-5">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <a href="/" class="btn btn-light btn-sm rounded-pill px-3 fw-bold">
                 <i class="bi bi-house-door me-1"></i> Home
@@ -142,5 +144,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=False %}
 </body>
 </html>

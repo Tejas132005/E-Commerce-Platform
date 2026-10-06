@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>{{ report_type|title }} Purchase Details</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
             --primary-color: #4f46e5;
@@ -137,9 +136,12 @@
             transform: translateY(-2px);
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
 
-<body>
+<body class="ix ix-w-bs">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
     <div class="premium-header">
         <div class="container text-center">
             <h1 class="display-4 fw-bold">Purchase Details</h1>
@@ -264,6 +266,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=False %}
 </body>
 
 </html>

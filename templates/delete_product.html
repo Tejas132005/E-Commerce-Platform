@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Delete Product - {{ user.company_name|default:user.username }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -59,13 +60,17 @@
         .success-message { background: #d4edda; color: #155724; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
         .error-message { background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
     </style>
+    {% include 'partials/head_end.html' %}
+    <style>body.ix .container .card { flex-direction: row; align-items: center; gap: 1rem; text-align: left; }</style>
 </head>
 
-<body>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
     <div class="container">
-        <p style="margin-bottom:1rem;"><a href="/" class="btn btn-outline">🏠 Home</a></p>
+        <p style="margin-bottom:1rem;"><a href="/" class="btn btn-outline"><i class="bi bi-house"></i> Home</a></p>
         <div class="header">
-            <h1>🗑️ Delete Product</h1>
+            <h1>Delete Product</h1>
             <p style="color:#666;">Permanent removal from your catalog</p>
         </div>
 
@@ -105,6 +110,8 @@
             <a href="{% url 'add_product' %}" class="btn btn-secondary">Add product</a>
         </div>
     </div>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 </body>
 
 </html>

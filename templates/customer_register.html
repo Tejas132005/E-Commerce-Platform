@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Customer Registration - {{ store_owner.company_name|default:store_owner.username }}</title>
     <style>
         * {
@@ -178,9 +179,12 @@
             }
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
 
-<body>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main ix-center">
     <div class="register-container">
         <div class="store-info">
             <h1>{{ store_owner.company_name|default:store_owner.username }}</h1>
@@ -223,7 +227,7 @@
             </div>
 
             <button type="submit" class="btn" id="submitBtn">
-                📝 Register & Start Shopping
+                <i class="bi bi-pencil-square"></i> Register & Start Shopping
             </button>
         </form>
 
@@ -235,7 +239,7 @@
         </div>
 
         <div class="back-link">
-            <a href="/">← Back to Main Site</a>
+            <a href="/"><i class="bi bi-arrow-left"></i> Back to Main Site</a>
         </div>
     </div>
 
@@ -295,6 +299,8 @@
             }
         });
     </script>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 </body>
 
 </html>

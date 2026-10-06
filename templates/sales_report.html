@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Sales Report - {{ user.company_name|default:user.username }}</title>
     <style>
         * {
@@ -168,13 +169,16 @@
             }
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
 
-<body>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
     <div class="header">
-        <h1>📊 Detailed Sales Report</h1>
+        <h1>Detailed Sales Report</h1>
         <p>{{ user.company_name|default:user.username }}</p>
-        <p style="margin-top:10px;"><a href="/" style="color:#fff;text-decoration:underline;">🏠 Home</a></p>
+        <p style="margin-top:10px;"><a href="/" style="color:#fff;text-decoration:underline;"><i class="bi bi-house"></i> Home</a></p>
     </div>
 
     <div class="container">
@@ -196,18 +200,18 @@
 
         <!-- Actions -->
         <div class="actions">
-            <a href="/" class="btn btn-secondary">🏠 Home</a>
+            <a href="/" class="btn btn-secondary"><i class="bi bi-house"></i> Home</a>
             <a href="{% url 'sales_dashboard' %}" class="btn btn-primary">
-                📊 Back to Dashboard
+                <i class="bi bi-bar-chart"></i> Back to Dashboard
             </a>
             <a href="{% url 'add_product' %}" class="btn btn-success">
-                ➕ Add Product
+                <i class="bi bi-plus-lg"></i> Add Product
             </a>
         </div>
 
         <!-- Sales Report Table -->
         <div class="report-section">
-            <h2>📋 Sales Transactions</h2>
+            <h2>Sales Transactions</h2>
 
             {% if sales %}
             <div style="overflow-x: auto;">
@@ -262,7 +266,7 @@
             </div>
             {% else %}
             <div class="no-sales">
-                <h3>📈 No sales data available</h3>
+                <h3>No sales data available</h3>
                 <p>Start making sales to see detailed reports here!</p>
                 <br>
                 <a href="{% url 'add_product' %}" class="btn btn-success">Add Your First Product</a>
@@ -270,6 +274,8 @@
             {% endif %}
         </div>
     </div>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 </body>
 
 </html>

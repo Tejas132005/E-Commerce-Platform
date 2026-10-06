@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Order #{{ order.order_number }} Details - {{ store_owner.username }}</title>
     <style>
         body {
@@ -307,26 +308,29 @@
             }
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
 
-<body>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
     <div class="container">
         <!-- Header -->
         <div class="header">
             <div class="breadcrumb">
-                <a href="/">🏠 Home</a> →
-                <a href="{% url 'store_products' username=store_owner.username %}">🏪 {{ store_owner.company_name|default:store_owner.username }}</a> →
-                <a href="{% url 'my_orders' username=store_owner.username %}">📦 My Orders</a> →
+                <a href="/"><i class="bi bi-house"></i> Home</a> <i class="bi bi-arrow-right"></i>
+                <a href="{% url 'store_products' username=store_owner.username %}"><i class="bi bi-shop"></i> {{ store_owner.company_name|default:store_owner.username }}</a> <i class="bi bi-arrow-right"></i>
+                <a href="{% url 'my_orders' username=store_owner.username %}"><i class="bi bi-box-seam"></i> My Orders</a> <i class="bi bi-arrow-right"></i>
                 Order #{{ order.order_number }}
             </div>
 
-            <h1>📋 Order Details</h1>
+            <h1>Order Details</h1>
 
             <div class="navigation">
-                <a href="{% url 'my_orders' username=store_owner.username %}" class="nav-btn secondary">📦 Back to Orders</a>
-                <a href="{% url 'generate_invoice_view' username=store_owner.username order_id=order.id %}" class="nav-btn info">📄 View Invoice</a>
-                <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=order.id %}" class="nav-btn success">📥 Download PDF</a>
-                <a href="{% url 'store_products' username=store_owner.username %}" class="nav-btn primary">🏪 Continue Shopping</a>
+                <a href="{% url 'my_orders' username=store_owner.username %}" class="nav-btn secondary"><i class="bi bi-box-seam"></i> Back to Orders</a>
+                <a href="{% url 'generate_invoice_view' username=store_owner.username order_id=order.id %}" class="nav-btn info"><i class="bi bi-file-earmark-text"></i> View Invoice</a>
+                <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=order.id %}" class="nav-btn success"><i class="bi bi-download"></i> Download PDF</a>
+                <a href="{% url 'store_products' username=store_owner.username %}" class="nav-btn primary"><i class="bi bi-shop"></i> Continue Shopping</a>
             </div>
         </div>
 
@@ -335,14 +339,14 @@
             <!-- Order Header Information -->
             <div class="order-header">
                 <div class="order-info">
-                    <h3>📋 Order Information</h3>
+                    <h3>Order Information</h3>
                     <div class="info-item">
                         <span class="info-label">Order Number:</span>
                         <span class="info-value">#{{ order.order_number }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Invoice Number:</span>
-                        <span class="info-value">{{ order.invoice_number|default:order.order_number }}</span>
+                        <span class="info-value">{{ order.invoice_number|default:order.order_number }}{% if order.financial_year %} (FY {{ order.financial_year_label }}){% endif %}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Invoice Date:</span>
@@ -359,7 +363,7 @@
                 </div>
 
                 <div class="order-info">
-                    <h3>👤 Customer Information</h3>
+                    <h3>Customer Information</h3>
                     <div class="info-item">
                         <span class="info-label">Name:</span>
                         <span class="info-value">{{ customer.name }}</span>
@@ -388,7 +392,7 @@
 
             <!-- Order Items -->
             <div class="order-items">
-                <h2 class="section-title">🛍️ Order Items</h2>
+                <h2 class="section-title">Order Items</h2>
 
                 {% for item_data in order_items %}
                 <div class="item-card">
@@ -437,7 +441,7 @@
 
             <!-- GST Breakdown -->
             <div class="gst-breakdown">
-                <div class="gst-title">💰 Payment Breakdown</div>
+                <div class="gst-title">Payment Breakdown</div>
                 <div class="gst-grid">
                     <div class="gst-item">
                         <div class="gst-label">Subtotal (Before Tax)</div>
@@ -460,13 +464,15 @@
 
             <!-- Action Buttons -->
             <div class="action-buttons">
-                <a href="{% url 'my_orders' username=store_owner.username %}" class="nav-btn secondary">📦 Back to Orders</a>
-                <a href="{% url 'generate_invoice_view' username=store_owner.username order_id=order.id %}" class="nav-btn info">📄 View Invoice</a>
-                <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=order.id %}" class="nav-btn success">📥 Download PDF</a>
-                <a href="{% url 'store_products' username=store_owner.username %}" class="nav-btn primary">🏪 Continue Shopping</a>
+                <a href="{% url 'my_orders' username=store_owner.username %}" class="nav-btn secondary"><i class="bi bi-box-seam"></i> Back to Orders</a>
+                <a href="{% url 'generate_invoice_view' username=store_owner.username order_id=order.id %}" class="nav-btn info"><i class="bi bi-file-earmark-text"></i> View Invoice</a>
+                <a href="{% url 'generate_invoice_pdf' username=store_owner.username order_id=order.id %}" class="nav-btn success"><i class="bi bi-download"></i> Download PDF</a>
+                <a href="{% url 'store_products' username=store_owner.username %}" class="nav-btn primary"><i class="bi bi-shop"></i> Continue Shopping</a>
             </div>
         </div>
     </div>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 </body>
 
 </html>

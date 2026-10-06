@@ -7,525 +7,355 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Multi-Store E-Commerce Platform{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-
+    <title>{% block title %}InvoxiaGST{% if user.is_authenticated %} - {{ user.company_name|default:user.username }}{% endif %}{% endblock %}</title>
+    {% include 'partials/head_start.html' %}
+    {% include 'partials/head_end.html' %}
     <style>
-        body {
-            background: linear-gradient(-45deg, #ffffff, #dff1ff, #e6f7ff, #f8f9fa);
-            background-size: 100% 100%;
-            animation: gradientBG 15s ease infinite;
-            font-family: 'Segoe UI', sans-serif;
-            color: #131313d8;
-            min-height: 100vh;
-            padding: 6%;
+        /* Home page only; shared tokens, header and menu live in templates/partials/ix_styles.html */
+        /* ---------- Greeting ---------- */
+        .greeting h1 {
+            font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+            font-weight: 800; letter-spacing: -0.025em; margin: 0;
         }
-        
-        @keyframes gradientBG {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
+        .greeting p { color: var(--slate); margin: .25rem 0 0; }
+
+        .range-switch {
+            display: inline-flex; background: var(--surface); border: 1px solid var(--line);
+            border-radius: 999px; padding: 3px;
         }
-        
-        header {
-            background-color: rgba(255, 255, 255, 0.85);
-            /* backdrop-filter: blur(10px); */
-            /* border-radius: 1rem; */
-            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
-            padding: 20px 30px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            z-index: 1030;
+        .range-switch button {
+            border: 0; background: none; color: var(--slate); font-weight: 600; font-size: .85rem;
+            padding: .4rem .85rem; border-radius: 999px;
         }
-        
-        .i nvoxiagst {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: #0056b3;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
-            font-style: italic;
-        }
-        
-        .menu .btn {
-            margin: 0 6px;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            border-radius: 25px;
-            padding: 8px 18px;
-        }
-        
-        .menu .btn:hover {
-            background-color: #0d6efd;
-            color: #fff;
-        }
-        
-        h1.text-center {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #2a52be;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .plans-heading h2 {
-            color: #004085;
-            text-shadow: 1px 1px 1px #ced4da;
-            margin-bottom: 1rem;
-        }
-        
-        .card {
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            border: none;
-            border-radius: 1.25rem;
-            transition: all 0.4s ease;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(245, 245, 245, 0.95));
-            backdrop-filter: blur(6px);
-            max-width: 100%;
-        }
-        
-        .card:hover {
-            transform: scale(1.05);
-            box-shadow: 0px 20px 60px rgba(5, 228, 187, 0.886);
-        }
-        
-        .card-header {
-            background-color: #0d6efd;
-            color: #fff;
-            font-weight: 600;
-            border-radius: 1rem 1rem 0 0;
-            font-size: 1.25rem;
-            text-align: center;
-        }
-        
-        .card-body {
-            text-align: center;
-            font-size: 1rem;
-            background-color: rgba(210, 213, 14, 0.1);
-            font-style: oblique;
-        }
-        
-        .card-footer {
-            background-color: rgba(167, 203, 168, 0.3);
-            border-radius: 0 0 1rem 1rem;
-            text-align: center;
-        }
-        
-        .text-center {
-            font-style: italic;
-        }
-        
-        .btn-primary {
-            border-radius: 25px;
-            padding: 8px 20px;
-            font-weight: 600;
-        }
-        
-        .btn-outline-dark:hover {
-            background-color: #0d6efd;
-            color: #fff;
-            border-color: #0d6efd;
-        }
-        
-        .modal-content {
-            border-radius: 1rem;
-        }
-        
-        .account .btn {
-            margin-left: 8px;
-        }
-        
-        .demo-badge {
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            color: white;
-            padding: 0.3rem 0.8rem;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            margin-left: 1rem;
-        }
-        
-        .feature-grid {
+        .range-switch button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+
+        /* ---------- Quick actions ---------- */
+        .actions {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: .75rem;
         }
-        
-        .store-info {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 1rem;
-            padding: 2rem;
-            margin-top: 2rem;
-            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+        .action {
+            display: flex; align-items: center; gap: .75rem;
+            background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md);
+            padding: .8rem .9rem; text-decoration: none; color: var(--ink); font-weight: 600;
+            transition: border-color .15s ease, background-color .15s ease;
         }
-        /* Premium button style */
-        
-        .premium-btn {
-            background: linear-gradient(145deg, #f9f9f9, #ececec);
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            font-weight: 500;
-            color: #333;
-            transition: all 0.3s ease;
-            padding: 10px 15px;
-            font-size: 0.95rem;
+        .action:hover { border-color: #b9c4dc; color: var(--ink); }
+        .action .ico {
+            width: 36px; height: 36px; flex: none; border-radius: 10px;
+            display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); font-size: 1.05rem;
         }
-        
-        .premium-btn i {
-            font-size: 1.1rem;
-            color: #555;
+        .action.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+        .action.primary .ico { background: rgba(255,255,255,.12); color: #fff; }
+        .action.primary:hover { background: #1b2d52; color: #fff; }
+        .action .count {
+            margin-left: auto; font-size: .8rem; font-weight: 700;
+            background: var(--page); color: var(--ink); border: 1px solid var(--line);
+            border-radius: 999px; padding: .1rem .55rem; min-width: 2rem; text-align: center;
         }
-        /* Hover effect */
-        
-        .premium-btn:hover {
-            background: linear-gradient(145deg, #ffffff, #f1f1f1);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transform: translateY(-2px);
-            color: #000;
-            text-decoration: none;
+
+        /* ---------- Charts ---------- */
+        .panel {
+            background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg);
+            padding: 1.25rem 1.25rem 1rem;
         }
-        /* Premium Upgrade Plan special styling */
-        
-        .special-upgrade {
-            background: linear-gradient(135deg, #fff6cc, #ffe680);
-            border: 1px solid #e6c200;
-            font-weight: 600;
+        .panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .5rem 1rem; margin-bottom: .75rem; }
+        .panel-head h2 { font-size: 1rem; font-weight: 700; margin: 0; }
+        .panel-head .sub { color: var(--slate); font-size: .85rem; }
+        .panel-total { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+        .panel-total small { font-size: .85rem; font-weight: 600; color: var(--slate); margin-left: .25rem; }
+        .chart-box { position: relative; height: 260px; }
+        .chart-box.tall { height: 320px; }
+        .chart-empty {
+            position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+            text-align: center; color: var(--slate); font-size: .95rem; padding: 1rem;
         }
-        
-        .special-upgrade i {
-            color: gold;
-            text-shadow: 0 0 6px rgba(255, 215, 0, 0.9), 0 0 12px rgba(255, 223, 0, 0.7);
-            font-size: 1.2rem;
+        .chart-empty.show { display: flex; }
+        .key { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; color: var(--slate); margin-left: .75rem; }
+        .key i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+        .updated { color: var(--slate); font-size: .8rem; }
+
+        /* ---------- Logged-out ---------- */
+        .hero-out { max-width: 640px; }
+        .hero-out h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.03em; }
+        .hero-out p { color: var(--slate); font-size: 1.1rem; }
+        .btn-ink { background: var(--ink); color: #fff; border: 1px solid var(--ink); border-radius: 999px; padding: .7rem 1.4rem; font-weight: 700; }
+        .hero-out .btn-lg { padding: .7rem 1.4rem; font-size: 1.05rem; }
+        .btn-ink:hover { background: #1b2d52; color: #fff; }
+
+
+        @media (max-width: 991px) {
+            .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
-        /* === RESPONSIVE DESIGN === */
-        
         @media (max-width: 768px) {
-            header {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-                position: static;
-            }
-            .menu {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-                margin-top: 10px;
-            }
-            .account {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-                margin-top: 10px;
-                justify-content: center;
-                align-items: center;
-            }
-            .plans {
-                flex-direction: column !important;
-                align-items: center;
-                padding: 0 1rem;
-            }
-            h1.text-center {
-                font-size: 2rem;
-            }
-            .card-header {
-                font-size: 1rem;
-            }
-            a {
-                text-decoration: none;
-            }
-            .bi-star-fill {
-                color: gold;
-            }
+            .range-switch { width: 100%; justify-content: space-between; }
+            .chart-box, .chart-box.tall { height: 240px; }
+        }
+        @media (max-width: 520px) {
+            .actions { grid-template-columns: 1fr; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; }
         }
     </style>
 </head>
 
-<body class="container-fluid">
-    <header class="d-flex justify-content-between align-items-center py-3">
-        <div class="d-flex align-items-center">
-            <div class="invoxiagst fs-1 fw-bold">🏪 InvoxiaGST</div>
-            {% if user.is_authenticated %}
-            <div class="demo-badge">LIVE</div>
-            {% else %}
-            <a href="{% url 'login' %}" style="text-decoration: none;">
-                <div class="demo-badge">LOGIN</div>
-            </a>
-            {% endif %}
+<body class="ix">
+    {% include 'partials/app_header.html' %}
 
-        </div>
-
-        <nav class="menu">
-            <a class="btn btn-outline-dark" href="/">Home</a> {% if user.is_authenticated %}
-            <!-- <a class="btn btn-outline-dark" href="{% url 'customer_details_list' %}">Customer Details</a> {% endif %} -->
-            <a class="btn btn-outline-dark" href="#features">Features</a>
-            <a class="btn btn-outline-dark" href="core/about/">About</a>
-            <!-- <button type="button" class="btn btn-outline-dark" data-bs-toggle="popover" data-bs-title="Contact Details" data-bs-content="<div class='text-start'>
-                <p class='mb-2'><b>Email:</b> <a href='mailto:support@multistore.demo' class='text-decoration-none'>support@multistore.demo</a></p>
-                <p class='mb-0'><b>Phone:</b> +91 98765 43210</p>
-            </div>" data-bs-placement="bottom">Contact Us</button> -->
-            <button id="contactPopover" type="button" class="btn btn-outline-dark" data-bs-toggle="popover" data-bs-placement="bottom">
-                Contact Us
-            </button>
-
-            <script>
-                document.addEventListener("DOMContentLoaded", function() {
-                    const contactBtn = document.getElementById("contactPopover");
-
-                    new bootstrap.Popover(contactBtn, {
-                        html: true,
-                        title: "<span class='fw-bold text-primary'>Contact Details</span>",
-                        content: `
-            <div class="text-start">
-                <p class="mb-2">
-                    <b>Email:</b> 
-                    <a href="mailto:invoxiagst@gmail.com" class="text-decoration-none">
-                        invoxiagst@gmail.com
-                    </a>
-                </p>
-                <p class="mb-0"><b>Phone:</b> +91 XXXXX XXXXX</p>
-            </div>
-        `
-                    });
-                });
-            </script>
-
-        </nav>
-
-        <div class="account">
-            {% if user.is_authenticated %}
-            <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#profileMenu" aria-controls="profileMenu">
-                <i class="bi bi-person-circle"></i> {{ user.username }}
-            </button>
-
-            <div class="offcanvas offcanvas-end" tabindex="-1" id="profileMenu" aria-labelledby="profileMenuLabel">
-                <div class="offcanvas-header">
-                    <h5 class="offcanvas-title" id="profileMenuLabel">Store Owner Menu</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-                </div>
-                <div class="offcanvas-body">
-                    <div class="d-grid gap-3 w-75 ps-2">
-                        <a href="/store/{{ user.username }}/" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-shop me-2"></i> My Store
-                        </a>
-                        <a href="/store/sales-dashboard/" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-graph-up me-2"></i> Sales Dashboard
-                        </a>
-                        <a href="/store/sales-report/" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-file-earmark-text me-2"></i> Sales Reports
-                        </a>
-                        <a href="/store/{{ user.username }}/analytics/" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-bar-chart-line me-2"></i> Item Analytics
-                        </a>
-                        <a href="/store/manage/products/" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-box-seam me-2"></i> Manage Products
-                        </a>
-                        <a href="/store/manage/archived/" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-archive me-2"></i> Archived Items
-                        </a>
-                        <a href="/store/monthly-stock-report/" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-calendar3 me-2"></i> Monthly Stock/Sales Details
-                        </a>
-                        <a href="/store/yearly-stock-summary/" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-calendar-range me-2"></i> Yearly Stock/Sales Details
-                        </a>
-                        <a href="/store/stock-at-date/" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-calendar-check me-2"></i> Stock As Of Date
-                        </a>
-                        <a href="/store/monthly-purchase-details/" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-calendar3 me-2"></i> Monthly Purchase Details
-                        </a>
-                        <a href="/store/yearly-purchase-details/" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-calendar-range me-2"></i> Yearly Purchase Details
-                        </a>
-                        <a href="{% url 'deleted_invoices' username=user.username %}" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-trash-fill text-danger me-2"></i> Deleted Invoices
-                        </a>
-                        <a href="/accounts/logout/" class="btn premium-btn d-flex align-items-center justify-content-start">
-                            <i class="bi bi-box-arrow-right me-2"></i> Logout
-                        </a>
-                        
-
-                    </div>
-                </div>
-            </div>
-            {% else %}
-            <a class="btn btn-primary" href="/accounts/login/"><i class="bi bi-box-arrow-in-right"></i> Login</a>
-            <a class="btn btn-outline-primary" href="/accounts/register/">Start Your Store</a> {% endif %}
-        </div>
-    </header>
-
-
-
-    <!-- Messages -->
-    {% if messages %}
-    <div class="container mt-3">
+    <main class="container-xl py-4 py-lg-5" style="max-width: var(--content-width);">
+        <!-- Messages -->
+        {% if messages %}
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         {% endfor %}
-    </div>
-    {% endif %}
-
-    <section class="mt-5">
-        <h1 class="text-center">Create Your Online Store Today!</h1>
-        <p class="text-center fs-5">Multi-tenant e-commerce platform with complete analytics and payment processing.</p>
+        {% endif %}
 
         {% if user.is_authenticated %}
-        <div class="store-info text-center">
-            <h3>👋 Welcome back, {{ user.username }}!</h3>
-            <p class="mb-3">
-                <strong>Store:</strong> {{ user.company_name|default:user.username }} |
-                <strong>Status:</strong> <span class="badge bg-success">Activated ⭐</span>
-            </p>
+        <section class="greeting d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+            <div>
+                <h1>{{ greeting }}, {{ user.username }}</h1>
+                <p>{{ user.company_name|default:"Your store" }} &middot; showing <span class="js-range-label">{{ dashboard.range.label|lower }}</span></p>
+            </div>
+            <div class="range-switch" role="group" aria-label="Chart period">
+                {% for key, label in range_choices %}
+                <button type="button" data-range="{{ key }}" aria-pressed="{% if key == dashboard.range.key %}true{% else %}false{% endif %}">
+                    {% if key == 'fy' %}This FY{% else %}{{ key }} days{% endif %}
+                </button>
+                {% endfor %}
+            </div>
+        </section>
 
-            <div class="row justify-content-center">
-                <div class="col-md-10">
-                    <div class="alert alert-success">
-                        <h4>✅ Welcome back!</h4>
-                        <p>Your store is live and ready for customers. Enjoy all features!</p>
+        <!-- Quick actions -->
+        <section class="actions mb-4" aria-label="Quick actions">
+            <a href="/store/{{ user.username }}/" class="action primary"><span class="ico"><i class="bi bi-shop"></i></span> Visit My Store</a>
+            <a href="/store/manage/add-product/" class="action"><span class="ico"><i class="bi bi-plus-lg"></i></span> Add Products</a>
+            <a href="{% url 'customer_details_list' %}" class="action"><span class="ico"><i class="bi bi-people"></i></span> Customer Details <span class="count js-customer-count" title="Total customers">{{ customer_count }}</span></a>
+            <a href="{% url 'all_invoices' username=user.username %}" class="action"><span class="ico"><i class="bi bi-receipt"></i></span> All Invoices</a>
+            <a href="/store/sales-dashboard/" class="action"><span class="ico"><i class="bi bi-graph-up"></i></span> Sales Dashboard</a>
+            <a href="/store/{{ user.username }}/analytics/" class="action"><span class="ico"><i class="bi bi-bar-chart-line"></i></span> Item Analytics</a>
+            <a href="{% url 'ad_section' %}" class="action"><span class="ico"><i class="bi bi-layout-text-sidebar-reverse"></i></span> AD Section</a>
+            <a href="{% url 'bank_payment_management' %}" class="action"><span class="ico"><i class="bi bi-bank"></i></span> Bank Payment Management</a>
+        </section>
+
+        <!-- Charts -->
+        <section class="row g-3" aria-label="Sales charts">
+            <div class="col-12">
+                <div class="panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>Quantity sold per day</h2>
+                            <span class="sub">Units sold on each day, from your invoices</span>
+                        </div>
+                        <div class="panel-total" style="color: var(--qty)"><span class="js-total-qty">{{ dashboard.totals.quantity_sold }}</span><small>units</small></div>
                     </div>
-                    <div class="row">
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <a href="/store/{{ user.username }}/" class="btn btn-primary w-100">
-                                <i class="bi bi-shop"></i> Visit My Store
-                            </a>
-                        </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <a href="/store/sales-dashboard/" class="btn btn-success w-100">
-                                <i class="bi bi-graph-up"></i> Sales Dashboard
-                            </a>
-                        </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <a href="/store/{{ user.username }}/analytics/" class="btn btn-warning w-100">
-                                <i class="bi bi-bar-chart-line"></i> Item Analytics
-                            </a>
-                        </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <a href="/store/manage/add-product/" class="btn btn-info w-100">
-                                <i class="bi bi-plus-circle"></i> Add Products
-                            </a>
-                        </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <a href="{% url 'ad_section' %}" class="btn premium-btn d-flex align-items-center justify-content-start">
-                                <i class="bi bi-layout-text-sidebar-reverse me-2"></i> AD Section
-                            </a>
-                        </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <a href="{% url 'customer_details_list' %}" class="btn premium-btn d-flex align-items-center justify-content-start">
-                                <i class="bi bi-people me-2"></i> Customer Details
-                            </a>
-                        </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <a href="{% url 'all_invoices' username=user.username %}" class="btn premium-btn d-flex align-items-center justify-content-start">
-                                <i class="bi bi-receipt me-2"></i> All Invoices
-                            </a>
-                        </div>
-
+                    <div class="chart-box tall">
+                        <canvas id="qtyChart" aria-label="Quantity sold per day"></canvas>
+                        <div class="chart-empty" id="qtyEmpty">No sales in this period. Bills you create will appear here.</div>
                     </div>
                 </div>
             </div>
-        </div>
+            <div class="col-lg-7">
+                <div class="panel h-100">
+                    <div class="panel-head">
+                        <div>
+                            <h2>Items sold and sales amount</h2>
+                            <span class="sub">Top 10 items by amount (incl. GST)</span>
+                            <div class="mt-1"><span class="key ms-0"><i style="background: var(--amount)"></i>Amount</span><span class="key"><i style="background: var(--qty)"></i>Quantity</span></div>
+                        </div>
+                        <div class="panel-total" style="color: var(--amount)">₹<span class="js-total-amount">{{ dashboard.totals.sold_amount|floatformat:2 }}</span></div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="itemsChart" aria-label="Items sold versus sales amount"></canvas>
+                        <div class="chart-empty" id="itemsEmpty">No items sold in this period.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="panel h-100">
+                    <div class="panel-head">
+                        <div>
+                            <h2>Invoices per day</h2>
+                            <span class="sub">Active invoices by invoice date</span>
+                        </div>
+                        <div class="panel-total" style="color: var(--invoice)"><span class="js-total-invoices">{{ dashboard.totals.invoices }}</span><small>invoices</small></div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="invoiceChart" aria-label="Invoices per day"></canvas>
+                        <div class="chart-empty" id="invoiceEmpty">No invoices in this period.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <p class="updated mt-3 mb-0"><i class="bi bi-arrow-repeat"></i> Updates automatically. Last checked <span class="js-updated">{{ dashboard.generated_at }}</span></p>
+        {{ dashboard|json_script:"dashboard-data" }}
+
         {% else %}
         <!-- Not logged in -->
-        <div class="text-center mt-4">
-            <a href="/accounts/register/" class="btn btn-primary btn-lg px-5">
-                🚀 Start Your Store
-            </a>
-            <p class="mt-3">Already have an account? <a href="/accounts/login/">Login here</a></p>
+        <section class="hero-out py-5">
+            <h1>Billing, stock and GST for your shop, in one place.</h1>
+            <p class="mt-3">Create GST invoices, track stock and see your sales every day. Each store keeps its own customers, products and records.</p>
+            <div class="d-flex flex-wrap gap-2 mt-4">
+                <a href="/accounts/register/" class="btn btn-ink btn-lg">Start your store</a>
+                <a href="/accounts/login/" class="btn btn-outline-dark btn-lg rounded-pill px-4 fw-bold">Login</a>
+            </div>
+        </section>
+        <div class="panel mt-4">
+            <p class="mb-0 text-secondary">This is a demonstration of a multi-tenant e-commerce platform. All payments are simulated for testing purposes. Each user gets their own isolated store with complete data separation.</p>
         </div>
         {% endif %}
-    </section>
+    </main>
 
-    <!-- Features Section -->
-    <section id="features" class="mt-5">
-        <div class="container">
-            <h2 class="text-center mb-4">Platform Features</h2>
-            <div class="feature-grid">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-shop fs-1 text-primary"></i>
-                        <h5 class="mt-3">Your Own Store</h5>
-                        <p>Get a personalized store URL with complete customization control</p>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-graph-up fs-1 text-success"></i>
-                        <h5 class="mt-3">Analytics Dashboard</h5>
-                        <p>Track sales, revenue, and performance with detailed reports</p>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-credit-card fs-1 text-info"></i>
-                        <h5 class="mt-3">Payment Processing</h5>
-                        <p>Secure payment handling with automated invoice generation</p>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-people fs-1 text-warning"></i>
-                        <h5 class="mt-3">Customer Management</h5>
-                        <p>Manage customers, orders, and inventory all in one place</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Demo Notice -->
-    <section id="about" class="mt-5 mb-5">
-        <div class="container">
-            <div class="alert alert-info text-center">
-                <h4>🎭 E-Commerce Platform</h4>
-                <p class="mb-0">This is a demonstration of a multi-tenant e-commerce platform. All payments are simulated for testing purposes. Each user gets their own isolated store with complete data separation.</p>
-            </div>
-        </div>
-    </section>
-
-
-    <footer id="footer" class="bg-dark text-white py-4 mt-5">
-        <div class="container text-center">
-            <h5 class="mb-2">InvoxiaGST</h5>
-            <p class="mb-1">
-                <strong>Email:</strong>
-                <a href="mailto:invoxiagst@gmail.com" class="text-white text-decoration-none">
-                    invoxiagst@gmail.com
-                </a>
-
-            </p>
-            <p class="mb-1">
-                <strong>Phone:</strong>
-                <a href="tel:XXXXXXXXXX" class="text-white text-decoration-none">
-                    XXXXXXXXXX
-                </a>
-            </p>
-            <p class="small mt-3 mb-0">&copy; {{ year }} InvoxiaGST. All Rights Reserved.</p>
+    <footer class="ix-footer py-4 mt-4">
+        <div class="container-xl d-flex flex-wrap justify-content-between gap-2" style="max-width: var(--content-width);">
+            <span>&copy; {{ year }} InvoxiaGST. All rights reserved.</span>
+            <span>
+                <a href="mailto:invoxiagst@gmail.com">invoxiagst@gmail.com</a>
+                &nbsp;&middot;&nbsp; <a href="tel:XXXXXXXXXX">XXXXXXXXXX</a>
+            </span>
         </div>
     </footer>
 
+    {% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    {% if user.is_authenticated %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
-        const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
-        [...popoverTriggerList].map(triggerEl => new bootstrap.Popover(triggerEl));
+    (function () {
+        const STATS_URL = "{% url 'home_stats' %}";
+        const POLL_MS = 30000;
+        const css = getComputedStyle(document.documentElement);
+        const C = {
+            qty: css.getPropertyValue('--qty').trim(),
+            amount: css.getPropertyValue('--amount').trim(),
+            invoice: css.getPropertyValue('--invoice').trim(),
+            slate: css.getPropertyValue('--slate').trim(),
+            line: css.getPropertyValue('--line').trim(),
+        };
+        let data = JSON.parse(document.getElementById('dashboard-data').textContent);
+        let rangeKey = data.range.key;
+
+        Chart.defaults.font.family = "'Manrope', 'Segoe UI', sans-serif";
+        Chart.defaults.color = C.slate;
+        Chart.defaults.plugins.legend.display = false;
+        Chart.defaults.maintainAspectRatio = false;
+
+        const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+        const inrShort = v => {
+            const a = Math.abs(v), f = n => (+n.toFixed(1)).toString();
+            if (a >= 1e7) return '₹' + f(v / 1e7) + ' Cr';
+            if (a >= 1e5) return '₹' + f(v / 1e5) + ' L';
+            if (a >= 1e3) return '₹' + f(v / 1e3) + 'k';
+            return '₹' + v;
+        };
+        const dayLabel = iso => {
+            const d = new Date(iso + 'T00:00:00');
+            return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+        };
+        const grid = { color: C.line, drawTicks: false };
+        const baseX = { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } };
+
+        const qtyChart = new Chart(document.getElementById('qtyChart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{
+                label: 'Quantity sold', data: [], borderColor: C.qty, borderWidth: 2.5,
+                backgroundColor: C.qty + '1F', fill: true, cubicInterpolationMode: 'monotone', pointRadius: 0, pointHoverRadius: 5,
+            }] },
+            options: {
+                interaction: { mode: 'index', intersect: false },
+                scales: { x: baseX, y: { beginAtZero: true, grid, ticks: { precision: 0 }, title: { display: true, text: 'Units' } } },
+                plugins: { tooltip: { callbacks: { label: c => ` ${c.parsed.y} units` } } },
+            },
+        });
+
+        const itemsChart = new Chart(document.getElementById('itemsChart'), {
+            data: { labels: [], datasets: [
+                { type: 'bar', label: 'Sales amount', data: [], backgroundColor: C.amount, borderRadius: 6, yAxisID: 'y', maxBarThickness: 38 },
+                { type: 'line', label: 'Quantity sold', data: [], borderColor: C.qty, backgroundColor: C.qty, borderWidth: 2, pointRadius: 4, yAxisID: 'y1' },
+            ] },
+            options: {
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: { grid: { display: false }, ticks: { callback(v) { const s = this.getLabelForValue(v); return s.length > 12 ? s.slice(0, 11) + '…' : s; } } },
+                    y: { beginAtZero: true, grid, ticks: { callback: inrShort }, title: { display: true, text: 'Amount (₹)' } },
+                    y1: { beginAtZero: true, position: 'right', grid: { display: false }, ticks: { precision: 0 }, title: { display: true, text: 'Units' } },
+                },
+                plugins: { tooltip: { callbacks: { label: c => c.dataset.yAxisID === 'y' ? ` ₹${inr.format(c.parsed.y)}` : ` ${c.parsed.y} units` } } },
+            },
+        });
+
+        const invoiceChart = new Chart(document.getElementById('invoiceChart'), {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Invoices', data: [], backgroundColor: C.invoice, borderRadius: 4, maxBarThickness: 22 }] },
+            options: {
+                scales: { x: baseX, y: { beginAtZero: true, grid, ticks: { precision: 0 }, title: { display: true, text: 'Invoices' } } },
+                plugins: { tooltip: { callbacks: { label: c => ` ${c.parsed.y} invoice${c.parsed.y === 1 ? '' : 's'}` } } },
+            },
+        });
+
+        function setText(sel, value) { document.querySelectorAll(sel).forEach(el => el.textContent = value); }
+        function toggleEmpty(id, empty) { document.getElementById(id).classList.toggle('show', empty); }
+
+        function render(d) {
+            const labels = d.days.map(dayLabel);
+            qtyChart.data.labels = labels;
+            qtyChart.data.datasets[0].data = d.quantity_sold;
+            invoiceChart.data.labels = labels;
+            invoiceChart.data.datasets[0].data = d.invoices;
+            itemsChart.data.labels = d.items.names;
+            itemsChart.data.datasets[0].data = d.items.amount;
+            itemsChart.data.datasets[1].data = d.items.quantity;
+            [qtyChart, invoiceChart, itemsChart].forEach(c => c.update());
+
+            toggleEmpty('qtyEmpty', d.totals.quantity_sold === 0);
+            toggleEmpty('invoiceEmpty', d.totals.invoices === 0);
+            toggleEmpty('itemsEmpty', d.items.names.length === 0);
+
+            setText('.js-total-qty', d.totals.quantity_sold);
+            setText('.js-total-invoices', d.totals.invoices);
+            setText('.js-total-amount', inr.format(d.totals.sold_amount));
+            setText('.js-customer-count', d.customer_count);
+            setText('.js-range-label', d.range.label.toLowerCase());
+            setText('.js-updated', d.generated_at);
+            document.querySelectorAll('.range-switch button').forEach(b =>
+                b.setAttribute('aria-pressed', b.dataset.range === d.range.key ? 'true' : 'false'));
+        }
+
+        async function refresh(force) {
+            try {
+                const res = await fetch(`${STATS_URL}?range=${encodeURIComponent(rangeKey)}`, {
+                    headers: { 'Accept': 'application/json' }, credentials: 'same-origin', cache: 'no-store',
+                });
+                if (!res.ok) return;
+                const next = await res.json();
+                if (force || next.version !== data.version) {
+                    data = next;
+                    render(data);
+                } else {
+                    setText('.js-updated', next.generated_at);
+                }
+            } catch (e) { /* offline: keep showing the last data */ }
+        }
+
+        document.querySelectorAll('.range-switch button').forEach(btn => btn.addEventListener('click', () => {
+            rangeKey = btn.dataset.range;
+            const url = new URL(window.location);
+            url.searchParams.set('range', rangeKey);
+            history.replaceState(null, '', url);
+            refresh(true);
+        }));
+
+        render(data);
+        setInterval(() => { if (!document.hidden) refresh(false); }, POLL_MS);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(false); });
+        window.addEventListener('pageshow', e => { if (e.persisted) refresh(false); });
+    })();
     </script>
+    {% endif %}
 </body>
 
 </html>

@@ -1,0 +1,48 @@
+{% if user.is_authenticated %}
+<div class="offcanvas offcanvas-end ix-owner-menu" tabindex="-1" id="ixOwnerMenu" aria-labelledby="ixOwnerMenuLabel">
+    <div class="offcanvas-header">
+        <div class="ix-who">
+            <span class="ix-avatar">{{ user.username|slice:":1" }}</span>
+            <div>
+                <strong id="ixOwnerMenuLabel">{{ user.company_name|default:user.username }}</strong>
+                <span>{{ user.username }} &middot; {{ user.phone }}</span>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="ix-menu-group">
+            <h6>Store</h6>
+            <a href="/" class="ix-menu-link"><span class="ico"><i class="bi bi-house"></i></span> Home</a>
+            <a href="/store/{{ user.username }}/" class="ix-menu-link"><span class="ico"><i class="bi bi-shop"></i></span> My Store</a>
+            <a href="/store/manage/products/" class="ix-menu-link"><span class="ico"><i class="bi bi-box-seam"></i></span> Manage Products</a>
+            <a href="/store/manage/archived/" class="ix-menu-link"><span class="ico"><i class="bi bi-archive"></i></span> Archived Items</a>
+            <a href="{% url 'customer_details_list' %}" class="ix-menu-link"><span class="ico"><i class="bi bi-people"></i></span> Customer Details <span class="count js-customer-count">{{ ix_customer_count }}</span></a>
+        </div>
+        <div class="ix-menu-group">
+            <h6>Sales and analytics</h6>
+            <a href="/store/sales-dashboard/" class="ix-menu-link"><span class="ico"><i class="bi bi-graph-up"></i></span> Sales Dashboard</a>
+            <a href="/store/sales-report/" class="ix-menu-link"><span class="ico"><i class="bi bi-file-earmark-text"></i></span> Sales Reports</a>
+            <a href="/store/{{ user.username }}/analytics/" class="ix-menu-link"><span class="ico"><i class="bi bi-bar-chart-line"></i></span> Item Analytics</a>
+            <a href="{% url 'ad_section' %}" class="ix-menu-link"><span class="ico"><i class="bi bi-layout-text-sidebar-reverse"></i></span> AD Section</a>
+        </div>
+        <div class="ix-menu-group">
+            <h6>Stock and purchases</h6>
+            <a href="/store/monthly-stock-report/" class="ix-menu-link"><span class="ico"><i class="bi bi-calendar3"></i></span> Monthly Stock/Sales Details</a>
+            <a href="/store/yearly-stock-summary/" class="ix-menu-link"><span class="ico"><i class="bi bi-calendar-range"></i></span> Yearly Stock/Sales Details</a>
+            <a href="/store/stock-at-date/" class="ix-menu-link"><span class="ico"><i class="bi bi-calendar-check"></i></span> Stock As Of Date</a>
+            <a href="/store/monthly-purchase-details/" class="ix-menu-link"><span class="ico"><i class="bi bi-cart3"></i></span> Monthly Purchase Details</a>
+            <a href="/store/yearly-purchase-details/" class="ix-menu-link"><span class="ico"><i class="bi bi-cart-check"></i></span> Yearly Purchase Details</a>
+        </div>
+        <div class="ix-menu-group">
+            <h6>Invoices and bank</h6>
+            <a href="{% url 'all_invoices' username=user.username %}" class="ix-menu-link"><span class="ico"><i class="bi bi-receipt"></i></span> All Invoices</a>
+            <a href="{% url 'deleted_invoices' username=user.username %}" class="ix-menu-link danger"><span class="ico"><i class="bi bi-trash"></i></span> Deleted Invoices</a>
+            <a href="{% url 'bank_payment_management' %}" class="ix-menu-link"><span class="ico"><i class="bi bi-bank"></i></span> Bank Payment Management</a>
+        </div>
+        <div class="ix-menu-foot">
+            <a href="/accounts/logout/" class="ix-menu-link"><span class="ico"><i class="bi bi-box-arrow-right"></i></span> Logout</a>
+        </div>
+    </div>
+</div>
+{% endif %}

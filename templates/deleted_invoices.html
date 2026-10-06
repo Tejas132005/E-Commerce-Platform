@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Deleted Invoices - {{ user.company_name|default:user.username }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -27,27 +28,30 @@
         .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); text-decoration: none; color: white; }
         .date-badge { background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-size: 0.9rem; }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
-<body>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
     <div class="header">
-        <h1>🗑️ Deleted Invoices</h1>
+        <h1>Deleted Invoices</h1>
         <p>{{ store_owner.company_name|default:store_owner.username }}</p>
         <p style="margin-top:10px;">
-            <a href="{% url 'my_orders' username=store_owner.username %}" style="color:#fff;text-decoration:underline;">📦 My Orders</a> | 
-            <a href="{% url 'store_products' username=store_owner.username %}" style="color:#fff;text-decoration:underline;">🏪 Store</a>
+            <a href="{% url 'my_orders' username=store_owner.username %}" style="color:#fff;text-decoration:underline;"><i class="bi bi-box-seam"></i> My Orders</a> | 
+            <a href="{% url 'store_products' username=store_owner.username %}" style="color:#fff;text-decoration:underline;"><i class="bi bi-shop"></i> Store</a>
         </p>
     </div>
 
     <div class="container">
         <!-- Actions -->
         <div class="actions">
-            <a href="{% url 'my_orders' username=store_owner.username %}" class="btn btn-primary">📦 My Orders</a>
-            <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-success">🏪 Store</a>
+            <a href="{% url 'my_orders' username=store_owner.username %}" class="btn btn-primary"><i class="bi bi-box-seam"></i> My Orders</a>
+            <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-success"><i class="bi bi-shop"></i> Store</a>
         </div>
 
         <!-- Sales Report Table -->
         <div class="report-section">
-            <h2>🗑️ Deleted Invoices Log</h2>
+            <h2>Deleted Invoices Log</h2>
             <!-- Messages -->
             {% if messages %}
             <div style="margin-bottom: 1rem;">
@@ -75,7 +79,7 @@
                         {% for order in orders %}
                         <tr>
                             <td>
-                                <strong>{{ order.invoice_number|default:order.order_number }}</strong>
+                                <strong>{{ order.invoice_number|default:order.order_number }}</strong>{% if order.financial_year %} <small class="text-muted">FY {{ order.financial_year_label }}</small>{% endif %}
                             </td>
                             <td>
                                 <strong>{{ order.customer.name }}</strong>
@@ -94,7 +98,7 @@
                                 <form method="POST" action="{% url 'restore_invoice' username=store_owner.username order_id=order.id %}" style="display:inline;">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Are you sure you want to restore this invoice?');">
-                                        ♻️ Restore
+                                        <i class="bi bi-arrow-counterclockwise"></i> Restore
                                     </button>
                                 </form>
                             </td>
@@ -105,11 +109,13 @@
             </div>
             {% else %}
             <div class="no-sales">
-                <h3>✨ No deleted invoices</h3>
+                <h3>No deleted invoices</h3>
                 <p>You have not deleted any invoices yet.</p>
             </div>
             {% endif %}
         </div>
     </div>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 </body>
 </html>

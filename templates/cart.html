@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Shopping Cart - {{ store_owner.company_name|default:store_owner.username }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -229,17 +229,20 @@
             }
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
 
-<body>
+<body class="ix" style="--ix-page-width: 1000px;">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
     <div class="header">
-        <h1>🛒 Shopping Cart</h1>
+        <h1>Shopping Cart</h1>
         <p>{{ store_owner.company_name|default:store_owner.username }}</p>
     </div>
 
     <div class="container">
-        <p style="margin-bottom:1rem;"><a href="/" style="font-weight:600;color:#c0392b;">🏠 Home</a>
-        &nbsp;·&nbsp;<a href="{% url 'store_products' username=store_owner.username %}" style="font-weight:600;color:#c0392b;">Continue shopping</a></p>
+        <p style="margin-bottom:1rem;"><a href="/" style="font-weight:600;color:var(--brand);text-decoration:none;"><i class="bi bi-house"></i> Home</a>
+        &nbsp;·&nbsp;<a href="{% url 'store_products' username=store_owner.username %}" style="font-weight:600;color:var(--brand);text-decoration:none;">Continue shopping</a></p>
 
         {% if messages %}
         <div class="mb-3">
@@ -259,7 +262,7 @@
             <div class="cart-item">
                 <div class="item-image">
                     {% if item_data.product.image %}
-                    <img src="{{ item_data.product.image.url }}" alt="{{ item_data.product.name }}" onerror="this.style.display='none'; this.parentElement.innerHTML='📦';"> {% else %} 📦 {% endif %}
+                    <img src="{{ item_data.product.image.url }}" alt="{{ item_data.product.name }}" onerror="this.style.display='none'; this.parentElement.innerHTML='📦';"> {% else %} <i class="bi bi-box-seam"></i> {% endif %}
                 </div>
 
                 <div class="item-info">
@@ -293,7 +296,7 @@
                       class="d-inline"
                       onsubmit="return confirm('Remove this item from your cart?');">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger btn-sm">🗑️ Remove</button>
+                    <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i> Remove</button>
                 </form>
             </div>
             {% endfor %}
@@ -307,7 +310,7 @@
                 </div>
 
                 <div class="gst-breakdown">
-                    <h4>📋 GST Breakdown:</h4>
+                    <h4>GST Breakdown:</h4>
                     {% for item_data in cart_items_with_gst %}
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
                         <span>{{ item_data.product.name }} ({{ item_data.gst_rate }}%):</span>
@@ -328,19 +331,19 @@
 
                 <div class="actions">
                     <a href="{% url 'checkout' username=store_owner.username %}" class="btn btn-success">
-                            💳 Proceed to Checkout
+                            <i class="bi bi-credit-card"></i> Proceed to Checkout
                         </a>
                     <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-primary">
-                            🛍️ Continue Shopping
+                            <i class="bi bi-bag"></i> Continue Shopping
                         </a>
                 </div>
             </div>
             {% else %}
             <div class="empty-cart">
-                <h3>🛒 Your cart is empty</h3>
+                <h3>Your cart is empty</h3>
                 <p>Add some products to your cart to see them here!</p>
                 <a href="{% url 'store_products' username=store_owner.username %}" class="btn btn-primary">
-                        🛍️ Start Shopping
+                        <i class="bi bi-bag"></i> Start Shopping
                     </a>
             </div>
             {% endif %}
@@ -348,6 +351,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=False %}
 </body>
 
 </html>

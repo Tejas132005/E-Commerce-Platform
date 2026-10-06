@@ -1,0 +1,18 @@
+{% include 'partials/owner_menu.html' %}
+{% if ix_load_bootstrap %}<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>{% endif %}
+<script>
+    (function () {
+        function initContact() {
+            var btn = document.getElementById('contactPopover');
+            if (!btn || !window.bootstrap || btn.dataset.ixReady) return;
+            btn.dataset.ixReady = '1';
+            new bootstrap.Popover(btn, {
+                html: true,
+                title: "<span class='fw-bold'>Contact details</span>",
+                content: '<div class="text-start"><p class="mb-2"><b>Email:</b> <a href="mailto:invoxiagst@gmail.com" class="text-decoration-none">invoxiagst@gmail.com</a></p><p class="mb-0"><b>Phone:</b> +91 XXXXX XXXXX</p></div>'
+            });
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initContact); else initContact();
+        window.addEventListener('load', initContact);
+    })();
+</script>

@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Create Business Account - E-Commerce Platform</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -284,20 +284,22 @@
             }
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
 
-<body>
-    <p class="text-center pt-3 mb-0"><a href="/" class="text-white fw-semibold text-decoration-none">🏠 Home</a></p>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main ix-center">
     <div class="register-container">
         <div class="register-header">
-            <div class="brand-logo">E</div>
+            <div class="brand-logo ix-brand-logo">Invoxia<span>GST</span></div>
             <h1>Start Your Business</h1>
             <p>Create your account and launch your online store today</p>
         </div>
 
         <div class="register-form">
             <div class="progress-card">
-                <h5>🚀 Get Started in Minutes</h5>
+                <h5>Get Started in Minutes</h5>
                 <p>Join thousands of successful businesses already using our platform</p>
             </div>
 
@@ -312,7 +314,7 @@
 
                 <!-- Personal Information Section -->
                 <div class="section-header">
-                    <h4>👤 Personal Information</h4>
+                    <h4>Personal Information</h4>
                     <p>Tell us about yourself</p>
                 </div>
 
@@ -378,7 +380,7 @@
 
                 <!-- Business Information Section -->
                 <div class="section-header">
-                    <h4>🏢 Business Information</h4>
+                    <h4>Business Information</h4>
                     <p>Set up your business profile for professional invoices and store branding</p>
                 </div>
 
@@ -474,7 +476,7 @@
 
                 <!-- Security Section -->
                 <div class="section-header">
-                    <h4>🔐 Account Security</h4>
+                    <h4>Account Security</h4>
                     <p>Create a secure password for your business account</p>
                 </div>
 
@@ -505,30 +507,30 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary">
-                    🚀 Create Business Account
+                    Create Business Account
                 </button>
             </form>
 
             <div class="benefits-section">
-                <h5>🎯 What You Get With Your Account</h5>
+                <h5>What You Get With Your Account</h5>
                 <div class="benefits-grid">
                     <div class="benefit-card">
-                        <div class="icon">🏪</div>
+                        <div class="icon"><i class="bi bi-shop"></i></div>
                         <h6>Your Online Store</h6>
                         <p>Get a personalized store URL and manage your products easily</p>
                     </div>
                     <div class="benefit-card">
-                        <div class="icon">📊</div>
+                        <div class="icon"><i class="bi bi-bar-chart"></i></div>
                         <h6>Sales Analytics</h6>
                         <p>Track your sales, revenue, and customer data with detailed reports</p>
                     </div>
                     <div class="benefit-card">
-                        <div class="icon">🧾</div>
+                        <div class="icon"><i class="bi bi-receipt"></i></div>
                         <h6>GST Invoices</h6>
                         <p>Generate professional invoices with automatic GST calculations</p>
                     </div>
                     <div class="benefit-card">
-                        <div class="icon">👥</div>
+                        <div class="icon"><i class="bi bi-people"></i></div>
                         <h6>Customer Management</h6>
                         <p>Manage customer profiles and track their purchase history</p>
                     </div>
@@ -543,6 +545,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=False %}
 </body>
 
 </html>

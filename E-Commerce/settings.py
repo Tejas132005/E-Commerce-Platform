@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'accounts',  # Custom user app
     'core',      # Main app
     'store',     # E-commerce app
+    'bank',      # Bank Payment Management (independent of billing)
 ]
 
 MIDDLEWARE = [

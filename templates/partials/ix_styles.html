@@ -1,0 +1,521 @@
+{# InvoxiaGST design system. Inlined so pages are styled even when /static/ is not served #}
+<style id="ix-styles">
+/* =====================================================================
+   InvoxiaGST design system
+   - Tokens, app header (logo slot), owner menu, page primitives.
+   - "Theme layer": rules scoped under body.ix restyle the older pages'
+     shared class names (.header, .btn-*, .section, tables, forms ...)
+     without touching their layout CSS. body.ix raises specificity so
+     these win over each page's own <style> block.
+   ===================================================================== */
+
+:root {
+    --page: #F3F5F9;
+    --surface: #FFFFFF;
+    --surface-2: #F7F8FB;
+    --ink: #0F1E3A;
+    --ink-hover: #1B2D52;
+    --slate: #5B6478;
+    --line: #E3E7EF;
+    --line-strong: #CBD3E1;
+    --brand: #1D4ED8;
+    --brand-hover: #1A43BD;
+    --brand-soft: #E8EEFC;
+    --qty: #1D4ED8;
+    --amount: #15803D;
+    --amount-soft: #E7F4EC;
+    --invoice: #B45309;
+    --invoice-soft: #FBF0E2;
+    --danger: #B42318;
+    --danger-soft: #FDECEA;
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --font: 'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --content-width: 1200px;
+}
+
+/* ---------- Base ---------- */
+body.ix {
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--font);
+    font-feature-settings: 'tnum' 1;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    display: block;
+    line-height: 1.55;
+}
+.ix :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.ix-main { padding: 2rem 1rem 3rem; }
+.ix-main.ix-center { display: flex; justify-content: center; align-items: flex-start; padding-top: 3rem; }
+
+/* ---------- App header ---------- */
+body.ix header.ix-header, .ix-header {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    width: auto;
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: saturate(160%) blur(8px);
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font);
+}
+.ix-header-inner {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: .7rem .75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+/* Brand wordmark (same as the home page) */
+.ix-brand {
+    font-weight: 800;
+    font-size: 1.45rem;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-decoration: none;
+    font-family: var(--font);
+    line-height: 1;
+    flex: none;
+}
+.ix-brand span { color: var(--brand); }
+.ix-brand:hover { color: var(--ink); }
+
+.ix-nav { display: flex; align-items: center; gap: .15rem; margin: 0; padding: 0; }
+.ix-nav a, .ix-nav button {
+    color: var(--slate);
+    font-weight: 600;
+    font-size: .93rem;
+    padding: .45rem .75rem;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    border: 0;
+    background: none;
+    font-family: var(--font);
+    line-height: 1.4;
+}
+.ix-nav a:hover, .ix-nav button:hover { color: var(--ink); background: var(--page); }
+.ix-nav a.active { color: var(--ink); background: var(--page); }
+
+.ix-account { display: flex; align-items: center; gap: .5rem; }
+.ix-btn-account {
+    display: inline-flex; align-items: center; gap: .55rem;
+    background: var(--ink); color: #fff; border: 0;
+    border-radius: 999px; padding: .35rem .9rem .35rem .35rem;
+    font-weight: 600; font-family: var(--font); font-size: .95rem; line-height: 1.4;
+}
+.ix-btn-account:hover { background: var(--ink-hover); color: #fff; }
+.ix-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: inline-grid; place-items: center;
+    background: var(--brand); color: #fff; font-weight: 700; font-size: .85rem;
+    text-transform: uppercase; flex: none;
+}
+.ix-btn-ink, .ix-btn-quiet {
+    display: inline-flex; align-items: center; gap: .4rem;
+    border-radius: 999px; padding: .45rem 1rem; font-weight: 700; font-size: .9rem;
+    text-decoration: none; font-family: var(--font); line-height: 1.4;
+}
+.ix-btn-ink { background: var(--ink); color: #fff; border: 1px solid var(--ink); }
+.ix-btn-ink:hover { background: var(--ink-hover); color: #fff; }
+.ix-btn-quiet { background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); }
+.ix-btn-quiet:hover { border-color: var(--ink); color: var(--ink); }
+
+/* ---------- Owner menu (offcanvas) ---------- */
+.offcanvas.ix-owner-menu { width: 340px; border-left: 0; background: var(--surface); font-family: var(--font); }
+.ix-owner-menu .offcanvas-header {
+    background: var(--ink); color: #fff; align-items: flex-start; padding: 1.4rem 1.25rem;
+}
+.ix-owner-menu .ix-who { display: flex; gap: .85rem; align-items: center; }
+.ix-owner-menu .ix-who .ix-avatar { width: 46px; height: 46px; font-size: 1.1rem; }
+.ix-owner-menu .ix-who strong { display: block; font-size: 1.05rem; line-height: 1.3; }
+.ix-owner-menu .ix-who span { font-size: .85rem; color: #b7c3dc; }
+.ix-owner-menu .btn-close { filter: invert(1); opacity: .8; }
+.ix-owner-menu .offcanvas-body { padding: .75rem .75rem 1rem; display: flex; flex-direction: column; }
+.ix-menu-group { margin-bottom: .6rem; }
+.ix-menu-group h6 { font-size: .78rem; font-weight: 700; color: var(--slate); margin: .75rem .6rem .35rem; }
+.ix-menu-link {
+    display: flex; align-items: center; gap: .7rem;
+    padding: .55rem .6rem; border-radius: 10px; text-decoration: none;
+    color: var(--ink); font-weight: 600; font-size: .93rem;
+}
+.ix-menu-link .ico {
+    width: 32px; height: 32px; border-radius: 9px; flex: none;
+    display: grid; place-items: center; background: var(--page); color: var(--slate);
+}
+.ix-menu-link:hover { background: var(--brand-soft); color: var(--brand); }
+.ix-menu-link:hover .ico { background: var(--brand); color: #fff; }
+.ix-menu-link .count { margin-left: auto; font-size: .75rem; color: var(--slate); }
+.ix-menu-link.danger .ico { color: var(--danger); }
+.ix-menu-foot { margin-top: auto; border-top: 1px solid var(--line); padding-top: .6rem; }
+.ix-menu-foot .ix-menu-link { color: var(--danger); }
+.ix-menu-foot .ix-menu-link:hover { background: var(--danger-soft); color: var(--danger); }
+.ix-menu-foot .ix-menu-link:hover .ico { background: var(--danger); }
+
+/* ---------- Page title (new-style pages) ---------- */
+.ix-page-title { font-size: clamp(1.55rem, 2.5vw, 2.05rem); font-weight: 800; letter-spacing: -0.025em; margin: 0 0 .2rem; color: var(--ink); }
+.ix-page-sub { color: var(--slate); margin: 0; }
+
+/* ---------- Footer ---------- */
+body.ix footer.ix-footer, .ix-footer { background: none; border-top: 1px solid var(--line); color: var(--slate); font-size: .875rem; }
+.ix-footer a { color: var(--ink); text-decoration: none; }
+
+/* =====================================================================
+   Theme layer for existing pages
+   ===================================================================== */
+
+/* Headings */
+.ix h1, .ix h2, .ix h3, .ix h4, .ix h5, .ix h6 { font-family: var(--font); color: var(--ink); text-shadow: none; }
+.ix h1 { font-weight: 800; letter-spacing: -0.025em; }
+.ix h2, .ix h3 { font-weight: 700; letter-spacing: -0.015em; }
+
+/* Page banners -> calm page title on the page background */
+.ix .header, .ix .ad-header, .ix .report-header, .ix .premium-header,
+.ix .summary-header, .ix .page-header, .ix .orders-header {
+    background: none !important;
+    color: var(--ink) !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    text-align: left !important;
+    padding: 0 var(--ix-page-pad, 1rem) 1rem !important;
+    margin: 0 auto 1.25rem !important;
+    max-width: var(--ix-page-width, var(--content-width));
+}
+/* Title blocks that wrap their own .container: let that container set the width */
+.ix :is(.header, .ad-header, .report-header, .premium-header, .summary-header, .page-header):has(> .container, > .container-fluid, > .container-xl) {
+    max-width: none !important; padding-left: 0 !important; padding-right: 0 !important;
+}
+/* Bootstrap's text-center inside title blocks -> left, like every other page */
+.ix :is(.header, .ad-header, .report-header, .premium-header, .summary-header, .page-header) .text-center,
+.ix .text-center:is(.header, .ad-header, .report-header, .premium-header, .summary-header, .page-header) { text-align: left !important; }
+.ix :is(.ad-header, .premium-header, .summary-header, .page-header, .report-header) .display-4,
+.ix :is(.ad-header, .premium-header, .summary-header, .page-header, .report-header) .display-5,
+.ix :is(.ad-header, .premium-header, .summary-header, .page-header, .report-header) .display-6 {
+    font-size: clamp(1.55rem, 2.5vw, 2.05rem) !important; font-weight: 800 !important; letter-spacing: -0.025em; color: var(--ink) !important;
+}
+.ix :is(.ad-header, .premium-header, .summary-header, .page-header, .report-header) .lead { color: var(--slate) !important; opacity: 1 !important; font-size: 1rem !important; font-weight: 500 !important; }
+
+/* Pages whose content sits in Bootstrap's responsive .container */
+body.ix-w-bs { --ix-page-pad: .75rem; --ix-page-width: 100%; }
+@media (min-width: 576px)  { body.ix-w-bs { --ix-page-width: 540px; } }
+@media (min-width: 768px)  { body.ix-w-bs { --ix-page-width: 720px; } }
+@media (min-width: 992px)  { body.ix-w-bs { --ix-page-width: 960px; } }
+@media (min-width: 1200px) { body.ix-w-bs { --ix-page-width: 1140px; } }
+@media (min-width: 1400px) { body.ix-w-bs { --ix-page-width: 1320px; } }
+/* Title blocks already inside a padded container don't need their own side padding */
+.ix :is(.container, .container-fluid, .container-xl, .container-lg) :is(.header, .ad-header, .report-header, .premium-header, .summary-header, .page-header, .orders-header) {
+    padding-left: 0 !important; padding-right: 0 !important; max-width: none !important;
+}
+.ix .header a:not(.btn), .ix .report-header a:not(.btn), .ix .page-header a:not(.btn), .ix .premium-header a:not(.btn),
+.ix .summary-header a:not(.btn), .ix .ad-header a:not(.btn) { color: var(--brand) !important; text-decoration: none; font-weight: 600; }
+.ix i.bi { line-height: 1; }
+.ix .header::after, .ix .premium-header::after, .ix .header::before, .ix .premium-header::before { display: none !important; }
+.ix .header h1, .ix .ad-header h1, .ix .ad-header h2, .ix .report-header h1, .ix .report-header h2,
+.ix .premium-header h1, .ix .premium-header h2, .ix .summary-header h1, .ix .summary-header h2,
+.ix .page-header h1, .ix .page-header h2, .ix .store-name {
+    color: var(--ink) !important;
+    font-size: clamp(1.55rem, 2.5vw, 2.05rem) !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.025em;
+    margin: 0 0 .2rem !important;
+    text-shadow: none !important;
+}
+.ix .header p, .ix .ad-header p, .ix .report-header p, .ix .premium-header p, .ix .report-subtitle,
+.ix .summary-header p, .ix .page-header p, .ix .store-tagline, .ix .header .text-white-50 {
+    color: var(--slate) !important;
+    opacity: 1 !important;
+    font-size: 1rem !important;
+    margin: 0;
+}
+.ix .header .text-white, .ix .ad-header .text-white, .ix .report-header .text-white,
+.ix .premium-header .text-white, .ix .summary-header .text-white, .ix .page-header .text-white { color: var(--ink) !important; }
+.ix .header .opacity-75, .ix .report-header .opacity-75, .ix .page-header .opacity-75 { opacity: 1 !important; color: var(--slate) !important; }
+
+/* Buttons */
+.ix .btn {
+    font-family: var(--font);
+    font-weight: 600;
+    border-radius: 10px;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+    box-shadow: none;
+    text-shadow: none;
+}
+.ix .btn:hover, .ix .btn:focus { transform: none !important; box-shadow: none !important; }
+.ix .btn-primary, .ix .btn-premium, .ix .btn-save, .ix .btn-export {
+    background: var(--brand) !important; border: 1px solid var(--brand) !important; color: #fff !important;
+}
+.ix .btn-primary:hover, .ix .btn-premium:hover, .ix .btn-save:hover, .ix .btn-export:hover {
+    background: var(--brand-hover) !important; border-color: var(--brand-hover) !important; color: #fff !important;
+}
+.ix .btn-success { background: var(--amount) !important; border: 1px solid var(--amount) !important; color: #fff !important; }
+.ix .btn-success:hover { background: #116A32 !important; border-color: #116A32 !important; }
+.ix .btn-dark { background: var(--ink) !important; border: 1px solid var(--ink) !important; color: #fff !important; }
+.ix .btn-dark:hover { background: var(--ink-hover) !important; }
+.ix .btn-secondary, .ix .btn-outline, .ix .btn-light, .ix .btn-outline-light, .ix .nav-btn, .ix .back-button {
+    background: var(--surface) !important; border: 1px solid var(--line-strong) !important; color: var(--ink) !important;
+}
+.ix .btn-secondary:hover, .ix .btn-outline:hover, .ix .btn-light:hover, .ix .btn-outline-light:hover, .ix .nav-btn:hover, .ix .back-button:hover {
+    border-color: var(--ink) !important; color: var(--ink) !important; background: var(--surface) !important;
+}
+.ix .btn-danger, .ix .remove-btn { background: var(--danger) !important; border: 1px solid var(--danger) !important; color: #fff !important; }
+.ix .btn-danger:hover, .ix .remove-btn:hover { background: #912018 !important; }
+.ix .btn-warning { background: var(--invoice-soft) !important; border: 1px solid #EBCB9F !important; color: #7A3A06 !important; }
+.ix .btn-warning:hover { border-color: var(--invoice) !important; }
+.ix .btn-info { background: var(--brand-soft) !important; border: 1px solid #C9D6F7 !important; color: var(--brand) !important; }
+.ix .btn-info:hover { border-color: var(--brand) !important; }
+.ix .btn-outline-primary { color: var(--brand); border-color: var(--brand); }
+.ix .btn-outline-primary:hover { background: var(--brand); color: #fff; }
+.ix .btn-outline-secondary, .ix .btn-outline-dark { color: var(--ink); border-color: var(--line-strong); background: var(--surface); }
+.ix .btn-outline-secondary:hover, .ix .btn-outline-dark:hover { background: var(--surface); color: var(--ink); border-color: var(--ink); }
+.ix .btn-outline-danger { color: var(--danger); border-color: #F1B8B2; }
+.ix .btn-outline-danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+.ix .btn-outline-success { color: var(--amount); border-color: #A9D8B9; }
+.ix .btn-outline-success:hover { background: var(--amount); color: #fff; }
+
+/* Surfaces / panels */
+.ix .card, .ix .section, .ix .stat-card, .ix .summary-card, .ix .stat-item, .ix .actions-bar,
+.ix .products-section, .ix .report-section, .ix .cart-section, .ix .cart-summary, .ix .order-card,
+.ix .order-detail, .ix .content-card, .ix .report-card, .ix .category-card, .ix .table-container,
+.ix .overview-card, .ix .insight-card, .ix .chart-container, .ix .filter-section, .ix .card-form,
+.ix .card-prod, .ix .form-container, .ix .nav-bar, .ix .orders-section, .ix .item-card,
+.ix .products-table, .ix .empty-state, .ix .card-stat, .ix .invoice-card, .ix .controls, .ix .login-container, .ix .register-container, .ix .error-container,
+.ix .about-section, .ix .docs-section, .ix .company-section, .ix .product-card, .ix .tab-content,
+.ix .order-info, .ix .order-items, .ix .gst-breakdown, .ix .features-card, .ix .welcome-card,
+.ix .benefits-section, .ix .progress-card, .ix .register-form, .ix .store-info.panel-like {
+    background: var(--surface) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: none !important;
+    animation: none !important;
+}
+.ix .card:hover, .ix .section:hover, .ix .stat-card:hover, .ix .summary-card:hover, .ix .stat-item:hover,
+.ix .product-card:hover, .ix .order-card:hover, .ix .invoice-card:hover, .ix .category-card:hover,
+.ix .overview-card:hover, .ix .insight-card:hover, .ix .item-card:hover, .ix .report-card:hover, .ix .card-stat:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+.ix .product-card:hover, .ix .invoice-card:hover, .ix .order-card:hover { border-color: var(--line-strong) !important; }
+.ix .card-header, .ix .order-header, .ix .slab-header, .ix .table-header, .ix .modal-header, .ix .item-header {
+    background: var(--surface-2) !important;
+    color: var(--ink) !important;
+    border-bottom: 1px solid var(--line) !important;
+    text-shadow: none !important;
+}
+.ix .card-header *, .ix .order-header *, .ix .slab-header *, .ix .table-header *, .ix .modal-header .modal-title { color: inherit; }
+.ix .order-header .order-number, .ix .order-header strong { color: var(--ink) !important; }
+.ix .modal-header .btn-close { filter: none !important; }
+.ix .card-header.bg-danger { color: var(--danger) !important; }
+.ix .card-header.bg-danger .btn-light { color: var(--danger) !important; }
+.ix .modal-content { border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+
+/* Card action rows wrap instead of overflowing */
+.ix .product-actions, .ix .order-actions, .ix .action-buttons, .ix .nav-buttons { flex-wrap: wrap; }
+.ix .product-actions .btn-sm { flex: 1 1 auto; white-space: nowrap; }
+
+/* Numbers and labels */
+.ix .stat-value, .ix .summary-card .value, .ix .stat-item .number, .ix .card-stat h3, .ix .card-stat .h3,
+.ix .summary-card h2, .ix .summary-card .h2, .ix .overview-card h3 {
+    color: var(--ink) !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+}
+.ix .stat-label, .ix .summary-card h3, .ix .stat-item .label, .ix .card-stat h6, .ix .card-stat small,
+.ix .summary-card p, .ix .summary-card h6 {
+    color: var(--slate) !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-weight: 600;
+}
+.ix .stat-icon { color: var(--brand) !important; font-size: 1.6rem !important; margin-bottom: .5rem !important; }
+.ix .currency, .ix .price-value, .ix .amount-in { color: var(--amount) !important; }
+
+/* Section titles */
+.ix .section h2, .ix .report-section h2, .ix .section-title, .ix .category-title, .ix .slab-header h5 {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    color: var(--ink) !important;
+    border-bottom: 1px solid var(--line) !important;
+    padding-bottom: .65rem !important;
+    margin-bottom: 1rem !important;
+    background: none !important;
+    -webkit-text-fill-color: currentColor;
+}
+
+.ix .category-title {
+    border: 0 !important; border-bottom: 1px solid var(--line) !important; border-radius: 0 !important;
+    padding: 0 0 .6rem !important; box-shadow: none !important;
+}
+.ix .category-section { background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 2rem; }
+
+/* Customer auth cards: bare .btn is the primary action; plain links */
+.ix .login-container .btn, .ix .register-container .btn {
+    background: var(--brand) !important; border: 1px solid var(--brand) !important; color: #fff !important;
+}
+.ix .login-container .btn:hover, .ix .register-container .btn:hover { background: var(--brand-hover) !important; }
+.ix .register-link a, .ix .login-link a, .ix .back-link a { color: var(--brand) !important; font-weight: 600; text-decoration: none; }
+.ix .back-link a { color: var(--slate) !important; }
+.ix .welcome-message { background: var(--brand-soft) !important; border: 1px solid #C9D6F7 !important; border-radius: var(--radius-md) !important; color: #1E3A8A !important; }
+.ix .customer-avatar { background: var(--brand) !important; }
+
+.ix .analytics-content { background: none !important; padding-left: 0 !important; padding-right: 0 !important; }
+.ix .summary-cards { background: none !important; padding: 0 0 1.5rem !important; }
+.ix .controls { margin-bottom: 1rem; }
+.ix .controls button { background: var(--brand) !important; border-radius: 10px !important; font-weight: 600; font-family: var(--font); }
+.ix .controls button:hover { background: var(--brand-hover) !important; }
+.ix .tabs { background: none !important; border-bottom: 1px solid var(--line) !important; }
+
+.ix .highlight-list { list-style: none; padding-left: 0; }
+.ix .highlight-list li::before { content: '' !important; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); margin-right: 10px; vertical-align: middle; }
+.ix .docs-section h4 { color: var(--ink) !important; }
+.ix .docs-list li a { color: var(--brand) !important; }
+
+.ix .orders-count { background: var(--brand-soft) !important; color: var(--brand) !important; }
+.ix .gst-title, .ix .order-items h3, .ix .gst-breakdown h3 { color: var(--ink) !important; font-weight: 700 !important; }
+.ix .store-info { border-left-color: var(--brand) !important; }
+.ix .breadcrumb { gap: .45rem; align-items: center; background: none !important; padding: 0 !important; }
+.ix .breadcrumb a { color: var(--brand) !important; text-decoration: none; }
+
+/* Tables */
+.ix table th, .ix .table > thead > tr > th, .ix .table-dark th, .ix thead.table-dark th, .ix thead.table-light th {
+    --bs-table-bg: var(--surface-2);
+    --bs-table-color: var(--slate);
+    background: var(--surface-2) !important;
+    color: var(--slate) !important;
+    font-weight: 700;
+    font-size: .84rem;
+    border-bottom: 1px solid var(--line) !important;
+    border-color: var(--line) !important;
+    text-transform: none;
+    letter-spacing: 0;
+}
+.ix table td { border-color: var(--line); }
+.ix .table { --bs-table-hover-bg: #F5F7FB; --bs-table-striped-bg: #FAFBFD; --bs-border-color: var(--line); }
+.ix .table-dark { --bs-table-bg: var(--surface); --bs-table-color: var(--ink); }
+.ix .total-row, .ix .total-row td, .ix tfoot td, .ix tfoot th {
+    background: var(--surface-2) !important;
+    color: var(--ink) !important;
+    font-weight: 700;
+}
+
+/* Forms */
+.ix .form-control, .ix .form-select,
+.ix input[type="text"], .ix input[type="number"], .ix input[type="email"], .ix input[type="password"],
+.ix input[type="date"], .ix input[type="month"], .ix input[type="tel"], .ix input[type="search"],
+.ix input[type="url"], .ix select, .ix textarea {
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    font-family: var(--font);
+    color: var(--ink);
+    background-color: var(--surface);
+    box-shadow: none;
+}
+.ix .form-control:focus, .ix .form-select:focus, .ix input:focus, .ix select:focus, .ix textarea:focus {
+    border-color: var(--brand) !important;
+    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15) !important;
+    outline: none;
+}
+.ix label, .ix .form-label { font-weight: 600; color: var(--ink); }
+.ix .input-group-text { background: var(--surface-2); border-color: var(--line-strong); color: var(--slate); }
+
+/* Legacy forms that render bare Django widgets inside .form-group */
+.ix .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="hidden"]),
+.ix .form-group select, .ix .form-group textarea {
+    width: 100%;
+    padding: .65rem .85rem;
+    font-size: 1rem;
+}
+
+/* Wordmark inside auth cards (login / register) */
+.ix .ix-brand-logo {
+    background: none !important;
+    width: auto !important;
+    height: auto !important;
+    box-shadow: none !important;
+    margin: 0 auto 1.25rem !important;
+    display: block !important;
+    text-align: center;
+    color: var(--ink) !important;
+    font-size: 1.9rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+}
+.ix .ix-brand-logo span { color: var(--brand); }
+
+/* Auth pages (owner register / login, customer login / register) */
+.ix .register-header {
+    background: var(--surface-2) !important;
+    color: var(--ink) !important;
+    border-bottom: 1px solid var(--line);
+}
+.ix .register-header h1 { color: var(--ink) !important; font-weight: 800; letter-spacing: -0.025em; font-size: 2rem; }
+.ix .register-header p { color: var(--slate) !important; opacity: 1 !important; }
+.ix .section-header::after { background: var(--brand) !important; }
+.ix .section-header h4, .ix .progress-card h5, .ix .benefits-section h5, .ix .benefit-card h6,
+.ix .welcome-card h5, .ix .welcome-card h6 { color: var(--ink) !important; }
+.ix .progress-card p, .ix .welcome-card p { color: var(--slate) !important; }
+.ix .text-primary { color: var(--brand) !important; }
+.ix .register-container, .ix .login-container { border-top-width: 1px !important; overflow: hidden; }
+
+/* Alerts / messages */
+.ix .alert, .ix .message, .ix .error-message, .ix .success-message, .ix .warning {
+    border-radius: var(--radius-md) !important;
+    border-left-width: 1px !important;
+    box-shadow: none !important;
+    font-weight: 500;
+}
+.ix .alert-success, .ix .message.success, .ix .success-message { background: var(--amount-soft) !important; color: #14532D !important; border: 1px solid #BFE3CB !important; }
+.ix .alert-danger, .ix .message.error, .ix .error-message { background: var(--danger-soft) !important; color: #7A1A12 !important; border: 1px solid #F4C7C1 !important; }
+.ix .alert-warning, .ix .message.warning, .ix .warning { background: var(--invoice-soft) !important; color: #7A3A06 !important; border: 1px solid #EFD3AE !important; }
+.ix .alert-info, .ix .message.info { background: var(--brand-soft) !important; color: #1E3A8A !important; border: 1px solid #C9D6F7 !important; }
+
+/* Badges */
+.ix .badge { border-radius: 999px; font-weight: 600; }
+
+/* Footer navigation rows on older pages */
+.ix .navigation { border-top: 1px solid var(--line) !important; }
+.ix .navigation a { color: var(--brand) !important; }
+
+/* Gradient progress bars -> flat brand */
+.ix .progress-fill, .ix .progress-bar-custom, .ix .bar-fill, .ix .performance-fill {
+    background: var(--brand) !important;
+}
+
+/* Tabs used by analytics pages */
+.ix .tab.active { color: var(--brand) !important; border-color: var(--brand) !important; background: none !important; }
+.ix .chart-tab { border-radius: 999px !important; }
+.ix .chart-tab.active { background: var(--ink) !important; color: #fff !important; border-color: var(--ink) !important; }
+.ix .dashboard-container { background: none !important; box-shadow: none !important; border: 0 !important; max-width: var(--content-width); margin: 0 auto !important; }
+.ix .dashboard-container > .header { padding-left: 0 !important; padding-right: 0 !important; }
+
+@media (max-width: 991px) {
+    .ix-nav { display: none; }
+}
+@media (max-width: 576px) {
+    .ix-btn-account .ix-name { display: none; }
+    .ix-btn-account { padding-right: .6rem; }
+    .ix-account .ix-btn-quiet { display: none; }
+    .ix .search-bar, .ix .search-bar form { width: 100%; min-width: 0 !important; }
+    .ix .search-bar form { display: flex; gap: .5rem; }
+    .ix .search-bar input { flex: 1 1 auto; min-width: 0 !important; width: auto !important; }
+    .ix-brand { font-size: 1.25rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ix * { transition: none !important; animation: none !important; }
+}
+@media print {
+    .ix-header, .offcanvas.ix-owner-menu, .ix-footer { display: none !important; }
+    .ix-main { padding: 0 !important; }
+}
+
+</style>

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>Sales Dashboard - {{ user.company_name|default:user.username }}</title>
     <style>
         * {
@@ -287,12 +288,15 @@
             animation: fadeIn 0.8s ease-out;
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
-<body>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
     <div class="header">
-        <h1>📊 Sales Dashboard</h1>
+        <h1>Sales Dashboard</h1>
         <p>{{ user.company_name|default:user.username }} - Analytics Overview</p>
-        <p style="margin-top:10px;"><a href="/" style="color:#fff;text-decoration:underline;font-weight:600;">🏠 Home</a></p>
+        <p style="margin-top:10px;"><a href="/" style="color:#fff;text-decoration:underline;font-weight:600;"><i class="bi bi-house"></i> Home</a></p>
     </div>
 
     <div class="container">
@@ -307,19 +311,19 @@
         <!-- Key Statistics -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon sales">💰</div>
+                <div class="stat-icon sales"><i class="bi bi-cash-stack"></i></div>
                 <div class="stat-value">₹{{ total_sales|floatformat:2 }}</div>
                 <div class="stat-label">Total Sales</div>
             </div>
             
             <div class="stat-card">
-                <div class="stat-icon profit">📈</div>
+                <div class="stat-icon profit"><i class="bi bi-graph-up"></i></div>
                 <div class="stat-value">₹{{ total_revenue|floatformat:2 }}</div>
                 <div class="stat-label">Total Revenue</div>
             </div>
             
             <div class="stat-card">
-                <div class="stat-icon orders">📦</div>
+                <div class="stat-icon orders"><i class="bi bi-box-seam"></i></div>
                 <div class="stat-value">{{ total_orders }}</div>
                 <div class="stat-label">Total Orders</div>
             </div>
@@ -327,7 +331,7 @@
 
         <!-- Category-wise Sales -->
         <div class="section">
-            <h2>📋 Category-wise Sales</h2>
+            <h2>Category-wise Sales</h2>
             
             {% if category_sales %}
                 <table class="category-table">
@@ -363,7 +367,7 @@
                 </table>
             {% else %}
                 <div class="no-data">
-                    <div class="no-data-icon">📊</div>
+                    <div class="no-data-icon"><i class="bi bi-bar-chart"></i></div>
                     <h3>No sales data available</h3>
                     <p>Start making sales to see category-wise analytics here!</p>
                 </div>
@@ -372,32 +376,32 @@
 
         <!-- Quick Actions -->
         <div class="section">
-            <h2>🚀 Quick Actions</h2>
+            <h2>Quick Actions</h2>
             <div class="actions">
                 <a href="{% url 'add_product' %}" class="btn btn-primary">
-                    ➕ Add Product
+                    <i class="bi bi-plus-lg"></i> Add Product
                 </a>
                 <a href="{% url 'product_list' %}" class="btn btn-secondary">
-                    📋 Manage Products
+                    <i class="bi bi-list-ul"></i> Manage Products
                 </a>
                 <a href="{% url 'sales_report' %}" class="btn btn-success">
-                    📊 Detailed Report
+                    <i class="bi bi-bar-chart"></i> Detailed Report
                 </a>
                 <a href="{% url 'store_products' username=user.username %}" class="btn btn-primary">
-                    🏪 View Store
+                    <i class="bi bi-shop"></i> View Store
                 </a>
-                <a href="{% url 'repair_sequence' %}" class="btn btn-warning" onclick="return confirm('This will re-index all orders and update invoice numbers format to INV-XX. Proceed?')">
-                    🔧 Repair Sequence
+                <a href="{% url 'repair_sequence' %}" class="btn btn-warning" onclick="return confirm('This will re-index invoice numbers from INV-01 inside EACH financial year (Apr-Mar). Already-issued invoice numbers may change. Proceed?')">
+                    <i class="bi bi-wrench"></i> Repair Sequence
                 </a>
             </div>
         </div>
 
         <!-- Navigation -->
         <div class="navigation">
-            <a href="/">🏠 Home</a>
-            <a href="{% url 'product_list' %}">📦 Products</a>
-            <a href="{% url 'sales_report' %}">📊 Reports</a>
-            <a href="{% url 'store_products' username=user.username %}">🏪 Store</a>
+            <a href="/"><i class="bi bi-house"></i> Home</a>
+            <a href="{% url 'product_list' %}"><i class="bi bi-box-seam"></i> Products</a>
+            <a href="{% url 'sales_report' %}"><i class="bi bi-bar-chart"></i> Reports</a>
+            <a href="{% url 'store_products' username=user.username %}"><i class="bi bi-shop"></i> Store</a>
         </div>
     </div>
 
@@ -432,5 +436,7 @@
             location.reload();
         }, 300000);
     </script>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 </body>
 </html>

@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head_start.html' %}
     <title>{{ store_owner.username }} - Analytics Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     {% csrf_token %}
@@ -208,14 +209,17 @@
             display: block;
         }
     </style>
+    {% include 'partials/head_end.html' %}
 </head>
 
-<body>
+<body class="ix">
+{% include 'partials/app_header.html' %}
+<div class="ix-main">
     <div class="dashboard-container">
         <div class="header">
-            <h1>📊 {{ store_owner.username }}'s Analytics Dashboard</h1>
+            <h1>{{ store_owner.username }}'s Analytics Dashboard</h1>
             <p>Comprehensive insights into your product performance</p>
-            <p style="margin-top:12px;"><a href="/" style="color:#fff;text-decoration:underline;font-weight:600;">🏠 Home</a></p>
+            <p style="margin-top:12px;"><a href="/" style="color:#fff;text-decoration:underline;font-weight:600;"><i class="bi bi-house"></i> Home</a></p>
         </div>
 
         <div class="summary-cards" id="summaryCards">
@@ -243,8 +247,8 @@
             </select>
 
             <input type="text" id="searchBox" placeholder="Search products..." />
-            <!-- <button onclick="refreshData()">🔄 Refresh</button> -->
-            <button onclick="exportData()">📥 Export CSV</button>
+            <!-- <button onclick="refreshData()"><i class="bi bi-arrow-repeat"></i> Refresh</button> -->
+            <button onclick="exportData()"><i class="bi bi-download"></i> Export CSV</button>
         </div>
 
         <div id="itemsTab" class="tab-content active">
@@ -665,6 +669,8 @@
             document.body.removeChild(link);
         }
     </script>
+</div>
+{% include 'partials/body_end.html' with ix_load_bootstrap=True %}
 </body>
 
 </html>

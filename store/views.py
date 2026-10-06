@@ -10,6 +10,7 @@ from django.db import transaction
 from django.http import HttpResponse, Http404
 from django.template.loader import render_to_string
 from .models import Product, Cart, Order, OrderItem, SalesReport, ShopCustomer, ProductReturn
+from .models import DELETED_ORDER_NUMBER_OFFSET, format_invoice_number
 from .forms import AddProductForm, UpdateProductForm, CustomerLoginForm, CustomerRegisterForm
 from accounts.models import CustomUser
 from collections import defaultdict
@@ -522,7 +523,7 @@ def checkout_view(request, username):
                 invoice_date=invoice_date,
             )
 
-            order.invoice_number = f"INV-{order.order_number:02d}"
+            order.invoice_number = format_invoice_number(order.order_number)
             order.save()
 
             # Create order items with GST/IGST breakdown and deduct stock
@@ -921,6 +922,8 @@ def generate_invoice_pdf(request, username, order_id):
             )
 
     inv = getattr(order, 'invoice_number', None) or f'INV-{order.id}'
+    if order.financial_year:
+        inv = f'{inv}_FY{order.financial_year_label}'
     safe_inv = ''.join(c if c.isalnum() or c in '-_' else '_' for c in str(inv))
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="invoice_{safe_inv}.pdf"'
@@ -959,25 +962,17 @@ def delete_invoice(request, username, order_id):
             # 1. Move ALL currently deleted orders of this user out of the way to avoid collisions
             all_deleted_orders = Order.objects.filter(store_owner=store_owner, is_deleted=True)
             for d_order in all_deleted_orders:
-                d_order.order_number = 1000000 + d_order.id
+                d_order.order_number = DELETED_ORDER_NUMBER_OFFSET + d_order.id
                 d_order.save()
                 
             # 2. Mark the current order as deleted and move it out of the sequential range
             order.is_deleted = True
-            order.order_number = 1000000 + order.id 
+            order.order_number = DELETED_ORDER_NUMBER_OFFSET + order.id 
             order.save()
             
-            # 3. Re-normalize the sequence for all ACTIVE orders of this store owner
-            active_orders = Order.objects.filter(
-                store_owner=store_owner,
-                is_deleted=False
-            ).order_by('order_date', 'id')
-            
-            for index, active_order in enumerate(active_orders, start=1):
-                if active_order.order_number != index:
-                    active_order.order_number = index
-                    active_order.invoice_number = f"INV-{active_order.order_number:02d}"
-                    active_order.save()
+            # 3. Re-normalize the sequence for the ACTIVE orders of the SAME financial year
+            #    (numbering restarts every 1 April, so other years are untouched)
+            Order.resequence_financial_year(store_owner, order.financial_year)
             
         messages.success(request, f'Invoice {order.invoice_number or order.order_number} has been deleted and stock has been restored.')
     else:
@@ -1022,8 +1017,8 @@ def restore_invoice(request, username, order_id):
             order.order_number = None
             order.save()
             
-            # After saving, order_number is re-assigned. Update the invoice_number to match.
-            order.invoice_number = f"INV-{order.order_number:02d}"
+            # After saving, order_number is re-assigned (within the invoice's financial year).
+            order.invoice_number = format_invoice_number(order.order_number)
             order.save()
             
         messages.success(request, f'Invoice {order.invoice_number or order.order_number} has been restored.')
@@ -1072,11 +1067,16 @@ def all_invoices_view(request, username):
     
     if search_query:
         # Search by invoice number
-        orders = orders.filter(
+        search_filter = (
             Q(invoice_number__icontains=search_query) | 
             Q(order_number__icontains=search_query) |
             Q(id__icontains=search_query)
         )
+        # Financial year search, e.g. "2025-26" or "FY 2025-26"
+        fy_match = re.fullmatch(r'(?:FY\s*)?(\d{4})-(\d{2})', search_query, re.IGNORECASE)
+        if fy_match:
+            search_filter |= Q(financial_year=int(fy_match.group(1)))
+        orders = orders.filter(search_filter)
         
     orders = orders.order_by('-invoice_date', '-order_date')
     
@@ -1114,42 +1114,27 @@ def edit_customer_view(request, customer_id):
 @login_required
 def repair_order_sequence_view(request):
     """
-    ONE-TIME CORRECTION: Re-normalize all order/invoice numbers for the current store owner.
-    Removes gaps and ensures consistency.
+    ONE-TIME CORRECTION: Re-normalize order/invoice numbers for the current store owner.
+    Removes gaps and ensures consistency. Numbering restarts at 1 in every
+    financial year (1 April - 31 March), so each year is re-indexed separately.
     """
     store_owner = request.user
     
-    # 1. Move ALL currently deleted orders of this user out of the way
-    all_deleted_orders = Order.objects.filter(store_owner=store_owner, is_deleted=True)
-    for d_order in all_deleted_orders:
-        d_order.order_number = 1000000 + d_order.id
-        d_order.save()
-        
-    # 2. Re-index ACTIVE orders starting from 1
-    active_orders = Order.objects.filter(
-        store_owner=store_owner,
-        is_deleted=False
-    ).order_by('order_date', 'id')
-    
-    count = 0
-    for index, active_order in enumerate(active_orders, start=1):
-        # Update if different
-        changed = False
-        if active_order.order_number != index:
-            active_order.order_number = index
-            changed = True
-        
-        # Always update invoice number format as per new requirement: INV-01, INV-02...
-        # Using :02d as requested in example, but :04d is typically safer. 
-        # I'll use :02d to match "INV-01" exactly.
-        expected_invoice = f"INV-{active_order.order_number:02d}"
-        if active_order.invoice_number != expected_invoice:
-            active_order.invoice_number = expected_invoice
-            changed = True
+    with transaction.atomic():
+        # 1. Move ALL currently deleted orders of this user out of the way
+        all_deleted_orders = Order.objects.filter(store_owner=store_owner, is_deleted=True)
+        for d_order in all_deleted_orders:
+            d_order.order_number = DELETED_ORDER_NUMBER_OFFSET + d_order.id
+            d_order.save()
             
-        if changed:
-            active_order.save()
-            count += 1
+        # 2. Re-index ACTIVE orders starting from 1 within each financial year
+        financial_years = (
+            Order.objects.filter(store_owner=store_owner, is_deleted=False)
+            .values_list('financial_year', flat=True).distinct()
+        )
+        count = 0
+        for fy in sorted(set(financial_years)):
+            count += Order.resequence_financial_year(store_owner, fy)
             
     messages.success(request, f'Sequence repaired! {count} orders were updated.')
     return redirect('sales_dashboard')

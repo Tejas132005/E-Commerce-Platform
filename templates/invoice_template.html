@@ -550,6 +550,7 @@
             </div>
             <div class="invoice-details">
                 <p class="invoice-no">Invoice No: {{ invoice.invoice_number|default:invoice.id }}</p>
+                {% if invoice.financial_year %}<p style="font-weight: bold; color: #000;">FY: {{ invoice.financial_year_label }}</p>{% endif %}
                 <p style="font-size: calc(0.95rem + 5px); font-weight: bold; color: #000;">Date: {% if invoice.invoice_date %}{{ invoice.invoice_date|date:"d/m/Y" }}{% else %}{{ invoice.order_date|date:"d/m/Y" }}{% endif %}</p>
             </div>
         </div>
