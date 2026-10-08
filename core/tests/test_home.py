@@ -120,3 +120,54 @@ class HomeViewTests(TestCase):
     def test_stats_endpoint_requires_login(self):
         resp = self.client.get(reverse('home_stats'))
         self.assertEqual(resp.status_code, 302)
+
+
+@mock.patch('core.dashboard.timezone.localdate', return_value=TODAY)
+class PastFinancialYearTests(TestCase):
+    """Home page 'Past FY' dropdown: last 10 financial years, each showing only that year."""
+
+    def setUp(self):
+        self.owner = make_owner()
+        c = make_customer(self.owner)
+        p = make_product(self.owner, 'Urea')
+        sell(self.owner, c, p, 3, '945.00', date(2025, 4, 1))       # FY 2025-26 first day
+        sell(self.owner, c, p, 2, '630.00', date(2026, 3, 31))      # FY 2025-26 last day
+        sell(self.owner, c, p, 7, '2205.00', date(2026, 4, 1))      # FY 2026-27 (current) - must not leak in
+        sell(self.owner, c, p, 4, '1260.00', date(2017, 6, 1))      # FY 2017-18 (10th previous year)
+
+    def test_lists_last_10_previous_years(self, _):
+        from core.dashboard import past_financial_years
+        years = past_financial_years()
+        self.assertEqual(len(years), 10)
+        self.assertEqual(years[0], ('fy2025', 'FY 2025-26'))
+        self.assertEqual(years[-1], ('fy2016', 'FY 2016-17'))
+
+    def test_past_year_shows_only_that_year(self, _):
+        d = build_home_dashboard(self.owner, 'fy2025')
+        self.assertEqual((d['range']['start'], d['range']['end']), ('2025-04-01', '2026-03-31'))
+        self.assertTrue(d['range']['is_past_fy'])
+        self.assertEqual(d['range']['label'], 'FY 2025-26')
+        self.assertEqual(len(d['days']), 365)
+        self.assertEqual(d['totals']['quantity_sold'], 5)
+        self.assertEqual(d['totals']['invoices'], 2)
+        self.assertEqual(d['totals']['sold_amount'], 1575.0)
+
+    def test_tenth_year_and_out_of_range(self, _):
+        self.assertEqual(build_home_dashboard(self.owner, 'fy2017')['totals']['quantity_sold'], 4)
+        self.assertEqual(build_home_dashboard(self.owner, 'fy2015')['range']['key'], '30')   # 11 years back: rejected
+        self.assertEqual(build_home_dashboard(self.owner, 'fy2026')['range']['key'], '30')   # current FY uses 'fy'
+        self.assertEqual(build_home_dashboard(self.owner, 'fyabc')['range']['key'], '30')
+
+    def test_this_fy_unchanged(self, _):
+        d = build_home_dashboard(self.owner, 'fy')
+        self.assertFalse(d['range']['is_past_fy'])
+        self.assertEqual(d['totals']['quantity_sold'], 7)
+
+    def test_page_and_endpoint(self, _):
+        self.client.force_login(self.owner)
+        resp = self.client.get('/', {'range': 'fy2025'})
+        self.assertContains(resp, 'id="fyPicker"')
+        self.assertContains(resp, '<option value="fy2025" selected>FY 2025-26</option>', html=False)
+        self.assertContains(resp, 'showing <span class="js-range-label">FY 2025-26</span>', html=False)
+        body = self.client.get('/core/home-stats/', {'range': 'fy2025'}).json()
+        self.assertEqual(body['totals']['quantity_sold'], 5)

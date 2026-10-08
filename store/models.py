@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
 from django.db import models, transaction
-from django.db.models import F, Max
+from django.db.models import F, Max, Q
 from accounts.models import CustomUser
 from django.utils import timezone
 
@@ -256,14 +256,30 @@ class Order(models.Model):
 
     @classmethod
     def next_invoice_sequence(cls, store_owner, financial_year):
-        """Next invoice number for this store in this financial year (1 if none yet)."""
+        """
+        Next invoice number for this store in this financial year (1 if none yet).
+        Old invoices whose financial_year is still empty are counted by their date,
+        so numbering never restarts while a repair is pending.
+        """
+        start, end = financial_year_bounds(financial_year)
+        legacy_in_year = Q(financial_year__isnull=True) & (
+            Q(invoice_date__range=(start, end)) |
+            Q(invoice_date__isnull=True, order_date__date__range=(start, end))
+        )
         last = cls.objects.filter(
+            Q(financial_year=financial_year) | legacy_in_year,
             store_owner=store_owner,
-            financial_year=financial_year,
             is_deleted=False,
             order_number__lt=DELETED_ORDER_NUMBER_OFFSET,
         ).aggregate(last=Max('order_number'))['last']
         return (last or 0) + 1
+
+    @classmethod
+    def repair_financial_years(cls, store_owner=None, dry_run=False):
+        """Fill missing financial_year on old invoices and fix number clashes. See store/invoice_repair.py."""
+        from .invoice_repair import repair_financial_years
+        owner_id = getattr(store_owner, 'pk', store_owner)
+        return repair_financial_years(cls, store_owner_id=owner_id, dry_run=dry_run)
 
     @classmethod
     def resequence_financial_year(cls, store_owner, financial_year):
@@ -273,6 +289,7 @@ class Order(models.Model):
         Returns the number of invoices whose number changed.
         """
         with transaction.atomic():
+            cls.repair_financial_years(store_owner)
             active = cls.objects.filter(
                 store_owner=store_owner,
                 financial_year=financial_year,
@@ -299,6 +316,8 @@ class Order(models.Model):
             with transaction.atomic():
                 # Serialise numbering per store owner (row lock on PostgreSQL; SQLite locks the DB on write).
                 list(CustomUser.objects.select_for_update().filter(pk=self.store_owner_id).values_list('pk', flat=True))
+                # Old invoices loaded without a financial year would otherwise make numbering restart at 1.
+                Order.repair_financial_years(self.store_owner_id)
                 self.order_number = Order.next_invoice_sequence(self.store_owner_id, self.financial_year)
                 super().save(*args, **kwargs)
             return

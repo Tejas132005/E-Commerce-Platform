@@ -1,11 +1,40 @@
+# Django Environment Variables & Secret Keys
 .env
+.env.local
+.env.*
+db.sqlite3
+*.sqlite3
 
+# Python Bytecode & Cache
 __pycache__/
 *.py[cod]
-*/__pycache__/
+*$py.class
 
-# Django migrations (ignore all except __init__.py)
-*/migrations/*
-!*/migrations/__init__.py
-migrations/ 
-/migrations/ 
+# Django Migrations
+# Keep tracking migrations history, but do not ignore local temporary migration artifacts if any exist. 
+# Generally, tracking migration files is best practice for Django, but if you want to explicitly ignore specific local tracking, standard practice is to allow __init__.py.
+**/migrations/__pycache__/
+
+# Django Media & Static Root
+/media/
+/staticfiles/
+/static_collected/
+
+# Database Files (PostgreSQL & SQLite logs/dumps)
+*.sql
+*.dump
+
+# Templates & Frontend
+# Jinja templates use standard HTML extensions, but ignore template cache or IDE context if generated
+.webassets-cache/
+
+# OS & IDEs (Keeps your repo clean from system bloat)
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

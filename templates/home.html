@@ -28,6 +28,20 @@
             padding: .4rem .85rem; border-radius: 999px;
         }
         .range-switch button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+        /* Past financial year picker, sits inside the same pill right after "This FY" */
+        .range-switch .fy-picker {
+            appearance: none; -webkit-appearance: none;
+            border: 0; border-left: 1px solid var(--line); border-radius: 0 999px 999px 0;
+            background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 16 16'%3E%3Cpath fill='%235B6478' d='M1.6 4.6a.75.75 0 0 1 1.06 0L8 9.94l5.34-5.34a.75.75 0 1 1 1.06 1.06l-5.87 5.87a.75.75 0 0 1-1.06 0L1.6 5.66a.75.75 0 0 1 0-1.06z'/%3E%3C/svg%3E") no-repeat right .7rem center;
+            color: var(--slate); font-family: inherit; font-weight: 600; font-size: .85rem;
+            padding: .4rem 1.8rem .4rem .85rem; margin-left: 3px; cursor: pointer; box-shadow: none;
+        }
+        .range-switch .fy-picker:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+        .range-switch .fy-picker.is-active {
+            background-color: var(--ink); color: #fff; border-left-color: var(--ink); border-radius: 999px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 16 16'%3E%3Cpath fill='%23ffffff' d='M1.6 4.6a.75.75 0 0 1 1.06 0L8 9.94l5.34-5.34a.75.75 0 1 1 1.06 1.06l-5.87 5.87a.75.75 0 0 1-1.06 0L1.6 5.66a.75.75 0 0 1 0-1.06z'/%3E%3C/svg%3E");
+        }
+        .range-switch .fy-picker option { color: var(--ink); background: var(--surface); }
 
         /* ---------- Quick actions ---------- */
         .actions {
@@ -89,7 +103,10 @@
             .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 768px) {
-            .range-switch { width: 100%; justify-content: space-between; }
+            .range-switch { width: 100%; justify-content: space-between; flex-wrap: wrap; border-radius: 20px; }
+            .range-switch button { flex: 1 1 auto; white-space: nowrap; }
+            .range-switch .fy-picker { flex: 1 0 100%; margin: 3px 0 0; border-left: 0; border-radius: 999px; background-color: var(--page); }
+            .js-range-label { white-space: nowrap; }
             .chart-box, .chart-box.tall { height: 240px; }
         }
         @media (max-width: 520px) {
@@ -119,7 +136,7 @@
         <section class="greeting d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
             <div>
                 <h1>{{ greeting }}, {{ user.username }}</h1>
-                <p>{{ user.company_name|default:"Your store" }} &middot; showing <span class="js-range-label">{{ dashboard.range.label|lower }}</span></p>
+                <p>{{ user.company_name|default:"Your store" }} &middot; showing <span class="js-range-label">{% if dashboard.range.is_past_fy %}{{ dashboard.range.label }}{% else %}{{ dashboard.range.label|lower }}{% endif %}</span></p>
             </div>
             <div class="range-switch" role="group" aria-label="Chart period">
                 {% for key, label in range_choices %}
@@ -127,6 +144,12 @@
                     {% if key == 'fy' %}This FY{% else %}{{ key }} days{% endif %}
                 </button>
                 {% endfor %}
+                <select class="fy-picker{% if dashboard.range.is_past_fy %} is-active{% endif %}" id="fyPicker" aria-label="Show a previous financial year">
+                    <option value="">Past FY</option>
+                    {% for key, label in past_fy_choices %}
+                    <option value="{{ key }}"{% if key == dashboard.range.key %} selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
             </div>
         </section>
 
@@ -252,10 +275,14 @@
             if (a >= 1e3) return '₹' + f(v / 1e3) + 'k';
             return '₹' + v;
         };
-        const dayLabel = iso => {
+        // Ranges that cross 1 January (financial years) show the year too, e.g. "05 Jan 26"
+        const dayLabel = (iso, withYear) => {
             const d = new Date(iso + 'T00:00:00');
-            return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+            const opts = { day: '2-digit', month: 'short' };
+            if (withYear) opts.year = '2-digit';
+            return d.toLocaleDateString('en-IN', opts);
         };
+        const fyPicker = document.getElementById('fyPicker');
         const grid = { color: C.line, drawTicks: false };
         const baseX = { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } };
 
@@ -301,7 +328,8 @@
         function toggleEmpty(id, empty) { document.getElementById(id).classList.toggle('show', empty); }
 
         function render(d) {
-            const labels = d.days.map(dayLabel);
+            const crossesYear = d.range.start.slice(0, 4) !== d.range.end.slice(0, 4);
+            const labels = d.days.map(iso => dayLabel(iso, crossesYear));
             qtyChart.data.labels = labels;
             qtyChart.data.datasets[0].data = d.quantity_sold;
             invoiceChart.data.labels = labels;
@@ -319,10 +347,12 @@
             setText('.js-total-invoices', d.totals.invoices);
             setText('.js-total-amount', inr.format(d.totals.sold_amount));
             setText('.js-customer-count', d.customer_count);
-            setText('.js-range-label', d.range.label.toLowerCase());
+            setText('.js-range-label', d.range.is_past_fy ? d.range.label : d.range.label.toLowerCase());
             setText('.js-updated', d.generated_at);
             document.querySelectorAll('.range-switch button').forEach(b =>
                 b.setAttribute('aria-pressed', b.dataset.range === d.range.key ? 'true' : 'false'));
+            fyPicker.value = d.range.is_past_fy ? d.range.key : '';
+            fyPicker.classList.toggle('is-active', !!d.range.is_past_fy);
         }
 
         async function refresh(force) {
@@ -341,13 +371,16 @@
             } catch (e) { /* offline: keep showing the last data */ }
         }
 
-        document.querySelectorAll('.range-switch button').forEach(btn => btn.addEventListener('click', () => {
-            rangeKey = btn.dataset.range;
+        function selectRange(key) {
+            rangeKey = key;
             const url = new URL(window.location);
             url.searchParams.set('range', rangeKey);
             history.replaceState(null, '', url);
             refresh(true);
-        }));
+        }
+        document.querySelectorAll('.range-switch button').forEach(btn =>
+            btn.addEventListener('click', () => selectRange(btn.dataset.range)));
+        fyPicker.addEventListener('change', () => { if (fyPicker.value) selectRange(fyPicker.value); });
 
         render(data);
         setInterval(() => { if (!document.hidden) refresh(false); }, POLL_MS);

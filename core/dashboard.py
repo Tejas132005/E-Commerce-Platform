@@ -10,7 +10,9 @@ from django.db.models import Count, DecimalField, Max, Sum, Value
 from django.db.models.functions import Coalesce, TruncDate
 from django.utils import timezone
 
-from store.models import Order, SalesReport, ShopCustomer, get_financial_year, financial_year_bounds
+from store.models import (
+    Order, SalesReport, ShopCustomer, financial_year_bounds, format_financial_year, get_financial_year,
+)
 
 RANGE_CHOICES = {
     '7': ('Last 7 days', 7),
@@ -19,21 +21,36 @@ RANGE_CHOICES = {
     'fy': ('This financial year', None),
 }
 DEFAULT_RANGE = '30'
+PAST_FY_COUNT = 10          # how many previous financial years the home page offers
 TOP_ITEMS = 10
 ZERO = Decimal('0.00')
 
 
+def past_financial_years(today=None, count=PAST_FY_COUNT):
+    """[('fy2025', 'FY 2025-26'), ...] for the `count` financial years before the current one, newest first."""
+    current = get_financial_year(today or timezone.localdate())
+    return [(f'fy{y}', f'FY {format_financial_year(y)}') for y in range(current - 1, current - 1 - count, -1)]
+
+
 def resolve_range(key, today=None):
-    """Return (key, label, start_date, end_date) for a range key; unknown keys fall back to 30 days."""
+    """
+    Return (key, label, start_date, end_date) for a range key.
+    Keys: '7', '30', '90', 'fy' (current FY to date) or 'fy<start year>' for one of the
+    previous PAST_FY_COUNT financial years (full 1 April - 31 March). Unknown keys fall back to 30 days.
+    """
     today = today or timezone.localdate()
-    if key not in RANGE_CHOICES:
-        key = DEFAULT_RANGE
-    label, days = RANGE_CHOICES[key]
-    if days is None:
-        start = financial_year_bounds(get_financial_year(today))[0]
-    else:
-        start = today - timedelta(days=days - 1)
-    return key, label, start, today
+    if key in RANGE_CHOICES:
+        label, days = RANGE_CHOICES[key]
+        if days is None:
+            start = financial_year_bounds(get_financial_year(today))[0]
+        else:
+            start = today - timedelta(days=days - 1)
+        return key, label, start, today
+    past = dict(past_financial_years(today))
+    if key in past:
+        start, end = financial_year_bounds(int(key[2:]))
+        return key, past[key], start, end
+    return resolve_range(DEFAULT_RANGE, today)
 
 
 def _day_labels(start, end):
@@ -82,7 +99,8 @@ def build_home_dashboard(user, range_key=DEFAULT_RANGE, today=None):
     version = f"{owner_orders['n']}-{owner_orders['last']}-{owner_sales['n']}-{owner_sales['last']}-{deleted}-{customer_count}-{start}-{end}"
 
     return {
-        'range': {'key': key, 'label': label, 'start': start.isoformat(), 'end': end.isoformat()},
+        'range': {'key': key, 'label': label, 'start': start.isoformat(), 'end': end.isoformat(),
+                  'is_past_fy': key not in RANGE_CHOICES},
         'days': [d.isoformat() for d in days],
         'quantity_sold': quantity_series,
         'invoices': invoice_series,

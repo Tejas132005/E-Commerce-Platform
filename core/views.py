@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
-from .dashboard import DEFAULT_RANGE, RANGE_CHOICES, build_home_dashboard
+from .dashboard import DEFAULT_RANGE, RANGE_CHOICES, build_home_dashboard, past_financial_years
 
 
 def home(request):
@@ -20,6 +20,7 @@ def home(request):
             'dashboard': dashboard,
             'customer_count': dashboard['customer_count'],
             'range_choices': [(k, v[0]) for k, v in RANGE_CHOICES.items()],
+            'past_fy_choices': past_financial_years(),
             'greeting': _greeting(),
         })
     return render(request, 'home.html', context)
