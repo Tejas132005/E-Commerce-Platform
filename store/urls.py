@@ -1,7 +1,7 @@
 # store/urls.py 
 
 from django.urls import path
-from . import views, manage_products, analytics
+from . import views, manage_products, analytics, fy_views
 
 urlpatterns = [ 
     # Store owner dashboard and reports (for logged-in users)
@@ -33,6 +33,7 @@ urlpatterns = [
     # Product management (for store owners)
     path('manage/add-product/', manage_products.add_new_product, name='add_product'),
     path('manage/update-product/<int:product_id>/', manage_products.update_existing_product, name='update_product_id'),
+    path('fy-analytics/<str:kind>/', fy_views.fy_analytics_view, name='fy_analytics'),
     path('manage/update-product/', manage_products.update_existing_product, name='update_product'),
     path('manage/delete-product/<int:product_id>/', manage_products.delete_product, name='delete_product_id'),
     path('manage/delete-product/', manage_products.delete_product, name='delete_product'),

@@ -10,8 +10,10 @@ from django.db.models import Count, DecimalField, Max, Sum, Value
 from django.db.models.functions import Coalesce, TruncDate
 from django.utils import timezone
 
+from store.fy_reports import fy_summary
 from store.models import (
-    Order, SalesReport, ShopCustomer, financial_year_bounds, format_financial_year, get_financial_year,
+    Order, Product, ProductReturn, SalesReport, ShopCustomer, financial_year_bounds, format_financial_year,
+    get_financial_year,
 )
 
 RANGE_CHOICES = {
@@ -96,7 +98,19 @@ def build_home_dashboard(user, range_key=DEFAULT_RANGE, today=None):
     owner_orders = Order.objects.filter(store_owner=user).aggregate(n=Count('id'), last=Max('id'))
     owner_sales = SalesReport.objects.filter(store_owner=user).aggregate(n=Count('id'), last=Max('id'))
     deleted = Order.objects.filter(store_owner=user, is_deleted=True).count()
-    version = f"{owner_orders['n']}-{owner_orders['last']}-{owner_sales['n']}-{owner_sales['last']}-{deleted}-{customer_count}-{start}-{end}"
+    # Purchases and supplier returns too, so the purchase widgets follow new or edited purchase records.
+    owner_lots = Product.objects.filter(store_owner=user).aggregate(
+        n=Count('id'), last=Max('id'), qty=Sum('initial_stock'), cost=Sum('taxable_unit_amount'), unit=Sum('unit_amount'),
+        days=Max('purchase_date'))
+    owner_returns = ProductReturn.objects.filter(product__store_owner=user).aggregate(n=Count('id'), last=Max('id'))
+    version = (f"{owner_orders['n']}-{owner_orders['last']}-{owner_sales['n']}-{owner_sales['last']}-{deleted}-{customer_count}-{start}-{end}"
+               f"|{owner_lots['n']}-{owner_lots['last']}-{owner_lots['qty']}-{owner_lots['cost']}-{owner_lots['unit']}-{owner_lots['days']}"
+               f"|{owner_returns['n']}-{owner_returns['last']}")
+
+    # Financial-year widgets (purchase vs sales boxes, month-wise purchases):
+    # a selected financial year ('fy' or a past year), otherwise the current one.
+    fy = int(key[2:]) if key.startswith('fy') and key != 'fy' else get_financial_year(today or timezone.localdate())
+    fy_data = fy_summary(user, fy, today)
 
     return {
         'range': {'key': key, 'label': label, 'start': start.isoformat(), 'end': end.isoformat(),
@@ -115,6 +129,21 @@ def build_home_dashboard(user, range_key=DEFAULT_RANGE, today=None):
             'sold_amount': float(total_amount),
         },
         'customer_count': customer_count,
+        'fy_summary': {
+            'fy': fy,
+            'label': fy_data['fy_label'],
+            'purchase': {'text': fy_data['purchase']['text'], 'taxable_text': fy_data['purchase']['taxable_text'],
+                         'lots': fy_data['purchase']['lots']},
+            'sales': {'text': fy_data['sales']['text'], 'taxable_text': fy_data['sales']['taxable_text'],
+                      'invoices': fy_data['sales']['invoices']},
+            'difference': {'text': fy_data['difference']['text'], 'tone': fy_data['difference']['tone']},
+            'opening_stock': {'text': fy_data['opening_stock']['text'], 'quantity': fy_data['opening_stock']['quantity']},
+            'profit_ex': {'text': fy_data['profit_ex']['text'], 'tone': fy_data['profit_ex']['tone']},
+            'profit_in': {'text': fy_data['profit_in']['text'], 'tone': fy_data['profit_in']['tone']},
+            'months': [m['month'] for m in fy_data['monthly_purchases']],
+            'monthly_purchases': [float(m['gross']) for m in fy_data['monthly_purchases']],
+            'monthly_total_text': fy_data['purchase']['text'],
+        },
         'version': version,
         'generated_at': timezone.localtime().strftime('%d %b %Y, %I:%M %p'),
     }

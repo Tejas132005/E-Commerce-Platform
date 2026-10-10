@@ -99,8 +99,30 @@
         .btn-ink:hover { background: #1b2d52; color: #fff; }
 
 
+        /* ---------- Purchase vs sales (financial year) ---------- */
+        .fy-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .5rem 1rem; margin-bottom: .75rem; }
+        .fy-head h2 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+        .fy-head a { color: var(--brand); font-weight: 600; text-decoration: none; font-size: .9rem; }
+        .fy-boxes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-bottom: .75rem; }
+        .fy-box {
+            display: block; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md);
+            padding: 1rem 1.1rem; text-decoration: none; color: var(--ink); transition: border-color .15s ease;
+        }
+        .fy-box:hover { border-color: var(--line-strong); color: var(--ink); }
+        .fy-box .lbl { display: flex; justify-content: space-between; color: var(--slate); font-weight: 600; font-size: .86rem; }
+        .fy-box .val { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; margin: .2rem 0 .1rem; line-height: 1.15; }
+        .fy-box .sub { color: var(--slate); font-size: .8rem; }
+        .fy-box.purchase .val { color: var(--brand); }
+        .fy-box.sales .val { color: var(--amount); }
+        .tone-purchase-higher { color: var(--danger) !important; }
+        .tone-sales-higher { color: var(--amount) !important; }
+        .tone-neutral { color: var(--slate) !important; }
+        .tone-gain { color: var(--amount) !important; }
+        .tone-loss { color: var(--danger) !important; }
+
         @media (max-width: 991px) {
             .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .fy-boxes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 768px) {
             .range-switch { width: 100%; justify-content: space-between; flex-wrap: wrap; border-radius: 20px; }
@@ -111,6 +133,7 @@
         }
         @media (max-width: 520px) {
             .actions { grid-template-columns: 1fr; }
+            .fy-boxes { grid-template-columns: 1fr; }
         }
         @media (prefers-reduced-motion: reduce) {
             * { transition: none !important; }
@@ -164,6 +187,61 @@
             <a href="{% url 'ad_section' %}" class="action"><span class="ico"><i class="bi bi-layout-text-sidebar-reverse"></i></span> AD Section</a>
             <a href="{% url 'bank_payment_management' %}" class="action"><span class="ico"><i class="bi bi-bank"></i></span> Bank Payment Management</a>
         </section>
+
+        <!-- Purchase vs sales for the financial year -->
+        {% with s=dashboard.fy_summary %}
+        <section class="mb-4" aria-label="Purchase versus sales">
+            <div class="fy-head">
+                <h2>Purchase vs sales · <span class="js-fy-label">{{ s.label }}</span></h2>
+                <a href="{% url 'fy_analytics' 'compare' %}?fy={{ s.fy }}" class="js-fy-link" data-base="{% url 'fy_analytics' 'compare' %}">Full analytics <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="fy-boxes">
+                <a class="fy-box purchase js-fy-link" href="{% url 'fy_analytics' 'purchases' %}?fy={{ s.fy }}" data-base="{% url 'fy_analytics' 'purchases' %}">
+                    <span class="lbl">Total purchases <i class="bi bi-chevron-right"></i></span>
+                    <div class="val js-fy-purchase">{{ s.purchase.text }}</div>
+                    <div class="sub">incl. GST · <span class="js-fy-purchase-lots">{{ s.purchase.lots }}</span> purchase lots</div>
+                </a>
+                <a class="fy-box sales js-fy-link" href="{% url 'fy_analytics' 'sales' %}?fy={{ s.fy }}" data-base="{% url 'fy_analytics' 'sales' %}">
+                    <span class="lbl">Total sales <i class="bi bi-chevron-right"></i></span>
+                    <div class="val js-fy-sales">{{ s.sales.text }}</div>
+                    <div class="sub">incl. GST · <span class="js-fy-sales-invoices">{{ s.sales.invoices }}</span> invoices</div>
+                </a>
+                <a class="fy-box js-fy-link" href="{% url 'fy_analytics' 'compare' %}?fy={{ s.fy }}" data-base="{% url 'fy_analytics' 'compare' %}">
+                    <span class="lbl">Sales − Purchase <i class="bi bi-chevron-right"></i></span>
+                    <div class="val js-fy-diff tone-{{ s.difference.tone }}">{{ s.difference.text }}</div>
+                    <div class="sub">Purchase vs sales difference · not profit</div>
+                </a>
+                <a class="fy-box js-fy-link" href="{% url 'fy_analytics' 'profit' %}?fy={{ s.fy }}" data-base="{% url 'fy_analytics' 'profit' %}">
+                    <span class="lbl">Total profit (excl. GST) <i class="bi bi-chevron-right"></i></span>
+                    <div class="val js-fy-profit-ex tone-{{ s.profit_ex.tone }}">{{ s.profit_ex.text }}</div>
+                    <div class="sub">Sales excl. GST − purchase cost of items sold</div>
+                </a>
+                <a class="fy-box js-fy-link" href="{% url 'fy_analytics' 'profit' %}?fy={{ s.fy }}" data-base="{% url 'fy_analytics' 'profit' %}">
+                    <span class="lbl">Total profit (incl. GST) <i class="bi bi-chevron-right"></i></span>
+                    <div class="val js-fy-profit-in tone-{{ s.profit_in.tone }}">{{ s.profit_in.text }}</div>
+                    <div class="sub">Sales incl. GST − purchase cost · includes output GST</div>
+                </a>
+                <a class="fy-box js-fy-link" href="{% url 'fy_analytics' 'compare' %}?fy={{ s.fy }}#inventory" data-base="{% url 'fy_analytics' 'compare' %}" data-hash="#inventory">
+                    <span class="lbl">Opening stock <i class="bi bi-chevron-right"></i></span>
+                    <div class="val js-fy-opening">{{ s.opening_stock.text }}</div>
+                    <div class="sub">At cost, carried in on 1 April · not a purchase</div>
+                </a>
+            </div>
+            <div class="panel">
+                <div class="panel-head">
+                    <div>
+                        <h2>Purchases per month</h2>
+                        <span class="sub">April to March · <span class="js-fy-label">{{ s.label }}</span> · incl. GST · opening stock not included</span>
+                    </div>
+                    <div class="panel-total" style="color: var(--brand)"><span class="js-fy-purchase">{{ s.purchase.text }}</span></div>
+                </div>
+                <div class="chart-box">
+                    <canvas id="purchaseMonthChart" aria-label="Purchases per month"></canvas>
+                    <div class="chart-empty" id="purchaseMonthEmpty">No purchases recorded in this financial year.</div>
+                </div>
+            </div>
+        </section>
+        {% endwith %}
 
         <!-- Charts -->
         <section class="row g-3" aria-label="Sales charts">
@@ -324,8 +402,41 @@
             },
         });
 
+        const purchaseMonthChart = new Chart(document.getElementById('purchaseMonthChart'), {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Purchases', data: [], backgroundColor: C.qty, borderRadius: 6, maxBarThickness: 36 }] },
+            options: {
+                scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid, ticks: { callback: inrShort }, title: { display: true, text: 'Amount (₹)' } } },
+                plugins: { tooltip: { callbacks: { label: c => ` ₹${inr.format(c.parsed.y)}` } } },
+            },
+        });
+
         function setText(sel, value) { document.querySelectorAll(sel).forEach(el => el.textContent = value); }
         function toggleEmpty(id, empty) { document.getElementById(id).classList.toggle('show', empty); }
+
+        function renderFy(s) {
+            purchaseMonthChart.data.labels = s.months;
+            purchaseMonthChart.data.datasets[0].data = s.monthly_purchases;
+            purchaseMonthChart.update();
+            toggleEmpty('purchaseMonthEmpty', s.monthly_purchases.every(v => v === 0));
+            setText('.js-fy-label', s.label);
+            setText('.js-fy-purchase', s.purchase.text);
+            setText('.js-fy-purchase-lots', s.purchase.lots);
+            setText('.js-fy-sales', s.sales.text);
+            setText('.js-fy-sales-invoices', s.sales.invoices);
+            setText('.js-fy-diff', s.difference.text);
+            setText('.js-fy-opening', s.opening_stock.text);
+            const setTone = (sel, tone) => document.querySelectorAll(sel).forEach(el => {
+                el.classList.remove('tone-purchase-higher', 'tone-sales-higher', 'tone-neutral', 'tone-gain', 'tone-loss');
+                el.classList.add('tone-' + tone);
+            });
+            setTone('.js-fy-diff', s.difference.tone);
+            setText('.js-fy-profit-ex', s.profit_ex.text);
+            setText('.js-fy-profit-in', s.profit_in.text);
+            setTone('.js-fy-profit-ex', s.profit_ex.tone);
+            setTone('.js-fy-profit-in', s.profit_in.tone);
+            document.querySelectorAll('.js-fy-link').forEach(a => { a.href = `${a.dataset.base}?fy=${s.fy}${a.dataset.hash || ''}`; });
+        }
 
         function render(d) {
             const crossesYear = d.range.start.slice(0, 4) !== d.range.end.slice(0, 4);
@@ -353,6 +464,7 @@
                 b.setAttribute('aria-pressed', b.dataset.range === d.range.key ? 'true' : 'false'));
             fyPicker.value = d.range.is_past_fy ? d.range.key : '';
             fyPicker.classList.toggle('is-active', !!d.range.is_past_fy);
+            renderFy(d.fy_summary);
         }
 
         async function refresh(force) {

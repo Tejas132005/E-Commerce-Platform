@@ -25,6 +25,7 @@ from datetime import datetime, timedelta, time, date
 import calendar
 
 from .excel_export import build_workbook_response
+from .fy_reports import fy_choices, fy_label, resolve_fy
 
 # -------------------- HELPER FUNCTIONS --------------------
 
@@ -714,10 +715,18 @@ def sales_dashboard_view(request):
     """Sales dashboard for the logged-in store owner"""
     user = request.user
     sales = SalesReport.objects.filter(store_owner=user, order__is_deleted=False)
+    orders = Order.objects.filter(store_owner=user, is_deleted=False)
+
+    # Financial-year filter (?fy=2026 = FY 2026-27, default current FY, ?fy=all = all time)
+    raw_fy = request.GET.get('fy')
+    selected_fy = None if raw_fy == 'all' else resolve_fy(raw_fy)
+    if selected_fy is not None:
+        sales = sales.filter(order__financial_year=selected_fy)
+        orders = orders.filter(financial_year=selected_fy)
     
     total_sales = sales.aggregate(total=Sum('total_price'))['total'] or Decimal('0.00')
     total_revenue = total_sales
-    total_orders = Order.objects.filter(store_owner=user, is_deleted=False).count()
+    total_orders = orders.count()
     
     # Category-wise sales
     category_sales = sales.values('category').annotate(
@@ -730,6 +739,9 @@ def sales_dashboard_view(request):
         'total_revenue': total_revenue,
         'total_orders': total_orders,
         'category_sales': category_sales,
+        'fy_choices': fy_choices(),
+        'selected_fy': selected_fy,
+        'period_label': fy_label(selected_fy) if selected_fy is not None else 'All time',
     })
 
 # -------------------- INVOICE GENERATION WITH GST --------------------
@@ -1149,6 +1161,7 @@ def analytics_dashboard_view(request):
         'user': request.user,
         'username': request.user.username,
         'page_title': 'Item Analytics Dashboard',
+        'fy_choices': fy_choices(),
     })
 
     
@@ -1174,7 +1187,8 @@ def user_analytics_dashboard_view(request, username):
             'user': request.user,
             'store_owner': store_owner,
             'username': username,
-            'page_title': f'{username} - Item Analytics Dashboard'
+            'page_title': f'{username} - Item Analytics Dashboard',
+            'fy_choices': fy_choices(),
         })
         
     except Exception as e:

@@ -10,6 +10,16 @@
     {% csrf_token %}
     <script>
         const USERNAME = '{{ username }}';
+        // Financial year for sales figures (?fy=2026 = FY 2026-27, 'all' = all time)
+        function selectedFy() { const el = document.getElementById('fyFilter'); return el ? el.value : 'all'; }
+        document.addEventListener('DOMContentLoaded', function () {
+            const el = document.getElementById('fyFilter');
+            if (!el) return;
+            el.addEventListener('change', function () {
+                loadItemsAnalytics();
+                if (document.getElementById('categoriesTab') && document.getElementById('categoriesTab').classList.contains('active')) loadCategoriesAnalytics();
+            });
+        });
     </script>
     <style>
         body {
@@ -232,6 +242,11 @@
         </div>
 
         <div class="controls">
+            <select id="fyFilter" aria-label="Financial year" title="Sales figures for this financial year">
+                {% for y, label in fy_choices %}<option value="{{ y }}"{% if forloop.first %} selected{% endif %}>{{ label }}</option>{% endfor %}
+                <option value="all">All time</option>
+            </select>
+
             <select id="sortBy">
                 <option value="total_revenue_with_gst">Sort by Revenue</option>
                 <option value="sold_quantity">Sort by Quantity Sold</option>
@@ -298,7 +313,7 @@
                                 <th>Items Sold</th>
                                 <th>Current Stock</th>
                                 <th>Revenue %</th>
-                                <th>Avg. Revenue/Product</th>
+                                <th>Avg. Revenue/Items</th>
                             </tr>
                         </thead>
                         <tbody id="categoriesTableBody">
@@ -363,7 +378,7 @@
                 document.getElementById('errorItems').style.display = 'none';
                 document.getElementById('itemsAnalytics').style.display = 'none';
 
-                const apiUrl = `/store/${USERNAME}/analytics/items/`;
+                const apiUrl = `/store/${USERNAME}/analytics/items/?fy=${encodeURIComponent(selectedFy())}`;
                 console.log('Fetching from:', apiUrl);
 
                 const response = await fetch(apiUrl, {
@@ -407,7 +422,7 @@
                 document.getElementById('errorCategories').style.display = 'none';
                 document.getElementById('categoriesAnalytics').style.display = 'none';
 
-                const apiUrl = `/store/${USERNAME}/analytics/categories/`;
+                const apiUrl = `/store/${USERNAME}/analytics/categories/?fy=${encodeURIComponent(selectedFy())}`;
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
@@ -461,8 +476,8 @@
                     <p class="value">${summary.total_items_in_stock}</p>
                 </div>
                 <div class="summary-card">
-                    <h3>Avg Revenue/Product</h3>
-                    <p class="value">₹${summary.average_revenue_per_product.toLocaleString()}</p>
+                    <h3>Avg Revenue/Items</h3>
+                    <p class="value" title="Sales revenue ÷ quantity sold">₹${summary.average_revenue_per_item.toLocaleString()}</p>
                 </div>
             `;
             document.getElementById('summaryCards').innerHTML = summaryCardsHtml;
@@ -513,7 +528,7 @@
                     <td>${category.total_sold_quantity}</td>
                     <td>${category.total_current_stock}</td>
                     <td>${category.revenue_percentage}%</td>
-                    <td>₹${category.average_revenue_per_product.toLocaleString()}</td>
+                    <td>₹${category.average_revenue_per_item.toLocaleString()}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -563,7 +578,7 @@
 
         async function viewItemDetail(productId) {
             try {
-                const apiUrl = `/store/${USERNAME}/analytics/item/${productId}/`;
+                const apiUrl = `/store/${USERNAME}/analytics/item/${productId}/?fy=${encodeURIComponent(selectedFy())}`;
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {

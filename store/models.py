@@ -119,7 +119,8 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        pass
+        # Financial-year purchase reports filter lots by owner + purchase date.
+        indexes = [models.Index(fields=['store_owner', 'purchase_date'], name='store_prod_owner_pdate_idx')]
 
     UNIT_LABEL_SUFFIX = {
         'kg': 'kg',
@@ -379,6 +380,9 @@ class ProductReturn(models.Model):
     
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['return_date'], name='store_return_date_idx')]
 
     def __str__(self):
         return f"Return {self.returned_invoice_number} - {self.product.name}"

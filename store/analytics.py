@@ -10,6 +10,7 @@ import calendar
 import csv
 from decimal import Decimal
 from .models import Product, SalesReport, OrderItem
+from .fy_reports import fy_label, resolve_fy
 from accounts.models import CustomUser
 
 
@@ -51,6 +52,23 @@ def _product_purchase_export_fields(product):
 
 # ============== USER-SPECIFIC ANALYTICS (NEW - Username Parameter) ==============
 
+def _fy_filter(request):
+    """
+    Financial-year filter for sales queries: ?fy=2026 (FY 2026-27), default = current FY, ?fy=all = all time.
+    Invoices belong to the financial year stored on the order (by invoice date).
+    """
+    raw = request.GET.get('fy')
+    if raw == 'all':
+        return None, {}
+    fy = resolve_fy(raw)
+    return fy, {'order__financial_year': fy}
+
+
+def _avg_revenue_per_item(revenue, quantity):
+    """Average revenue per item sold = sales revenue / quantity sold (0 when nothing was sold)."""
+    return round(revenue / quantity, 2) if quantity else 0
+
+
 def get_store_owner_by_username(username):
     """Get store owner by username"""
     return get_object_or_404(CustomUser, username=username)
@@ -71,6 +89,8 @@ def user_item_analytics_api(request, username):
                 'status': 'error',
                 'message': 'Access denied. You can only view your own analytics.'
             }, status=403)
+
+        fy, fy_filter = _fy_filter(request)
         
         print(f"User-specific analytics request for: {store_owner.username}")
         
@@ -86,7 +106,7 @@ def user_item_analytics_api(request, username):
                     'total_gst_collected': 0,
                     'total_items_sold': 0,
                     'total_items_in_stock': 0,
-                    'average_revenue_per_product': 0
+                    'average_revenue_per_item': 0
                 },
                 'items': []
             })
@@ -98,7 +118,7 @@ def user_item_analytics_api(request, username):
             sales_data = SalesReport.objects.filter(
                 store_owner=store_owner,
                 product=product,
-                order__is_deleted=False
+                order__is_deleted=False, **fy_filter
             ).aggregate(
                 total_sold=Sum('quantity'),
                 total_revenue=Sum('total_price'),
@@ -112,7 +132,7 @@ def user_item_analytics_api(request, username):
             # Get detailed order items for THIS store owner only
             order_items = OrderItem.objects.filter(
                 order__store_owner=store_owner,
-                order__is_deleted=False,
+                order__is_deleted=False, **fy_filter,
                 product=product
             )
             
@@ -157,7 +177,7 @@ def user_item_analytics_api(request, username):
             last_sale = SalesReport.objects.filter(
                 store_owner=store_owner,
                 product=product,
-                order__is_deleted=False
+                order__is_deleted=False, **fy_filter
             ).order_by('-sale_date').first()
             
             last_sale_date = None
@@ -217,8 +237,9 @@ def user_item_analytics_api(request, username):
                 'total_gst_collected': round(total_gst_all, 2),
                 'total_items_sold': total_items_sold,
                 'total_items_in_stock': total_items_in_stock,
-                'average_revenue_per_product': round(total_revenue_all / total_products, 2) if total_products > 0 else 0
+                'average_revenue_per_item': _avg_revenue_per_item(total_revenue_all, total_items_sold)
             },
+            'financial_year': fy_label(fy) if fy else 'All time',
             'items': analytics_data
         }
         
@@ -247,6 +268,8 @@ def user_single_item_analytics_api(request, username, product_id):
                 'status': 'error',
                 'message': 'Access denied.'
             }, status=403)
+
+        fy, fy_filter = _fy_filter(request)
         
         product = get_object_or_404(
             Product, id=product_id, store_owner=store_owner,
@@ -256,7 +279,7 @@ def user_single_item_analytics_api(request, username, product_id):
         sales_data = SalesReport.objects.filter(
             store_owner=store_owner,
             product=product,
-            order__is_deleted=False
+            order__is_deleted=False, **fy_filter
         ).aggregate(
             total_sold=Sum('quantity'),
             total_orders=Count('order', distinct=True)
@@ -268,7 +291,7 @@ def user_single_item_analytics_api(request, username, product_id):
         # Get order items for GST calculations
         order_items = OrderItem.objects.filter(
             order__store_owner=store_owner,
-            order__is_deleted=False,
+            order__is_deleted=False, **fy_filter,
             product=product
         )
         
@@ -307,7 +330,7 @@ def user_single_item_analytics_api(request, username, product_id):
         recent_sales = SalesReport.objects.filter(
             store_owner=store_owner,
             product=product,
-            order__is_deleted=False
+            order__is_deleted=False, **fy_filter
         ).order_by('-sale_date')[:10]
         
         recent_sales_data = []
@@ -386,6 +409,8 @@ def user_category_analytics_api(request, username):
                 'status': 'error',
                 'message': 'Access denied.'
             }, status=403)
+
+        fy, fy_filter = _fy_filter(request)
         
         products = Product.objects.filter(store_owner=store_owner)
         
@@ -421,7 +446,7 @@ def user_category_analytics_api(request, username):
             sales_data = SalesReport.objects.filter(
                 store_owner=store_owner,
                 product=product,
-                order__is_deleted=False
+                order__is_deleted=False, **fy_filter
             ).aggregate(
                 total_sold=Sum('quantity')
             )
@@ -431,7 +456,7 @@ def user_category_analytics_api(request, username):
             # Calculate GST for this product for THIS store owner only
             order_items = OrderItem.objects.filter(
                 order__store_owner=store_owner,
-                order__is_deleted=False,
+                order__is_deleted=False, **fy_filter,
                 product=product
             )
             
@@ -476,7 +501,7 @@ def user_category_analytics_api(request, username):
                 'total_sold_quantity': category_info['total_sold_quantity'],
                 'total_current_stock': category_info['total_current_stock'],
                 'revenue_percentage': revenue_percentage,
-                'average_revenue_per_product': round(category_revenue / category_info['total_products'], 2) if category_info['total_products'] > 0 else 0
+                'average_revenue_per_item': _avg_revenue_per_item(category_revenue, category_info['total_sold_quantity'])
             })
         
         categories_list.sort(key=lambda x: x['total_revenue_with_gst'], reverse=True)
@@ -489,6 +514,7 @@ def user_category_analytics_api(request, username):
                 'total_revenue_all_categories': round(total_revenue_all_categories, 2),
                 'total_products_all_categories': sum(cat['total_products'] for cat in categories_list)
             },
+            'financial_year': fy_label(fy) if fy else 'All time',
             'categories': categories_list
         }
         
@@ -523,7 +549,7 @@ def item_analytics_api(request):
                     'total_gst_collected': 0,
                     'total_items_sold': 0,
                     'total_items_in_stock': 0,
-                    'average_revenue_per_product': 0
+                    'average_revenue_per_item': 0
                 },
                 'items': []
             })
@@ -610,7 +636,7 @@ def item_analytics_api(request):
                 'total_gst_collected': round(total_gst_all, 2),
                 'total_items_sold': total_items_sold,
                 'total_items_in_stock': total_items_in_stock,
-                'average_revenue_per_product': round(total_revenue_all / total_products, 2) if total_products > 0 else 0
+                'average_revenue_per_item': _avg_revenue_per_item(total_revenue_all, total_items_sold)
             },
             'items': analytics_data
         }

@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% load fy_format %}
+
+{% block title %}{% if kind == 'purchases' %}Purchase analytics{% elif kind == 'sales' %}Sales analytics{% elif kind == 'profit' %}Profit analytics{% else %}Purchase vs sales{% endif %} · {{ fy_label }} - InvoxiaGST{% endblock %}
+
+{% block extra_head %}
+<style>
+    .fy-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1rem; margin-bottom: 1.25rem; }
+    .fy-tabs { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+    .fy-tabs a { color: var(--slate); font-weight: 600; font-size: .88rem; padding: .4rem .9rem; border-radius: 999px; text-decoration: none; }
+    .fy-tabs a.active { background: var(--ink); color: #fff; }
+    .fy-controls { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+    .fy-controls select { border-radius: 999px; padding: .4rem 2rem .4rem .9rem; font-weight: 600; font-size: .88rem; }
+    .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+    .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: .95rem 1rem; }
+    .stat .lbl { color: var(--slate); font-size: .84rem; font-weight: 600; }
+    .stat .val { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; margin-top: .15rem; }
+    .stat .sub { color: var(--slate); font-size: .8rem; margin-top: .1rem; }
+    .tone-purchase-higher { color: var(--danger) !important; }
+    .tone-sales-higher { color: var(--amount) !important; }
+    .tone-neutral { color: var(--slate) !important; }
+    .tone-gain { color: var(--amount) !important; }
+    .tone-loss { color: var(--danger) !important; }
+    .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+    .seg button { border: 0; background: none; color: var(--slate); font-weight: 600; font-size: .84rem; padding: .35rem .85rem; border-radius: 999px; }
+    .seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+    .profit-scroll { max-height: 560px; overflow-y: auto; }
+    tr.loss-row td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+    .panel h2 { font-size: 1rem; font-weight: 700; margin: 0 0 .2rem; }
+    .panel .hint { color: var(--slate); font-size: .85rem; margin-bottom: .75rem; }
+    .chart-box { position: relative; height: 300px; }
+    .chart-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--slate); }
+    .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .75rem; }
+    .chips button { border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); border-radius: 999px; font-weight: 600; font-size: .82rem; padding: .25rem .75rem; }
+    .chips button.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .note { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-md); padding: .75rem 1rem; color: var(--slate); font-size: .88rem; }
+    .roll td:first-child { color: var(--slate); }
+    .roll tr.total td { font-weight: 800; color: var(--ink); border-top: 2px solid var(--line-strong); }
+    @media (max-width: 991px) { .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 520px) { .stat-grid { grid-template-columns: 1fr; } .chart-box { height: 240px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fy-head">
+    <div>
+        <h1 class="ix-page-title">{% if kind == 'purchases' %}Purchase analytics{% elif kind == 'sales' %}Sales analytics{% elif kind == 'profit' %}Profit analytics{% else %}Purchase vs sales{% endif %}</h1>
+        <p class="ix-page-sub">{{ fy_label }} · 1 April {{ fy }} to 31 March {{ fy|add:1 }}</p>
+    </div>
+    <div class="fy-controls">
+        <nav class="fy-tabs" aria-label="Analytics view">
+            <a href="{% url 'fy_analytics' 'purchases' %}?fy={{ fy }}" class="{% if kind == 'purchases' %}active{% endif %}">Purchases</a>
+            <a href="{% url 'fy_analytics' 'sales' %}?fy={{ fy }}" class="{% if kind == 'sales' %}active{% endif %}">Sales</a>
+            <a href="{% url 'fy_analytics' 'compare' %}?fy={{ fy }}" class="{% if kind == 'compare' %}active{% endif %}">Compare</a>
+            <a href="{% url 'fy_analytics' 'profit' %}?fy={{ fy }}" class="{% if kind == 'profit' %}active{% endif %}">Profit</a>
+        </nav>
+        <form method="get" class="m-0">
+            <select name="fy" class="form-select" aria-label="Financial year" onchange="this.form.submit()">
+                {% for y, label in fy_choices %}<option value="{{ y }}"{% if y == fy %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </form>
+        <a href="/?range={% if fy == fy_choices.0.0 %}fy{% else %}fy{{ fy }}{% endif %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Home</a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat"><div class="lbl">Purchases (incl. GST)</div><div class="val" id="statPurchase">{{ summary.purchase.text }}</div><div class="sub">Taxable {{ summary.purchase.taxable_text }} · {{ summary.purchase.lots }} lot{{ summary.purchase.lots|pluralize }}</div></div>
+    <div class="stat"><div class="lbl">Sales (incl. GST)</div><div class="val" id="statSales">{{ summary.sales.text }}</div><div class="sub">Taxable {{ summary.sales.taxable_text }} · {{ summary.sales.invoices }} invoice{{ summary.sales.invoices|pluralize }}</div></div>
+    <div class="stat"><div class="lbl">Sales − Purchase</div><div class="val tone-{{ summary.difference.tone }}" id="statDiff">{{ summary.difference.text }}</div><div class="sub">Comparison only, not profit</div></div>
+    <div class="stat"><div class="lbl">Opening stock (at cost)</div><div class="val" id="statOpening">{{ summary.opening_stock.text }}</div><div class="sub">Carried in on 1 April · not a purchase</div></div>
+</div>
+
+{% if purchases.missing_cost and kind != 'sales' %}
+<div class="alert alert-warning">
+    {{ purchases.missing_cost|length }} purchase lot{{ purchases.missing_cost|length|pluralize }} in {{ fy_label }} {{ purchases.missing_cost|length|pluralize:"has,have" }} no purchase cost saved
+    ({{ purchases.missing_cost|slice:":5"|join:", " }}{% if purchases.missing_cost|length > 5 %}, …{% endif %}) and {{ purchases.missing_cost|length|pluralize:"is,are" }} counted at ₹0.
+    Add the taxable unit amount on the Update Product page to include {{ purchases.missing_cost|length|pluralize:"it,them" }}.
+</div>
+{% endif %}
+
+{% if kind == 'profit' %}
+<div class="stat-grid">
+    <div class="stat"><div class="lbl">Profit (excl. GST)</div><div class="val tone-{{ profit.profit_ex.tone }}">{{ profit.profit_ex.text }}</div><div class="sub">Sales excl. GST − cost of items sold</div></div>
+    <div class="stat"><div class="lbl">Profit (incl. GST)</div><div class="val tone-{{ profit.profit_in.tone }}">{{ profit.profit_in.text }}</div><div class="sub">Sales incl. GST − cost · includes output GST</div></div>
+    <div class="stat"><div class="lbl">Cost of items sold</div><div class="val">{{ profit.totals.cost|inr }}</div><div class="sub">{{ profit.totals.cost_from_opening_stock|inr }} from opening stock</div></div>
+    <div class="stat"><div class="lbl">Items at a loss</div><div class="val {% if profit.loss_items %}tone-loss{% else %}tone-neutral{% endif %}">{{ profit.loss_items }}</div><div class="sub">of {{ profit.items|length }} item{{ profit.items|length|pluralize }} sold in {{ fy_label }}</div></div>
+</div>
+
+{% if profit.missing_cost %}
+<div class="alert alert-warning">
+    {{ profit.missing_cost|length }} sold item{{ profit.missing_cost|length|pluralize }} {{ profit.missing_cost|length|pluralize:"has,have" }} no purchase cost saved
+    ({{ profit.missing_cost|slice:":5"|join:", " }}{% if profit.missing_cost|length > 5 %}, …{% endif %}), so {{ profit.missing_cost|length|pluralize:"its,their" }} cost counts as ₹0 and profit is overstated.
+    Add the taxable unit amount on the Update Product page.
+</div>
+{% endif %}
+
+<div class="panel">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+        <div>
+            <h2>Profit by item</h2>
+            <div class="hint mb-0">Green = profit, red = loss · {{ fy_label }} · highest profit at the top</div>
+        </div>
+        <div class="seg" role="group" aria-label="Profit measure">
+            <button type="button" data-measure="profit_ex" aria-pressed="true">Excl. GST</button>
+            <button type="button" data-measure="profit_in" aria-pressed="false">Incl. GST</button>
+        </div>
+    </div>
+    <div class="profit-scroll">
+        <div class="chart-box" id="profitChartBox" style="height: {% widthratio profit.items|length 1 28 %}px; min-height: 260px;">
+            <canvas id="profitChart" aria-label="Profit by item"></canvas>
+            {% if not profit.items %}<div class="chart-empty">No sales in {{ fy_label }}.</div>{% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <h2>Item-wise profit</h2>
+    <div class="hint">Sales at the actual invoice rates · cost = quantity sold × the purchase cost of the lot it came from</div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="profitTable">
+            <thead>
+                <tr>
+                    <th>Item</th><th>Category</th><th class="num">Qty sold</th><th class="num">Invoice rate</th>
+                    <th class="num">Sales excl. GST</th><th class="num">GST</th><th class="num">Sales incl. GST</th>
+                    <th class="num">Cost of qty sold</th><th class="num">Profit excl. GST</th><th class="num">Profit incl. GST</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in profit.items %}
+                <tr class="{% if r.profit_ex < 0 %}loss-row{% endif %}">
+                    <td class="fw-semibold">{{ r.name }}{% if r.lots > 1 %}<div class="small text-muted">{{ r.lots }} purchase lots</div>{% endif %}</td>
+                    <td>{{ r.category }}</td>
+                    <td class="num">{{ r.quantity }}</td>
+                    <td class="num">{% if r.min_rate == r.max_rate %}{{ r.min_rate|inr }}{% else %}{{ r.min_rate|inr }}–{{ r.max_rate|inr }}<div class="small text-muted">avg {{ r.avg_rate|inr }}</div>{% endif %}</td>
+                    <td class="num">{{ r.taxable|inr }}</td>
+                    <td class="num">{{ r.gst|inr }}</td>
+                    <td class="num">{{ r.gross|inr }}</td>
+                    <td class="num">{{ r.cost|inr }}</td>
+                    <td class="num fw-bold tone-{{ r.profit_ex_display.tone }}">{{ r.profit_ex_display.text }}</td>
+                    <td class="num fw-bold tone-{{ r.profit_in_display.tone }}">{{ r.profit_in_display.text }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="10" class="text-center text-muted py-4">No sales recorded in {{ fy_label }}.</td></tr>
+                {% endfor %}
+            </tbody>
+            {% if profit.items %}
+            <tfoot>
+                <tr>
+                    <td colspan="2">Total</td><td class="num">{{ profit.totals.quantity }}</td><td></td>
+                    <td class="num">{{ profit.totals.taxable|inr }}</td><td class="num">{{ profit.totals.gst|inr }}</td><td class="num">{{ profit.totals.gross|inr }}</td>
+                    <td class="num">{{ profit.totals.cost|inr }}</td>
+                    <td class="num tone-{{ profit.profit_ex.tone }}">{{ profit.profit_ex.text }}</td>
+                    <td class="num tone-{{ profit.profit_in.tone }}">{{ profit.profit_in.text }}</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+<div class="note mb-3">
+    <strong>Profit (excl. GST)</strong> is the usual measure. <strong>Profit (incl. GST)</strong> is shown as requested: it keeps the output GST collected from customers,
+    which is owed to the government, so it is higher than the business's real margin. Purchase cost is excluding GST (input GST is claimable).
+</div>
+
+{% elif kind == 'purchases' or kind == 'sales' %}
+<div class="row g-3">
+    <div class="{% if kind == 'purchases' %}col-lg-6{% else %}col-12{% endif %}">
+        <div class="panel h-100">
+            <h2>{% if kind == 'purchases' %}Purchases{% else %}Sales{% endif %} by category</h2>
+            <div class="hint">Amount incl. GST. Click a bar or a category below to see its items.</div>
+            <div class="chart-box"><canvas id="categoryChart"></canvas>{% if not chart.categories %}<div class="chart-empty">No {{ kind }} in {{ fy_label }}.</div>{% endif %}</div>
+        </div>
+    </div>
+    {% if kind == 'purchases' %}
+    <div class="col-lg-6">
+        <div class="panel h-100">
+            <h2>Purchases per month</h2>
+            <div class="hint">April to March. Opening stock is not included.</div>
+            <div class="chart-box"><canvas id="monthChart"></canvas></div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="panel">
+    <h2>Item-wise {% if kind == 'purchases' %}purchases{% else %}sales{% endif %}</h2>
+    <div class="hint">{% if kind == 'purchases' %}Each purchase lot at its recorded purchase cost{% else %}Invoice lines at the prices billed{% endif %} · {{ fy_label }}</div>
+    <div class="chips" id="catChips">
+        <button type="button" class="active" data-cat="">All categories</button>
+        {% for c in report.categories %}<button type="button" data-cat="{{ c.category }}">{{ c.category }}</button>{% endfor %}
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="itemTable">
+            <thead>
+                <tr>
+                    <th>Item</th><th>Category</th>
+                    <th class="num">{% if kind == 'purchases' %}Qty purchased{% else %}Qty sold{% endif %}</th>
+                    <th class="num">Taxable</th><th class="num">Amount (incl. GST)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for it in report.items %}
+                <tr data-cat="{{ it.category }}">
+                    <td class="fw-semibold">{{ it.name }}{% if kind == 'purchases' and it.supplier %}<div class="small text-muted">{{ it.supplier }} · {{ it.invoice }} · {{ it.date|date:"d M Y" }}</div>{% endif %}</td>
+                    <td>{{ it.category }}</td>
+                    <td class="num">{{ it.quantity }}</td>
+                    <td class="num">{{ it.taxable|inr }}</td>
+                    <td class="num fw-semibold">{{ it.gross|inr }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-4">No {{ kind }} recorded in {{ fy_label }}.</td></tr>
+                {% endfor %}
+            </tbody>
+            {% if report.items %}
+            <tfoot>
+                <tr><td colspan="2">Total</td><td class="num">{{ report.totals.quantity }}</td><td class="num">{{ report.totals.taxable|inr }}</td><td class="num">{{ report.totals.gross|inr }}</td></tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+
+<div class="panel">
+    <h2>Category totals</h2>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead><tr><th>Category</th><th class="num">Items</th><th class="num">Quantity</th><th class="num">Taxable</th><th class="num">Amount (incl. GST)</th></tr></thead>
+            <tbody>
+                {% for c in report.categories %}
+                <tr><td class="fw-semibold">{{ c.category }}</td><td class="num">{{ c.products }}</td><td class="num">{{ c.quantity }}</td><td class="num">{{ c.taxable|inr }}</td><td class="num">{{ c.gross|inr }}</td></tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-3">Nothing to show.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if kind == 'purchases' %}
+<div class="note mb-3">
+    Supplier returns in {{ fy_label }}: {{ purchases.returns.count }} return{{ purchases.returns.count|pluralize }}, {{ purchases.returns.quantity }} unit{{ purchases.returns.quantity|pluralize }},
+    {{ purchases.returns.gross|inr }} incl. GST (shown separately; the totals above are purchases before returns).
+    Opening stock of {{ summary.opening_stock.text }} was bought in earlier years and is not counted here.
+</div>
+{% endif %}
+
+{% else %}
+<div class="panel">
+    <h2>Purchases and sales by category</h2>
+    <div class="hint">Amounts incl. GST for {{ fy_label }}. Sales − Purchase compares the two transaction totals; it is not profit.</div>
+    <div class="chart-box"><canvas id="compareChart"></canvas>{% if not chart.categories %}<div class="chart-empty">No purchases or sales in {{ fy_label }}.</div>{% endif %}</div>
+</div>
+
+<div class="panel">
+    <h2>Category comparison</h2>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead><tr><th>Category</th><th class="num">Purchases</th><th class="num">Sales</th><th class="num">Sales − Purchase</th></tr></thead>
+            <tbody>
+                {% for r in comparison %}
+                <tr><td class="fw-semibold">{{ r.category }}</td><td class="num">{{ r.purchase|inr }}</td><td class="num">{{ r.sales|inr }}</td><td class="num fw-bold tone-{{ r.difference.tone }}">{{ r.difference.text }}</td></tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center text-muted py-3">Nothing to compare in {{ fy_label }}.</td></tr>
+                {% endfor %}
+            </tbody>
+            {% if comparison %}
+            <tfoot><tr><td>Total</td><td class="num">{{ summary.purchase.text }}</td><td class="num">{{ summary.sales.text }}</td><td class="num tone-{{ summary.difference.tone }}">{{ summary.difference.text }}</td></tr></tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+
+<div class="panel" id="inventory">
+    <h2>Stock value for {{ fy_label }}</h2>
+    <div class="hint">At purchase cost (excl. GST), valued lot by lot at the price each lot was bought for. Selling prices are never used.</div>
+    <div class="table-responsive">
+        <table class="table roll align-middle mb-2" style="max-width: 640px;">
+            <tbody>
+                <tr><td>Opening stock on 1 April {{ fy }} ({{ rollforward.opening.quantity }} units)</td><td class="num">{{ rollforward.opening.value|inr }}</td></tr>
+                <tr><td>+ Purchases during the year</td><td class="num">{{ rollforward.purchases|inr }}</td></tr>
+                <tr><td>− Supplier returns</td><td class="num">{{ rollforward.returns|inr }}</td></tr>
+                <tr><td>− Cost of items sold</td><td class="num">{{ rollforward.cogs|inr }}</td></tr>
+                <tr class="total"><td>{% if rollforward.is_current_year %}Stock value to date{% else %}Closing stock on 31 March {{ fy|add:1 }}{% endif %} ({{ rollforward.closing.quantity }} units)</td><td class="num">{{ rollforward.closing.value|inr }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+    {% if not rollforward.balanced %}
+    <div class="alert alert-warning mb-2">
+        Dated stock movements do not fully explain this year's figures (expected {{ rollforward.expected_closing|inr }}).
+        {% if rollforward.closing.anomalies or rollforward.opening.anomalies %}Some lots show more sold or returned than purchased.{% endif %}
+    </div>
+    {% endif %}
+    {% if rollforward.opening.missing_cost or rollforward.closing.missing_cost %}
+    <div class="alert alert-warning mb-2">Some stock has no purchase cost saved and is counted at ₹0
+        ({{ rollforward.closing.missing_cost|default:rollforward.opening.missing_cost|slice:":5"|join:", " }}). Selling prices are never used as a substitute.</div>
+    {% endif %}
+    {% if rollforward.is_current_year and rollforward.untracked_quantity %}
+    <div class="note">
+        Stock on record today is {{ rollforward.recorded.quantity }} units ({{ rollforward.recorded.value|inr }} at cost).
+        The difference of {{ rollforward.untracked_quantity }} units ({{ rollforward.untracked_value|inr }}) comes from stock quantities edited
+        on the Update Product page, which are not dated and so cannot be placed in a financial year.
+    </div>
+    {% endif %}
+    {% if not rollforward.is_current_year %}<p class="text-muted small mb-0">This closing stock is the opening stock of FY {{ fy|add:1 }}-{{ fy|add:2|stringformat:"d"|slice:"2:" }}.</p>{% endif %}
+</div>
+{% endif %}
+
+{{ chart|json_script:"fy-chart" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const KIND = "{{ kind }}";
+    const data = JSON.parse(document.getElementById('fy-chart').textContent);
+    const css = getComputedStyle(document.documentElement);
+    const C = {
+        brand: css.getPropertyValue('--brand').trim() || '#1D4ED8',
+        amount: css.getPropertyValue('--amount').trim() || '#15803D',
+        invoice: css.getPropertyValue('--invoice').trim() || '#B45309',
+        slate: css.getPropertyValue('--slate').trim() || '#5B6478',
+        line: css.getPropertyValue('--line').trim() || '#E3E7EF',
+    };
+    if (!window.Chart) return;
+    Chart.defaults.font.family = "'Manrope', 'Segoe UI', sans-serif";
+    Chart.defaults.color = C.slate;
+    Chart.defaults.maintainAspectRatio = false;
+    const inr = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const short = v => { const a = Math.abs(v), f = n => (+n.toFixed(1)).toString();
+        if (a >= 1e7) return '₹' + f(v / 1e7) + ' Cr'; if (a >= 1e5) return '₹' + f(v / 1e5) + ' L';
+        if (a >= 1e3) return '₹' + f(v / 1e3) + 'k'; return '₹' + v; };
+    const yMoney = { beginAtZero: true, grid: { color: C.line }, ticks: { callback: short } };
+    const tip = { callbacks: { label: c => ` ${c.dataset.label}: ₹${inr.format(c.parsed.y)}` } };
+
+    // Category drill-down: chips and bar clicks filter the item table
+    const chips = document.querySelectorAll('#catChips button');
+    function filterCat(cat) {
+        chips.forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+        document.querySelectorAll('#itemTable tbody tr[data-cat]').forEach(tr => {
+            tr.style.display = !cat || tr.dataset.cat === cat ? '' : 'none';
+        });
+    }
+    chips.forEach(b => b.addEventListener('click', () => filterCat(b.dataset.cat)));
+
+    if (KIND === 'profit') {
+        if (!data.names.length) return;
+        const GAIN = C.amount, LOSS = getComputedStyle(document.documentElement).getPropertyValue('--danger').trim() || '#B42318';
+        const colours = vals => vals.map(v => v < 0 ? LOSS : GAIN);
+        const labels = { profit_ex: 'Profit excl. GST', profit_in: 'Profit incl. GST' };
+        const chart = new Chart(document.getElementById('profitChart'), {
+            type: 'bar',
+            data: { labels: data.names, datasets: [{ label: labels.profit_ex, data: data.profit_ex, backgroundColor: colours(data.profit_ex), borderRadius: 4, maxBarThickness: 22 }] },
+            options: {
+                indexAxis: 'y',
+                scales: {
+                    x: { grid: { color: C.line }, ticks: { callback: short } },
+                    y: { grid: { display: false }, ticks: { autoSkip: false, callback(v) { const s = this.getLabelForValue(v); return s.length > 22 ? s.slice(0, 21) + '…' : s; } } },
+                },
+                plugins: { legend: { display: false }, tooltip: { callbacks: {
+                    title: items => `${items[0].label} · ${data.categories[items[0].dataIndex]}`,
+                    label: c => ` ${c.dataset.label}: ${c.parsed.x < 0 ? '−' : ''}₹${inr.format(Math.abs(c.parsed.x))}` } } },
+            },
+        });
+        document.querySelectorAll('.seg button').forEach(btn => btn.addEventListener('click', () => {
+            const m = btn.dataset.measure;
+            document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
+            chart.data.datasets[0].data = data[m];
+            chart.data.datasets[0].backgroundColor = colours(data[m]);
+            chart.data.datasets[0].label = labels[m];
+            chart.update();
+        }));
+        return;
+    }
+    if (KIND === 'compare') {
+        if (!data.categories.length) return;
+        new Chart(document.getElementById('compareChart'), {
+            type: 'bar',
+            data: { labels: data.categories, datasets: [
+                { label: 'Purchases', data: data.purchase, backgroundColor: C.brand, borderRadius: 6, maxBarThickness: 34 },
+                { label: 'Sales', data: data.sales, backgroundColor: C.amount, borderRadius: 6, maxBarThickness: 34 },
+            ] },
+            options: { scales: { x: { grid: { display: false } }, y: yMoney }, plugins: { tooltip: tip } },
+        });
+        return;
+    }
+    if (data.categories.length) {
+        const color = KIND === 'purchases' ? C.brand : C.amount;
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'bar',
+            data: { labels: data.categories, datasets: [{ label: KIND === 'purchases' ? 'Purchases' : 'Sales', data: data.values, backgroundColor: color, borderRadius: 6, maxBarThickness: 46 }] },
+            options: {
+                scales: { x: { grid: { display: false } }, y: yMoney },
+                plugins: { legend: { display: false }, tooltip: tip },
+                onClick: (e, els) => { if (els.length) filterCat(data.categories[els[0].index]); },
+            },
+        });
+    }
+    if (KIND === 'purchases') {
+        new Chart(document.getElementById('monthChart'), {
+            type: 'bar',
+            data: { labels: data.months, datasets: [{ label: 'Purchases', data: data.monthly, backgroundColor: C.brand, borderRadius: 6, maxBarThickness: 30 }] },
+            options: { scales: { x: { grid: { display: false } }, y: yMoney }, plugins: { legend: { display: false }, tooltip: tip } },
+        });
+    }
+})();
+</script>
+{% endblock %}

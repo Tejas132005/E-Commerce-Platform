@@ -18,6 +18,8 @@ class LayoutTemplateTests(TestCase):
             if path.name in EXCLUDED or path.stat().st_size == 0:
                 continue
             text = path.read_text(encoding='utf-8')
+            if "{% extends 'base.html' %}" in text:   # inherits the layout from base.html
+                continue
             with self.subTest(page=path.name):
                 self.assertIn("partials/app_header.html", text)
                 self.assertIn("partials/head_end.html", text)
@@ -29,6 +31,8 @@ class LayoutTemplateTests(TestCase):
             if path.name in EXCLUDED or path.stat().st_size == 0:
                 continue
             text = path.read_text(encoding='utf-8')
+            if "{% extends 'base.html' %}" in text:
+                continue
             own = len(re.findall(r'bootstrap(?:\.bundle)?(?:\.min)?\.js', text))
             shared = 'ix_load_bootstrap=True' in text
             with self.subTest(page=path.name):
@@ -55,7 +59,7 @@ class LayoutRenderTests(TestCase):
 
     def test_owner_pages_show_menu_with_customer_count(self):
         self.client.force_login(self.owner)
-        for url in ['/', '/store/sales-dashboard/', '/store/manage/products/', '/bank/']:
+        for url in ['/', '/store/sales-dashboard/', '/store/manage/products/', '/bank/', '/store/fy-analytics/compare/']:
             with self.subTest(url=url):
                 resp = self.client.get(url)
                 self.assertEqual(resp.status_code, 200)
